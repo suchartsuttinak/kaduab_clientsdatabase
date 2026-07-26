@@ -43,12 +43,18 @@
         Request::routeIs('document.*') ||
         Request::routeIs('income.*') ||
         Request::routeIs('help_type.*') ||
+        Request::routeIs('citizenship.*') ||
+        Request::routeIs('citizen.*') ||
         Request::routeIs('translate.*');
 
     $isUserMenu =
         Request::routeIs('users.index') ||
         Request::routeIs('users.create') ||
         Request::routeIs('users.edit');
+
+    $isIdstationCentralMenu =
+        Request::routeIs('idstation.central.*');
+        
 @endphp
 
 <style>
@@ -325,6 +331,60 @@
                             </ul>
                         </div>
                     </li>
+
+
+                {{-- =========================
+                    ศูนย์กลางทะเบียน
+                ========================== --}}
+                <li class="menu-title">ศูนย์กลางทะเบียน</li>
+
+                <li>
+                    <a href="#sidebarIdstationCentral"
+                    data-bs-toggle="collapse"
+                    aria-expanded="{{ $isIdstationCentralMenu ? 'true' : 'false' }}"
+                    class="{{ $isIdstationCentralMenu ? 'active' : '' }}">
+
+                        <i data-feather="database"></i>
+
+                        <span>บุคคลไรัสัญชาติ</span>
+
+                        <span class="menu-arrow menu-arrow-custom"></span>
+
+                    </a>
+
+                    <div class="collapse {{ $isIdstationCentralMenu ? 'show' : '' }}"
+                        id="sidebarIdstationCentral">
+
+                        <ul class="nav-second-level">
+
+                            <li>
+                                <a href="{{ route('idstation.central.index') }}"
+                                class="tp-link {{ Request::routeIs('idstation.central.index') ? 'active' : '' }}">
+
+                                    <i class="bi bi-speedometer2 me-2"></i>
+
+                                    ศูนย์กลางข้อมูล
+
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="{{ route('idstation.central.report') }}"
+                                class="tp-link {{ Request::routeIs('idstation.central.report') ? 'active' : '' }}">
+
+                                    <i class="bi bi-file-earmark-text me-2"></i>
+
+                                    รายงานสรุป
+
+                                </a>
+                            </li>
+
+                        </ul>
+
+                    </div>
+                </li>
+
+
                 {{-- =========================
                     ข้อมูลอ้างอิง
                 ========================== --}}
@@ -352,6 +412,8 @@
                                 <li><a href="{{ route('document.show') }}" class="tp-link {{ Request::routeIs('document.*') ? 'active' : '' }}">รายการเอกสาร</a></li>
                                 <li><a href="{{ route('income.show') }}" class="tp-link {{ Request::routeIs('income.*') ? 'active' : '' }}">รายการรายได้</a></li>
                                 <li><a href="{{ route('help_type.show') }}" class="tp-link {{ Request::routeIs('help_type.*') ? 'active' : '' }}">ประเภทการช่วยเหลือ</a></li>
+                                <li><a href="{{ route('citizenship.show') }}" class="tp-link {{ Request::routeIs('citizenship.*') ? 'active' : '' }}">รายการทางทะเบียน</a></li>
+                                <li><a href="{{ route('citizen.show') }}" class="tp-link {{ Request::routeIs('citizen.*') ? 'active' : '' }}">ได้รับสถานะทางทะเบียน</a></li>
                                 <li><a href="{{ route('translate.show') }}" class="tp-link {{ Request::routeIs('translate.*') ? 'active' : '' }}">ประเภทการพ้นอุปการะ</a></li>
                             </ul>
                         </div>

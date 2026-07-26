@@ -1,22 +1,28 @@
         <?php
 
-        use App\Http\Controllers\AdminController;
-        use App\Http\Controllers\backend\OperationController;
-        use App\Http\Controllers\backend\PublicizeController;
-        use App\Http\Controllers\ClientAdmin\AdminClientController;
-        use App\Http\Controllers\Frontend\BehaviorScreeningController;
-        use App\Http\Controllers\Frontend\CaseActivityController;
-        use App\Http\Controllers\Frontend\ClientHouseTransferController;
-        use App\Http\Controllers\Landing\AboutController;
-        use App\Http\Controllers\Landing\IssueController;
-        use App\Http\Controllers\Landing\LandingController;
-        use App\Http\Controllers\Landing\NewsController;
-        use App\Http\Controllers\Landing\ScholarshipChildController;
-        use App\Http\Controllers\Landing\ScholarshipController;
-        use App\Http\Controllers\ProfileController;
-        use App\Http\Controllers\StatisticsController;
-        use App\Http\Controllers\UserManagementController;
-        use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\backend\IdstationCentralController;
+use App\Http\Controllers\backend\OperationController;
+use App\Http\Controllers\backend\PublicizeController;
+use App\Http\Controllers\ChildAnalyticsReportController;
+use App\Http\Controllers\ClientAdmin\AdminClientController;
+use App\Http\Controllers\Frontend\BehaviorScreeningController;
+use App\Http\Controllers\Frontend\CaseActivityController;
+use App\Http\Controllers\Frontend\ClientHouseTransferController;
+use App\Http\Controllers\Frontend\DepressionScreeningController;
+use App\Http\Controllers\Frontend\IdstationController;
+use App\Http\Controllers\Frontend\NutritionAssessmentController;
+use App\Http\Controllers\Frontend\SnapIvScreeningController;
+use App\Http\Controllers\Landing\AboutController;
+use App\Http\Controllers\Landing\IssueController;
+use App\Http\Controllers\Landing\LandingController;
+use App\Http\Controllers\Landing\NewsController;
+use App\Http\Controllers\Landing\ScholarshipChildController;
+use App\Http\Controllers\Landing\ScholarshipController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StatisticsController;
+use App\Http\Controllers\UserManagementController;
+use Illuminate\Support\Facades\Route;
 
         /*
         |--------------------------------------------------------------------------
@@ -71,7 +77,7 @@
         |--------------------------------------------------------------------------
         */
 
-        Route::middleware(['auth', 'role:admin,executive,social_worker'])->group(function () {
+        Route::middleware(['auth', 'role:admin,executive'])->group(function () {
             Route::get('/issues', [IssueController::class, 'index'])
                 ->name('issues.index');
 
@@ -339,6 +345,132 @@
 
         /*
         |--------------------------------------------------------------------------
+        | SNAP-IV Screening
+        |--------------------------------------------------------------------------
+        */
+            Route::prefix('snap-iv')
+            ->middleware(['auth', 'role:admin,executive,social_worker'])
+            ->name('snap-iv.')
+            ->controller(SnapIvScreeningController::class)
+            ->group(function () {
+
+                Route::get('/{client}', 'index')
+                    ->name('index');
+
+                Route::get('/{client}/create', 'create')
+                    ->name('create');
+
+                Route::post('/{client}', 'store')
+                    ->name('store');
+
+                Route::get('/show/{screening}', 'show')
+                    ->name('show');
+
+                Route::get('/official-report/{screening}', 'officialReport')
+                    ->name('official-report');
+
+                Route::delete('/{screening}', 'destroy')
+                    ->name('destroy');
+            });
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | แบบคัดกรองภาวะซึมเศร้าในวัยรุ่น
+        |--------------------------------------------------------------------------
+        */
+
+        Route::middleware(['auth'])
+            ->prefix('depression-screenings')
+            ->group(function () {
+
+                Route::get('/client/{client}', [
+                    DepressionScreeningController::class,
+                    'index'
+                ])
+                    ->whereNumber('client')
+                    ->name('depression-screenings.index');
+
+                Route::get('/client/{client}/create', [
+                    DepressionScreeningController::class,
+                    'create'
+                ])
+                    ->whereNumber('client')
+                    ->name('depression-screenings.create');
+
+                Route::post('/client/{client}', [
+                    DepressionScreeningController::class,
+                    'store'
+                ])
+                    ->whereNumber('client')
+                    ->name('depression-screenings.store');
+
+                Route::get('/{screening}/official-report', [
+                    DepressionScreeningController::class,
+                    'officialReport'
+                ])
+                    ->whereNumber('screening')
+                    ->name('depression-screenings.official-report');
+
+                Route::get('/{screening}', [
+                    DepressionScreeningController::class,
+                    'show'
+                ])
+                    ->whereNumber('screening')
+                    ->name('depression-screenings.show');
+
+                Route::delete('/{screening}', [
+                    DepressionScreeningController::class,
+                    'destroy'
+                ])
+                    ->whereNumber('screening')
+                    ->name('depression-screenings.destroy');
+
+            });
+
+
+            
+        /*
+        |--------------------------------------------------------------------------
+        | แบบคัดกรองโภชนาการ
+        |--------------------------------------------------------------------------
+        */
+           Route::middleware([
+            'auth',
+            'role:admin,executive,social_worker,teacher_caregiver'
+        ])
+        ->prefix('clients/{client}/nutrition-assessments')
+        ->name('nutrition_assessments.')
+        ->controller(NutritionAssessmentController::class)
+        ->group(function () {
+
+            Route::get('/', 'index')
+                ->name('index');
+
+            Route::get('/create', 'create')
+                ->name('create');
+
+                Route::post('/', 'store')
+                ->name('store');
+
+                Route::get('/{assessment}', 'show')
+                ->name('show');
+
+                Route::get('/{assessment}/edit', 'edit')
+                ->name('edit');
+
+            Route::put('/{assessment}', 'update')
+                ->name('update');
+
+            Route::delete('/{assessment}', 'destroy')
+                ->name('destroy');
+
+        });
+
+
+        /*
+        |--------------------------------------------------------------------------
         | Case Activities
         |--------------------------------------------------------------------------
         */
@@ -352,6 +484,52 @@
                 ->whereNumber('client')
                 ->name('case-activities.report');
         });
+
+
+        
+       // =========================
+        // ID Station
+        // บุคคลไม่มีสถานะทางทะเบียน
+        // =========================
+        Route::middleware(['auth'])->group(function () {
+
+            Route::get('/admin/client/{client}/idstation', [IdstationController::class, 'index'])
+                ->name('idstation.index');
+
+            Route::post('/admin/client/{client}/idstation/store', [IdstationController::class, 'store'])
+                ->name('idstation.store');
+
+            Route::put('/admin/client/idstation/{idstation}/update', [IdstationController::class, 'update'])
+                ->name('idstation.update');
+
+            Route::delete('/admin/client/idstation/{idstation}/delete', [IdstationController::class, 'destroy'])
+                ->name('idstation.destroy');
+
+
+            // =========================
+            // ID Station Central Registry
+            // ศูนย์กลางบุคคลไม่มีสถานะทางทะเบียน
+            // =========================
+            Route::get('/admin/idstation-central', [IdstationCentralController::class, 'index'])
+                ->name('idstation.central.index');
+
+            Route::get('/admin/idstation-central/report', [IdstationCentralController::class, 'report'])
+                ->name('idstation.central.report');
+
+        });
+
+            // รายงานวิเคราะห์ข้อมูลเด็กตามเงื่อนไข
+            Route::middleware(['auth', 'role:admin,executive,social_worker'])->group(function () {
+
+                Route::get('/admin/child-analytics-report', [ChildAnalyticsReportController::class, 'index'])
+                    ->name('child.analytics.report.index');
+
+            });
+
+
+
+
+
 
 
         /*
@@ -382,6 +560,10 @@
         require __DIR__.'/backend/subject.php';
         require __DIR__.'/backend/translate.php';
         require __DIR__.'/backend/scholarshipChild.php';
+        require __DIR__.'/backend/citizen.php';
+        require __DIR__.'/backend/citizenship.php';
+        
+
 
 
         /*

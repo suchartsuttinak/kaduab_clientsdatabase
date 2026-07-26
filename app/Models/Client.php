@@ -352,4 +352,17 @@ public function behaviorScreenings()
 {
     return $this->hasMany(\App\Models\BehaviorScreening::class);
 }
+
+
+  // ความสัมพันธ์กับ NutritionAssessment (ประเมินโภชนาการ)
+public function nutritionAssessments()
+{
+    return $this->hasMany(NutritionAssessment::class);
+}
+
+
+public function idstations()
+{
+    return $this->hasMany(Idstation::class);
+}
 }
