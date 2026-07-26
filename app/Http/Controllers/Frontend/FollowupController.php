@@ -60,13 +60,20 @@ class FollowupController extends Controller
         $this->authorizeManage();
 
         $validator = Validator::make($request->all(), [
-            'followup_date'      => 'required|date',
+          'followup_date' => [
+            'required',
+            'date',
+            'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+        ],
+
             'assistance_detail'  => 'required|string',
             'note'               => 'nullable|string',
         ], [
-            'followup_date.required'     => 'กรุณาเลือกวันเดือนปี',
-            'followup_date.date'         => 'รูปแบบวันเดือนไม่ถูกต้อง',
-            'assistance_detail.required' => 'กรุณากรอกการช่วยเหลือและติดตามผล',
+            'followup_date.required'        => 'กรุณาเลือกวันเดือนปี',
+            'followup_date.date'            => 'รูปแบบวันเดือนไม่ถูกต้อง',
+            'followup_date.before_or_equal' => 'วันที่ติดตามต้องไม่เกินวันปัจจุบัน',
+
+            'assistance_detail.required'    => 'กรุณากรอกการช่วยเหลือและติดตามผล',
         ]);
 
         if ($validator->fails()) {
@@ -109,13 +116,19 @@ class FollowupController extends Controller
         $this->authorizeManage();
 
         $validator = Validator::make($request->all(), [
-            'followup_date'      => 'required|date',
+          'followup_date' => [
+            'required',
+            'date',
+            'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+        ],
+
             'assistance_detail'  => 'required|string',
             'note'               => 'nullable|string',
         ], [
-            'followup_date.required'     => 'กรุณาเลือกวันเดือนปี',
-            'followup_date.date'         => 'รูปแบบวันเดือนไม่ถูกต้อง',
-            'assistance_detail.required' => 'กรุณากรอกการช่วยเหลือและติดตามผล',
+            'followup_date.required'        => 'กรุณาเลือกวันเดือนปี',
+            'followup_date.date'            => 'รูปแบบวันเดือนไม่ถูกต้อง',
+            'followup_date.before_or_equal' => 'วันที่ติดตามต้องไม่เกินวันปัจจุบัน',
+            'assistance_detail.required'    => 'กรุณากรอกการช่วยเหลือและติดตามผล',
         ]);
 
         if ($validator->fails()) {

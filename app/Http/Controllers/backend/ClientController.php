@@ -353,7 +353,19 @@ protected function saveClientImage($file): string
             'nick_name'       => 'nullable|string|max:255',
             'first_name'      => 'required|string|max:255',
             'last_name'       => 'required|string|max:255',
-            'birth_date'      => 'required|date',
+
+           'birth_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
+            'arrival_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
             // 'id_card'         => 'nullable|string|max:13|unique:clients,id_card',
             'id_card' => [
                 'nullable',
@@ -388,7 +400,6 @@ protected function saveClientImage($file): string
             'origin_zipcode'         => 'nullable|integer',
             'origin_phone'           => 'nullable|string|max:50',
 
-            'arrival_date'    => 'required|date',
             'target_id'       => 'required|integer',
             'contact_id'      => 'required|integer',
             'project_id'      => 'required|integer',
@@ -404,8 +415,15 @@ protected function saveClientImage($file): string
             'gender.required'        => 'กรุณาเลือกเพศ',
             'first_name.required'    => 'กรุณากรอกชื่อ',
             'last_name.required'     => 'กรุณากรอกนามสกุล',
-            'birth_date.required'    => 'กรุณากรอกวัน/เดือน/ปีเกิด',
-            // 'id_card.unique'         => 'เลขบัตรประชาชนนี้ถูกใช้แล้ว',
+
+
+            'birth_date.required' => 'กรุณากรอกวันเกิด',
+            'birth_date.before_or_equal' => 'วันเกิดต้องไม่เกินวันปัจจุบัน',
+
+            'arrival_date.required' => 'กรุณากรอกวันที่รับเข้า',
+            'arrival_date.before_or_equal' => 'วันที่รับเข้าต้องไม่เกินวันปัจจุบัน',
+
+
             'id_card.regex' => 'รูปแบบเลขประชาชนต้องเป็น 0-0000-00000-00-0',
             'national_id.required'   => 'กรุณาเลือกสัญชาติ',
             'religion_id.required'   => 'กรุณาเลือกศาสนา',
@@ -632,27 +650,41 @@ protected function saveClientImage($file): string
         // กันการเดา id ตั้งแต่ต้น
         $client = $this->findAuthorizedClient($id);
 
-        $validated = $request->validate([
+             $validated = $request->validate([
             'register_number' => 'nullable|unique:clients,register_number,' . $id,
-            // 'id_card'         => 'nullable|unique:clients,id_card,' . $id,
-           'id_card' => [
-            'nullable',
-            'regex:/^[0-9]{1}-[0-9]{4}-[0-9]{5}-[0-9]{2}-[0-9]{1}$/',
-            'unique:clients,id_card,' . $id,
-        ],
-            'title_id'        => 'required|integer',
-            'nick_name'       => 'nullable|string|max:255',
-            'first_name'      => 'required|string|max:255',
-            'last_name'       => 'required|string|max:255',
-            'gender'          => 'required|in:male,female',
-            'birth_date'      => 'required|date',
-            'national_id'     => 'required|integer',
-            'religion_id'     => 'required|integer',
-            'marital_id'      => 'required|integer',
-            'occupation_id'   => 'required|integer',
-            'income_id'       => 'required|integer',
-            'education_id'    => 'required|integer',
-            'scholl'          => 'nullable|string|max:255',
+
+            'id_card' => [
+                'nullable',
+                'regex:/^[0-9]{1}-[0-9]{4}-[0-9]{5}-[0-9]{2}-[0-9]{1}$/',
+                'unique:clients,id_card,' . $id,
+            ],
+
+            'title_id'   => 'required|integer',
+            'nick_name'  => 'nullable|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name'  => 'required|string|max:255',
+            'gender'     => 'required|in:male,female',
+
+            'birth_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
+            'arrival_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
+            'national_id'   => 'required|integer',
+            'religion_id'   => 'required|integer',
+            'marital_id'    => 'required|integer',
+            'occupation_id' => 'required|integer',
+            'income_id'     => 'required|integer',
+            'education_id'  => 'required|integer',
+            'scholl'        => 'nullable|string|max:255',
+
             'address'         => 'nullable|string|max:255',
             'moo'             => 'nullable|string|max:255',
             'soi'             => 'nullable|string|max:255',
@@ -675,25 +707,55 @@ protected function saveClientImage($file): string
             'origin_zipcode'         => 'nullable|integer',
             'origin_phone'           => 'nullable|string|max:50',
 
-            'arrival_date'    => 'required|date',
-            'target_id'       => 'required|integer',
-            'contact_id'      => 'required|integer',
-            'project_id'      => 'required|integer',
-            'house_id'        => 'required|integer',
-            'status_id'       => 'required|integer',
-            'case_resident'   => 'required|in:Active,Inactive',
-            'problems'        => 'nullable|array',
-            'problems.*'      => 'integer',
-          'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'target_id'     => 'required|integer',
+            'contact_id'    => 'required|integer',
+            'project_id'    => 'required|integer',
+            'house_id'      => 'required|integer',
+            'status_id'     => 'required|integer',
+            'case_resident' => 'required|in:Active,Inactive',
+            'problems'      => 'nullable|array',
+            'problems.*'    => 'integer',
+            'image'         => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ], [
             'register_number.unique' => 'เลขทะเบียนนี้ถูกใช้แล้ว',
             'register_number.string' => 'เลขทะเบียนต้องเป็นตัวอักษร',
             'register_number.max'    => 'เลขทะเบียนต้องไม่เกิน 255 ตัวอักษร',
+
             'id_card.unique' => 'เลขบัตรประชาชนนี้ถูกใช้แล้ว',
             'id_card.regex'  => 'เลขบัตรประชาชนต้องอยู่ในรูปแบบ 0-0000-00000-00-0',
+
+            'title_id.required'   => 'กรุณาเลือกคำนำหน้า',
+            'first_name.required' => 'กรุณากรอกชื่อ',
+            'last_name.required'  => 'กรุณากรอกนามสกุล',
+            'gender.required'     => 'กรุณาเลือกเพศ',
+
+            'birth_date.required'        => 'กรุณากรอกวันเกิด',
+            'birth_date.before_or_equal' => 'วันเกิดต้องไม่เกินวันปัจจุบัน',
+
+            'arrival_date.required'        => 'กรุณากรอกวันที่รับเข้า',
+            'arrival_date.before_or_equal' => 'วันที่รับเข้าต้องไม่เกินวันปัจจุบัน',
+
+            'national_id.required'   => 'กรุณาเลือกสัญชาติ',
+            'religion_id.required'   => 'กรุณาเลือกศาสนา',
+            'marital_id.required'    => 'กรุณาเลือกสถานภาพการสมรส',
+            'occupation_id.required' => 'กรุณาเลือกอาชีพ',
+            'income_id.required'     => 'กรุณาเลือกรายได้เฉลี่ย/เดือน',
+            'education_id.required'  => 'กรุณาเลือกระดับการศึกษา',
+
+            'target_id.required'  => 'กรุณาเลือกกลุ่มเป้าหมาย',
+            'contact_id.required' => 'กรุณาเลือกวิธีการติดต่อ',
+            'project_id.required' => 'กรุณาเลือกหน่วยงาน',
+            'house_id.required'   => 'กรุณาเลือกสถานที่พักอาศัย',
+            'status_id.required'  => 'กรุณาเลือกสถานะผู้เข้ารับ',
+
             'case_resident.required' => 'กรุณาเลือกสถานะการอยู่อาศัย',
             'case_resident.in'       => 'สถานะการอยู่อาศัยต้องเป็น Active หรือ Inactive เท่านั้น',
-        ]);
 
+            'image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'image.mimes' => 'รูปภาพต้องเป็นไฟล์ประเภท jpeg, png, jpg, gif หรือ svg',
+            'image.max'   => 'รูปภาพต้องมีขนาดไม่เกิน 2MB',
+        ]);
+        
         $validated = $this->forceAuthorizedProject($validated);
 
         // กันการเปลี่ยน house_id ไปบ้านที่ไม่มีสิทธิ์

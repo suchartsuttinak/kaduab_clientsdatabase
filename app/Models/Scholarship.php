@@ -6,14 +6,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class Scholarship extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'fullname',
+        'phone',
+        'email',
+        'support_types',
+        'detail',
 
-    // ✅ แปลง JSON เป็น array
-    protected $casts = [
-        'support_types' => 'array',
+        // สำหรับระบบแจ้งเตือน
+        'is_read',
+        'read_at',
     ];
 
-    // ✅ ความสัมพันธ์: 1 ผู้สนับสนุน มีหลายการบริจาค
+    protected $casts = [
+        'support_types' => 'array',
+        'is_read'       => 'boolean',
+        'read_at'       => 'datetime',
+    ];
+
+    // 1 ผู้สนับสนุน มีหลายการบริจาค
     public function donations()
     {
         return $this->hasMany(ScholarshipDonation::class);

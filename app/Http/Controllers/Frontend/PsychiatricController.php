@@ -127,7 +127,7 @@ class PsychiatricController extends Controller
             'description' => 'วันที่ส่งตรวจ: ' . ($data['sent_date'] ?? '-') .
                             ' | ส่งตรวจที่: ' . ($data['hotpital'] ?? '-') .
                             ' | การใช้ยา: ' . (($data['drug_no'] ?? 'no') === 'yes' ? 'มี' : 'ไม่มี'),
-            'occurred_at' => now(),
+            'occurred_at' => $data['sent_date'] ?? now('Asia/Bangkok'),
             'icon'        => 'bi-hospital',
             'url'         => route('psychiatric.create', $client->id),
         ]);
@@ -246,7 +246,7 @@ class PsychiatricController extends Controller
             'description' => 'วันที่ส่งตรวจ: ' . ($data['sent_date'] ?? '-') .
                             ' | ส่งตรวจที่: ' . ($data['hotpital'] ?? '-') .
                             ' | การใช้ยา: ' . (($data['drug_no'] ?? 'no') === 'yes' ? 'มี' : 'ไม่มี'),
-            'occurred_at' => now(),
+            'occurred_at' => $data['sent_date'] ?? now('Asia/Bangkok'),
             'icon'        => 'bi-hospital',
             'url'         => route('psychiatric.create', $psychiatric->client_id),
         ]);

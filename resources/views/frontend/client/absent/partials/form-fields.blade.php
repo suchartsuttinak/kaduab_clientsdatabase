@@ -6,6 +6,7 @@
                name="absent_date"
                class="form-control form-control-sm @if(empty($prefix)) @error('absent_date') is-invalid @enderror @endif"
                value="{{ $absentDate ?? '' }}"
+               max="{{ now('Asia/Bangkok')->toDateString() }}"
                required>
         @if(empty($prefix))
             @error('absent_date')
@@ -21,6 +22,7 @@
                name="record_date"
                class="form-control form-control-sm @if(empty($prefix)) @error('record_date') is-invalid @enderror @endif"
                value="{{ $recordDate ?? '' }}"
+               max="{{ now('Asia/Bangkok')->toDateString() }}"
                required>
         @if(empty($prefix))
             @error('record_date')

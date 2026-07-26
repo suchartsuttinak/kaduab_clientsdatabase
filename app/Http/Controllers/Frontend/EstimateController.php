@@ -126,12 +126,14 @@ class EstimateController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'date' => [
-                    'required',
-                    'date',
-                    Rule::unique('estimates')->where(function ($query) use ($request) {
-                        return $query->where('client_id', $request->client_id);
-                    }),
-                ],
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+
+                Rule::unique('estimates')->where(function ($query) use ($request) {
+                    return $query->where('client_id', $request->client_id);
+                }),
+            ],
                 'follo_no' => 'required',
                 'results'  => 'nullable|string',
                 'family_income' => 'nullable|numeric|min:0',
@@ -151,6 +153,7 @@ class EstimateController extends Controller
                 'date.unique' => 'วันที่นี้ถูกบันทึกไว้แล้ว กรุณาเลือกวันอื่น',
                 'date.required' => 'กรุณาเลือกวันที่',
                 'date.date' => 'รูปแบบวันที่ไม่ถูกต้อง',
+                'date.before_or_equal' => 'วันที่ติดตามต้องไม่เกินวันที่ปัจจุบัน',
                 'follo_no.required' => 'กรุณาเลือกการดำเนินงาน',
                 'income_sufficiency.required' => 'กรุณาเลือกความเพียงพอของรายได้',
                 'income_sufficiency.in' => 'ค่าความเพียงพอของรายได้ไม่ถูกต้อง',
@@ -261,13 +264,15 @@ class EstimateController extends Controller
             ->firstOrFail();
 
         $validated = $request->validate([
-            'date' => [
-                'required',
-                'date',
-                Rule::unique('estimates')
-                    ->where(fn($q) => $q->where('client_id', $estimate->client_id))
-                    ->ignore($estimate->id),
-            ],
+           'date' => [
+            'required',
+            'date',
+            'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+
+            Rule::unique('estimates')
+                ->where(fn($q) => $q->where('client_id', $estimate->client_id))
+                ->ignore($estimate->id),
+        ],
             'follo_no' => 'required',
             'results' => 'nullable|string',
             'family_income' => 'nullable|numeric|min:0',
@@ -288,6 +293,7 @@ class EstimateController extends Controller
             'date.unique' => 'วันที่นี้ถูกบันทึกไว้แล้ว กรุณาเลือกวันอื่น',
             'date.required' => 'กรุณาเลือกวันที่',
             'date.date' => 'รูปแบบวันที่ไม่ถูกต้อง',
+            'date.before_or_equal' => 'วันที่ติดตามต้องไม่เกินวันที่ปัจจุบัน',
             'follo_no.required' => 'กรุณาเลือกการดำเนินงาน',
             'income_sufficiency.required' => 'กรุณาเลือกความเพียงพอของรายได้',
             'income_sufficiency.in' => 'ค่าความเพียงพอของรายได้ไม่ถูกต้อง',

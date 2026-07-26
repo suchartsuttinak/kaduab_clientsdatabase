@@ -161,18 +161,25 @@
 
            <div class="row mb-4">
 
-    <div class="col-lg-3 mb-3">
+            <div class="col-lg-3 mb-3">
 
-        <label class="form-label fw-bold">
-            วันที่ประเมิน
-        </label>
+                <label class="form-label fw-bold">
+                    วันที่ประเมิน <span class="text-danger">*</span>
+                </label>
 
-        <input type="date"
-               name="screening_date"
-               value="{{ old('screening_date', date('Y-m-d')) }}"
-               class="form-control">
+                <input type="date"
+                    name="screening_date"
+                    value="{{ old('screening_date', now('Asia/Bangkok')->toDateString()) }}"
+                    max="{{ now('Asia/Bangkok')->toDateString() }}"
+                    class="form-control @error('screening_date') is-invalid @enderror">
 
-    </div>
+                @error('screening_date')
+                    <div class="invalid-feedback">
+                        {{ $message }}
+                    </div>
+                @enderror
+
+            </div>
 
     <div class="col-lg-3 mb-3">
 

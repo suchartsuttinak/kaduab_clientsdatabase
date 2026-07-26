@@ -8,15 +8,30 @@ use Illuminate\Http\Request;
 
 class IssueController extends Controller
 {
-    // แสดงรายการแจ้งปัญหา
+    /**
+     * แสดงรายการแจ้งปัญหา
+     */
     public function index()
     {
+        // ป้องกันการเข้าถึงโดยผู้ที่ไม่มีสิทธิ์
+        if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'executive'])) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+        }
+
+        // เมื่อเปิดดูรายการ ให้เปลี่ยนสถานะเป็นอ่านแล้ว
+        Issue::where('is_read', false)->update([
+            'is_read' => true,
+            'read_at' => now('Asia/Bangkok'),
+        ]);
+
         $issues = Issue::latest()->paginate(10);
 
         return view('landing.issues.index', compact('issues'));
     }
 
-    // บันทึกการแจ้งปัญหา
+    /**
+     * บันทึกการแจ้งปัญหา
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -40,6 +55,8 @@ class IssueController extends Controller
             'fullname' => $validated['fullname'],
             'phone'    => $validated['phone'],
             'subject'  => $validated['subject'],
+            // รายการใหม่ถือว่ายังไม่ได้อ่าน
+            'is_read'  => false,
         ]);
 
         return redirect()

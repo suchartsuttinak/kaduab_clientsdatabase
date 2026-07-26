@@ -30,15 +30,45 @@ class EscapeFollowController extends Controller
         Client::forUser(auth()->user())->findOrFail($escape->client_id);
 
         $data = $request->validate([
-            'trace_date'  => 'required|date',
-            'trac_no'     => 'required|string',
-            'detail'      => 'nullable|string',
-            'report_date' => 'nullable|date',
-            'stop_date'   => 'nullable|date',
-            'punish'      => 'nullable|string',
-            'punish_date' => 'nullable|date',
-            'remark'      => 'nullable|string',
-        ]);
+                'trace_date' => [
+                    'required',
+                    'date',
+                    'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+                ],
+                'trac_no' => 'required|string',
+                'detail' => 'nullable|string',
+
+                'report_date' => [
+                    'nullable',
+                    'date',
+                    'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+                ],
+                'stop_date' => [
+                    'nullable',
+                    'date',
+                    'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+                ],
+                'punish' => 'nullable|string',
+                'punish_date' => [
+                    'nullable',
+                    'date',
+                    'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+                ],
+                'remark' => 'nullable|string',
+            ], [
+                'trace_date.required'        => 'กรุณาระบุวันที่ติดตาม',
+                'trace_date.date'            => 'รูปแบบวันที่ติดตามไม่ถูกต้อง',
+                'trace_date.before_or_equal' => 'วันที่ติดตามต้องไม่เกินวันปัจจุบัน',
+
+                'report_date.date'            => 'รูปแบบวันที่แจ้งความไม่ถูกต้อง',
+                'report_date.before_or_equal' => 'วันที่แจ้งความต้องไม่เกินวันปัจจุบัน',
+
+                'stop_date.date'            => 'รูปแบบวันที่ยุติการติดตามไม่ถูกต้อง',
+                'stop_date.before_or_equal' => 'วันที่ยุติการติดตามต้องไม่เกินวันปัจจุบัน',
+
+                'punish_date.date'            => 'รูปแบบวันที่ลงโทษไม่ถูกต้อง',
+                'punish_date.before_or_equal' => 'วันที่ลงโทษต้องไม่เกินวันปัจจุบัน',
+            ]);
 
         $nextCount = EscapeFollow::where('escape_id', $escape_id)->count() + 1;
 
@@ -111,15 +141,45 @@ class EscapeFollowController extends Controller
 
         Client::forUser(auth()->user())->findOrFail($escape->client_id);
 
-        $data = $request->validate([
-            'trace_date'  => 'required|date',
-            'trac_no'     => 'required|string',
-            'detail'      => 'nullable|string',
-            'report_date' => 'nullable|date',
-            'stop_date'   => 'nullable|date',
-            'punish'      => 'nullable|string',
-            'punish_date' => 'nullable|date',
-            'remark'      => 'nullable|string',
+       $data = $request->validate([
+            'trace_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+            'trac_no' => 'required|string',
+            'detail' => 'nullable|string',
+
+            'report_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+            'stop_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+            'punish' => 'nullable|string',
+            'punish_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+            'remark' => 'nullable|string',
+        ], [
+            'trace_date.required'        => 'กรุณาระบุวันที่ติดตาม',
+            'trace_date.date'            => 'รูปแบบวันที่ติดตามไม่ถูกต้อง',
+            'trace_date.before_or_equal' => 'วันที่ติดตามต้องไม่เกินวันปัจจุบัน',
+
+            'report_date.date'            => 'รูปแบบวันที่แจ้งความไม่ถูกต้อง',
+            'report_date.before_or_equal' => 'วันที่แจ้งความต้องไม่เกินวันปัจจุบัน',
+
+            'stop_date.date'            => 'รูปแบบวันที่ยุติการติดตามไม่ถูกต้อง',
+            'stop_date.before_or_equal' => 'วันที่ยุติการติดตามต้องไม่เกินวันปัจจุบัน',
+
+            'punish_date.date'            => 'รูปแบบวันที่ลงโทษไม่ถูกต้อง',
+            'punish_date.before_or_equal' => 'วันที่ลงโทษต้องไม่เกินวันปัจจุบัน',
         ]);
 
         $newTraceDate = Carbon::parse($data['trace_date'])->startOfDay();

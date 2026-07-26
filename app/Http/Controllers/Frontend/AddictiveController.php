@@ -113,7 +113,7 @@ class AddictiveController extends Controller
                                 ' | ครั้งที่ ' . ($addictive->count ?? '-') .
                                 ' | ผลตรวจ: ' . (($data['exam'] == 1) ? 'พบสารเสพติด' : 'ไม่พบสารเสพติด') .
                                 ' | ผู้ตรวจ: ' . ($data['recorder'] ?? '-'),
-                'occurred_at' => now(),
+                'occurred_at' => $data['date'] ?? now('Asia/Bangkok'),
                 'icon'        => 'bi-clipboard2-pulse',
                 'url'         => route('addictive.create', $client->id),
             ]);
@@ -225,7 +225,7 @@ class AddictiveController extends Controller
                             ' | ครั้งที่ ' . ($addictive->count ?? '-') .
                             ' | ผลตรวจ: ' . (($data['exam'] == 1) ? 'พบสารเสพติด' : 'ไม่พบสารเสพติด') .
                             ' | ผู้ตรวจ: ' . ($data['recorder'] ?? '-'),
-            'occurred_at' => now(),
+            'occurred_at' => $data['date'] ?? now('Asia/Bangkok'),
             'icon'        => 'bi-clipboard2-pulse',
             'url'         => route('addictive.create', $addictive->client_id),
         ]);

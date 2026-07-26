@@ -30,12 +30,19 @@
                         <div class="row g-3">
                             <div class="col-12 col-md-4">
                                 <label for="date" class="form-label-modern">วันที่เกิดเหตุ</label>
-                                <input type="date"
-                                       name="date"
-                                       id="date"
-                                       class="form-control form-control-modern"
-                                       value="{{ old('date', $observe->date ?? '') }}"
-                                       required>
+                              <input type="date"
+                                    name="date"
+                                    id="date"
+                                    class="form-control form-control-modern @error('date') is-invalid @enderror"
+                                    value="{{ old('date', $observe->date ?? now('Asia/Bangkok')->toDateString()) }}"
+                                    max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                    required>
+
+                                @error('date')
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+                                @enderror
                             </div>
 
                             <div class="col-12 col-md-8">
@@ -123,10 +130,17 @@
                             <div class="col-12 col-md-4">
                                 <label for="record_date" class="form-label-modern">วันที่บันทึก</label>
                                 <input type="date"
-                                       name="record_date"
-                                       id="record_date"
-                                       class="form-control form-control-modern"
-                                       value="{{ old('record_date', $observe->record_date ?? '') }}">
+                                        name="record_date"
+                                        id="record_date"
+                                        class="form-control form-control-modern @error('record_date') is-invalid @enderror"
+                                        value="{{ old('record_date', $observe->record_date ?? now('Asia/Bangkok')->toDateString()) }}"
+                                        max="{{ now('Asia/Bangkok')->toDateString() }}">
+
+                                    @error('record_date')
+                                        <div class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
                             </div>
 
                           <div class="col-12 col-md-8">

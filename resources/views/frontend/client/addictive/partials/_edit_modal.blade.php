@@ -193,14 +193,16 @@
                         </div>
 
                         <div class="row g-3">
-                            <div class="col-12 col-md-4 col-lg-3">
+                           <div class="col-12 col-md-4 col-lg-3">
                                 <label class="form-label form-label-modern">
                                     วันที่ตรวจ <span class="text-danger">*</span>
                                 </label>
                                 <input type="date"
-                                       name="date"
-                                       id="edit_date"
-                                       class="form-control form-control-modern">
+                                    name="date"
+                                    id="edit_date"
+                                    class="form-control form-control-modern"
+                                    max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                    required>
                             </div>
 
                             <div class="col-12 col-md-4 col-lg-3">

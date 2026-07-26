@@ -212,145 +212,222 @@
 }
 
 @media print{
-    html,
-    body{
-        width: 297mm !important;
-        min-height: 210mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #fff !important;
-        overflow: visible !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+    @page{
+        size:A4 landscape;
+        margin:6mm;
     }
 
-    .navbar-custom,
-    .leftside-menu,
-    .page-title-box,
-    .footer,
-    .addictive-report-actions,
+    html,
+    body{
+        width:297mm !important;
+        height:auto !important;
+        min-height:auto !important;
+        margin:0 !important;
+        padding:0 !important;
+        background:#fff !important;
+        overflow:visible !important;
+        font-size:12px !important;
+        -webkit-print-color-adjust:exact !important;
+        print-color-adjust:exact !important;
+    }
+
+    nav,
     header,
-    footer{
-        display: none !important;
+    footer,
+    aside,
+    .navbar,
+    .navbar-custom,
+    .sidebar,
+    .leftside-menu,
+    .main-footer,
+    .footer,
+    .app-footer,
+    .content-footer,
+    .page-footer,
+    .page-title-box,
+    .addictive-report-actions{
+        display:none !important;
+    }
+
+    .content-wrapper,
+    .main-content,
+    .page-content,
+    .container,
+    .container-fluid{
+        width:100% !important;
+        max-width:100% !important;
+        min-height:auto !important;
+        height:auto !important;
+        margin:0 !important;
+        padding:0 !important;
+        background:#fff !important;
+        overflow:visible !important;
     }
 
     .addictive-report-page{
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 auto !important;
-        padding: 0 !important;
-        background: #fff !important;
-        overflow: visible !important;
+        width:100% !important;
+        max-width:100% !important;
+        min-height:auto !important;
+        height:auto !important;
+        margin:0 !important;
+        padding:0 !important;
+        background:#fff !important;
+        overflow:visible !important;
     }
 
     .addictive-report-box{
-        width: 100% !important;
-        max-width: 100% !important;
-        min-height: auto !important;
-        margin: 0 auto !important;
-        padding: 0 !important;
-        border: none !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        background: #fff !important;
-        overflow: visible !important;
-        page-break-after: avoid !important;
+        width:100% !important;
+        max-width:100% !important;
+        min-height:auto !important;
+        height:auto !important;
+        margin:0 !important;
+        padding:0 !important;
+        border:0 !important;
+        border-radius:0 !important;
+        box-shadow:none !important;
+        background:#fff !important;
+        overflow:visible !important;
+        page-break-after:auto !important;
+        break-after:auto !important;
     }
 
     .addictive-report-header{
-        text-align: center !important;
-        margin: 0 0 6px !important;
-        padding: 0 0 5px !important;
-        border-bottom: 1px solid #cbd5e1 !important;
+        display:block !important;
+        text-align:center !important;
+        margin:0 0 7px !important;
+        padding:0 0 6px !important;
+        border-bottom:1px solid #d1d5db !important;
     }
 
     .addictive-report-title{
-        margin: 0 !important;
-        font-size: 20px !important;
-        font-weight: 900 !important;
-        line-height: 1.1 !important;
-        color: #0f172a !important;
+        margin:0 !important;
+        font-size:20px !important;
+        font-weight:900 !important;
+        line-height:1.15 !important;
+        color:#111827 !important;
     }
 
     .addictive-report-subtitle{
-        margin-top: 2px !important;
-        font-size: 11px !important;
-        line-height: 1.1 !important;
-        color: #64748b !important;
+        margin:2px 0 0 !important;
+        font-size:11px !important;
+        line-height:1.2 !important;
+        color:#64748b !important;
     }
 
     .addictive-report-meta{
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 4px 22px !important;
-        margin: 0 0 6px !important;
-        padding: 0 0 5px !important;
-        border-bottom: 1px solid #dbe4f0 !important;
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:4px 20px !important;
+        margin:0 0 7px !important;
+        padding:0 0 6px !important;
+        border-bottom:1px solid #e5e7eb !important;
     }
 
-    .addictive-report-meta > *{
-        border: none !important;
-        background: none !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        min-width: auto !important;
-        width: auto !important;
-        flex: none !important;
-        font-size: 12.5px !important;
-        font-weight: 800 !important;
-        line-height: 1.1 !important;
-        color: #0f172a !important;
+    .addictive-report-meta-item{
+        border:0 !important;
+        background:none !important;
+        box-shadow:none !important;
+        padding:0 !important;
+        margin:0 !important;
+        min-width:auto !important;
+        width:auto !important;
+    }
+
+    .addictive-report-meta-label{
+        display:inline !important;
+        font-size:12px !important;
+        font-weight:800 !important;
+        color:#111827 !important;
+        margin:0 4px 0 0 !important;
+    }
+
+    .addictive-report-meta-value{
+        display:inline !important;
+        font-size:12px !important;
+        font-weight:800 !important;
+        color:#111827 !important;
+        margin:0 !important;
     }
 
     .addictive-report-table-wrap{
-        width: 100% !important;
-        overflow: visible !important;
-        border: none !important;
-        border-radius: 0 !important;
-        margin: 0 !important;
+        width:100% !important;
+        overflow:visible !important;
+        border:0 !important;
+        border-radius:0 !important;
+        margin:0 !important;
+        padding:0 !important;
     }
 
     .addictive-report-table{
-        width: 100% !important;
-        min-width: 0 !important;
-        max-width: 100% !important;
-        table-layout: fixed !important;
-        border-collapse: collapse !important;
-        margin: 0 !important;
+        width:100% !important;
+        min-width:0 !important;
+        max-width:100% !important;
+        table-layout:fixed !important;
+        border-collapse:collapse !important;
+        margin:0 !important;
+        page-break-inside:auto !important;
+    }
+
+    .addictive-report-table thead{
+        display:table-header-group !important;
+    }
+
+    .addictive-report-table tr{
+        page-break-inside:avoid !important;
+        break-inside:avoid !important;
     }
 
     .addictive-report-table th,
     .addictive-report-table td{
-        border: 1px solid #111827 !important;
-        padding: 3px 4px !important;
-        font-size: 10.5px !important;
-        line-height: 1.1 !important;
-        vertical-align: middle !important;
-        text-align: center !important;
-        white-space: normal !important;
-        word-break: break-word !important;
-        overflow-wrap: anywhere !important;
+        border:1px solid #111827 !important;
+        padding:3px 4px !important;
+        font-size:10.5px !important;
+        line-height:1.15 !important;
+        vertical-align:middle !important;
+        text-align:center !important;
+        white-space:normal !important;
+        word-break:break-word !important;
+        overflow-wrap:anywhere !important;
     }
 
     .addictive-report-table thead th{
-        background: #eef4ff !important;
-        font-weight: 900 !important;
-        color: #0f172a !important;
+        background:#f1f5f9 !important;
+        font-weight:900 !important;
+        color:#111827 !important;
     }
 
-    .addictive-report-signature,
-    .report-signature{
-        margin-top: 18px !important;
-        padding-top: 0 !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
+    .addictive-col-text{
+        text-align:left !important;
     }
 
-    .addictive-report-signature * ,
-    .report-signature *{
-        font-size: 12px !important;
-        line-height: 1.2 !important;
+    .addictive-report-sign{
+        margin-top:14px !important;
+        display:flex !important;
+        justify-content:flex-end !important;
+        page-break-inside:avoid !important;
+        break-inside:avoid !important;
+    }
+
+    .addictive-report-sign-box{
+        width:240px !important;
+        max-width:240px !important;
+        text-align:center !important;
+        font-size:11.5px !important;
+        color:#111827 !important;
+    }
+
+    .addictive-report-sign-line{
+        margin-top:24px !important;
+        padding-top:4px !important;
+        border-top:1px solid #111827 !important;
+        font-size:11px !important;
+        line-height:1.1 !important;
+    }
+
+    .addictive-report-empty{
+        padding:14px !important;
+        font-size:12px !important;
+        border-radius:0 !important;
     }
 }
 </style>

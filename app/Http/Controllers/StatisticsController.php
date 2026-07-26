@@ -15,6 +15,9 @@ use App\Models\Refer;
 use App\Models\Project;
 use App\Models\House;
 use App\Models\CaseActivity;
+use App\Models\Issue;
+use App\Models\Scholarship;
+use App\Models\Target;
 use Carbon\Carbon;
 
 class StatisticsController extends Controller
@@ -34,6 +37,7 @@ class StatisticsController extends Controller
         $problemId      = $request->input('problem');
         $projectId      = $request->input('project_id');
         $houseId        = $request->input('house_id');
+        $targetId = $request->input('target_id');
 
         $startMonth = $request->input('start_month');
         $startYear  = $request->input('start_year');
@@ -66,6 +70,7 @@ class StatisticsController extends Controller
                     },
                 
                 'problems',
+                'target',      // เพิ่มบรรทัดนี้
             ]);
 
             // กรองตามโครงการ (project_id) ถ้ามีการเลือก
@@ -133,6 +138,10 @@ class StatisticsController extends Controller
             $query->whereHas('problems', function ($q) use ($problemId) {
                 $q->where('problems.id', $problemId);
             });
+        }
+
+        if ($targetId) {
+            $query->where('target_id', $targetId);
         }
 
         if (!empty($releaseStatus) && $releaseStatus !== 'all') {
@@ -280,6 +289,28 @@ class StatisticsController extends Controller
             ->limit(4)
             ->get();
 
+          // ตรวจสอบสิทธิ์ผู้ใช้และดึงรายการแจ้งปัญหาที่ยังไม่ได้อ่าน (is_read = false) สำหรับผู้ใช้ที่มีบทบาทเป็น admin หรือ executive
+            $pendingIssues = collect();
+
+            if (auth()->check() && in_array(auth()->user()->role, ['admin', 'executive'], true)) {
+                $pendingIssues = Issue::where('is_read', false)
+                    ->latest()
+                    ->limit(5)
+                    ->get();
+            }
+
+            // ตรวจสอบสิทธิ์ผู้ใช้และดึงรายการผู้สนับสนุนทุนที่ยังไม่ได้อ่าน (is_read = false) สำหรับผู้ใช้ที่มีบทบาทเป็น admin
+                $pendingScholarships = collect();
+
+            if (auth()->check() && auth()->user()->role === 'admin') {
+                $pendingScholarships = Scholarship::where('is_read', false)
+                    ->latest()
+                    ->limit(5)
+                    ->get();
+            }
+
+
+
         $educations = Education::orderBy('id')->get();
         $problems   = Problem::orderBy('problem_name')->get();
         $projects   = Project::orderBy('project_name')->get();
@@ -300,6 +331,7 @@ class StatisticsController extends Controller
             'problem'               => $problemId ?? '',
             'projectId'             => $projectId ?? '',
             'houseId'               => $houseId ?? '',
+            'targetId'              => $targetId ?? '',
             'projects'              => $projects,
             'houses'                => $houses,
             'maleCount'             => $maleCount,
@@ -322,6 +354,8 @@ class StatisticsController extends Controller
             'appointmentCount'      => $appointmentCount,
             'pendingReferApprovals' => $pendingReferApprovals,
             'latestCaseActivities'  => $latestCaseActivities,
+            'pendingIssues'         => $pendingIssues,
+            'pendingScholarships'   => $pendingScholarships
         ]);
     }
 
@@ -340,6 +374,7 @@ class StatisticsController extends Controller
             $problemId      = $request->input('problem');
             $projectId = $request->input('project_id');
             $houseId   = $request->input('house_id');
+            $targetId = $request->input('target_id');
 
             $startMonth = $request->input('start_month');
             $startYear  = $request->input('start_year');
@@ -371,6 +406,7 @@ class StatisticsController extends Controller
                     'problems',
                     'project',
                     'house',
+                    'target',
                 ]);
 
             if (!empty($projectId) && $projectId !== 'all') {
@@ -428,6 +464,10 @@ class StatisticsController extends Controller
                 });
             }
 
+            if ($targetId) {
+                $query->where('target_id', $targetId);
+            }
+
             if (!empty($releaseStatus) && $releaseStatus !== 'all') {
                 $query->where('release_status', $releaseStatus);
             }
@@ -442,6 +482,7 @@ class StatisticsController extends Controller
             $institutionSummary = [];
             $projectSummary = [];
             $houseSummary   = [];
+            $targetSummary = [];
 
            foreach ($clients as $client) {
                 $latestEducation = $client->educationRecords->first();
@@ -455,23 +496,68 @@ class StatisticsController extends Controller
 
                 $institutionSummary[$schoolName] = ($institutionSummary[$schoolName] ?? 0) + 1;
 
-              foreach ($client->problems as $problem) {
-                    $problemName = $problem->problem_name ?? $problem->name ?? 'ไม่ระบุ';
+             foreach ($client->problems ?? collect() as $problem) {
+                    $problemName = $problem->problem_name
+                        ?? $problem->name
+                        ?? 'ไม่ระบุ';
+
                     $problemSummary[$problemName] = ($problemSummary[$problemName] ?? 0) + 1;
                 }
 
-                $projectName = $client->project->project_name
-                    ?? $client->project->name
+                $projectName = optional($client->project)->project_name
+                    ?? optional($client->project)->name
                     ?? 'ไม่ระบุ';
 
                 $projectSummary[$projectName] = ($projectSummary[$projectName] ?? 0) + 1;
 
-                $houseName = $client->house->house_name
-                    ?? $client->house->name
+                $houseName = optional($client->house)->house_name
+                    ?? optional($client->house)->name
                     ?? 'ไม่ระบุ';
 
                 $houseSummary[$houseName] = ($houseSummary[$houseName] ?? 0) + 1;
+
+                $targetName = optional($client->target)->target_name
+                    ?? optional($client->target)->name
+                    ?? 'ไม่ระบุ';
+
+                $targetSummary[$targetName] = ($targetSummary[$targetName] ?? 0) + 1;
             }
+
+               
+
+           // เรียงลำดับการศึกษาจากมากไปน้อย เช่น ป.6 ก่อน ป.5
+            uksort($educationSummary, function ($a, $b) {
+
+            $getLevelScore = function ($text) {
+                $text = trim($text);
+
+                $base = 0;
+
+                if (str_contains($text, 'มัธยม') || str_contains($text, 'ม.')) {
+                    $base = 200;
+                } elseif (
+                    str_contains($text, 'ประถม') ||
+                    str_contains($text, 'ประม') ||
+                    str_contains($text, 'ป.')
+                ) {
+                    $base = 100;
+                } elseif (str_contains($text, 'อนุบาล')) {
+                    $base = 50;
+                }
+
+                preg_match('/(\d+)/u', $text, $match);
+                $year = isset($match[1]) ? (int) $match[1] : 0;
+
+                return $base + $year;
+            };
+
+            return $getLevelScore($b) <=> $getLevelScore($a);
+        });
+
+
+                $targetName = $targetId
+            ? (Target::find($targetId)?->target_name ?? 'ไม่ระบุ')
+            : 'ทั้งหมด';
 
 
             return view('admin.statistics.report', compact(
@@ -491,7 +577,10 @@ class StatisticsController extends Controller
                 'startMonth',
                 'startYear',
                 'endMonth',
-                'endYear'
+                'endYear',
+                'targetId',
+                'targetName',
+                'targetSummary'
             ));
         }
         }

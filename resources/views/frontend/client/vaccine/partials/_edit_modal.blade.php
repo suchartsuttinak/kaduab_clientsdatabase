@@ -28,7 +28,12 @@
                             <div class="row g-3">
                                 <div class="col-12 col-md-4">
                                     <label class="form-label required">วันที่รับวัคซีน</label>
-                                    <input type="date" name="date" id="edit_date" class="form-control">
+                                    <input type="date"
+                                        name="date"
+                                        id="edit_date"
+                                        class="form-control"
+                                        max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                        required>
                                 </div>
 
                                 <div class="col-12 col-md-8">

@@ -114,17 +114,22 @@
 
                     <div class="card-body">
                         <div class="row pt-4">
-                            <div class="form-group col-md-3 mb-3">
+                           <div class="form-group col-md-3 mb-3">
                                 <label for="visit_date" class="form-label">
                                     วันที่เยี่ยมบ้าน: <span class="text-danger">*</span>
                                 </label>
+
                                 <input type="date"
-                                       name="visit_date"
-                                       id="visit_date"
-                                       class="form-control @error('visit_date') is-invalid @enderror"
-                                       value="{{ old('visit_date', $visitFamily->visit_date ?? '') }}">
+                                    name="visit_date"
+                                    id="visit_date"
+                                    class="form-control @error('visit_date') is-invalid @enderror"
+                                    value="{{ old('visit_date', $visitFamily->visit_date ?? '') }}"
+                                    max="{{ now('Asia/Bangkok')->toDateString() }}">
+
                                 @error('visit_date')
-                                    <small class="text-danger">{{ $message }}</small>
+                                    <small class="text-danger" id="visit_date-error">
+                                        {{ $message }}
+                                    </small>
                                 @enderror
                             </div>
                         </div>

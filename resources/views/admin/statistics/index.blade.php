@@ -7,908 +7,1056 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-    <style>
-        .dashboard-page {
-            padding: 1.25rem 0 1.5rem;
-        }
+   <style>
+    .dashboard-page {
+        padding: 1.25rem 0 1.5rem;
+    }
 
-        /* =========================
-           HERO
-        ========================= */
-        .dashboard-hero {
-            position: relative;
-            overflow: hidden;
-            border-radius: 24px;
-            padding: 1.5rem 1.5rem;
-            margin-bottom: 1.25rem;
-            background:
-                radial-gradient(circle at top right, rgba(255, 255, 255, .22), transparent 28%),
-                linear-gradient(135deg, #0f4c81 0%, #1368aa 48%, #1e88e5 100%);
-            color: #fff;
-            box-shadow: 0 18px 40px rgba(15, 76, 129, .18);
-        }
+    /* =========================
+       HERO
+    ========================= */
+    .dashboard-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 24px;
+        padding: 1.5rem 1.6rem;
+        margin-bottom: 1.25rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, .22), transparent 28%),
+            linear-gradient(135deg, #0f4c81 0%, #1368aa 48%, #1e88e5 100%);
+        color: #fff;
+        box-shadow: 0 18px 40px rgba(15, 76, 129, .18);
+    }
 
-        .dashboard-hero::after {
-            content: "";
-            position: absolute;
-            right: -60px;
-            top: -60px;
-            width: 220px;
-            height: 220px;
-            background: rgba(255, 255, 255, .08);
-            border-radius: 50%;
-        }
+    .dashboard-hero::after {
+        content: "";
+        position: absolute;
+        right: -60px;
+        top: -60px;
+        width: 220px;
+        height: 220px;
+        background: rgba(255, 255, 255, .08);
+        border-radius: 50%;
+    }
 
-        .dashboard-hero::before {
-            content: "";
-            position: absolute;
-            left: -40px;
-            bottom: -60px;
-            width: 180px;
-            height: 180px;
-            background: rgba(255, 255, 255, .06);
-            border-radius: 50%;
-        }
+    .dashboard-hero::before {
+        content: "";
+        position: absolute;
+        left: -40px;
+        bottom: -60px;
+        width: 180px;
+        height: 180px;
+        background: rgba(255, 255, 255, .06);
+        border-radius: 50%;
+    }
 
-        .dashboard-hero-content {
-            position: relative;
-            z-index: 1;
-        }
+    .dashboard-hero-content,
+    .dashboard-hero-action-col {
+        position: relative;
+        z-index: 2;
+    }
 
-        .dashboard-hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: .5rem;
-            background: rgba(255, 255, 255, .14);
-            border: 1px solid rgba(255, 255, 255, .18);
-            border-radius: 999px;
-            padding: .45rem .8rem;
-            font-size: .9rem;
-            font-weight: 500;
-            margin-bottom: .8rem;
-        }
+    .dashboard-hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        background: rgba(255, 255, 255, .14);
+        border: 1px solid rgba(255, 255, 255, .18);
+        border-radius: 999px;
+        padding: .45rem .8rem;
+        font-size: .9rem;
+        font-weight: 600;
+        margin-bottom: .8rem;
+        white-space: nowrap;
+    }
 
+    .dashboard-hero-title {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        color: #ffffff !important;
+        text-shadow: 0 2px 12px rgba(0, 0, 0, .15);
+    }
+
+    .dashboard-hero-subtitle {
+        margin: .55rem 0 0;
+        color: rgba(255, 255, 255, .88);
+        max-width: 780px;
+        font-size: .98rem;
+        line-height: 1.65;
+    }
+
+    .dashboard-hero-action-col {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .dashboard-hero-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: .85rem;
+        flex-wrap: nowrap;
+        width: 100%;
+    }
+
+    .dashboard-btn-pill {
+        width: 255px;
+        min-height: 56px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .65rem;
+        border-radius: 999px;
+        padding: 0 1rem;
+        font-size: .92rem;
+        font-weight: 800;
+        line-height: 1.2;
+        white-space: nowrap;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, .12);
+        border: 1px solid rgba(255, 255, 255, .25);
+        transition: all .18s ease;
+        flex: 0 0 255px;
+    }
+
+    .dashboard-btn-pill i,
+    .dashboard-btn-pill svg {
+        width: 23px;
+        height: 23px;
+        font-size: 1.25rem;
+        flex: 0 0 23px;
+    }
+
+    .dashboard-btn-pill span {
+        display: inline-block;
+        line-height: 1.2;
+    }
+
+    .dashboard-btn-report {
+        background: linear-gradient(135deg, #0f766e, #14b8a6);
+        color: #ffffff !important;
+    }
+
+    .dashboard-btn-report:hover {
+        background: linear-gradient(135deg, #0f5f59, #0d9488);
+        color: #ffffff !important;
+        transform: translateY(-1px);
+    }
+
+    .dashboard-btn-pill.btn-light {
+        color: #111827 !important;
+        background: #ffffff;
+        border-color: rgba(255, 255, 255, .9);
+    }
+
+    .dashboard-btn-pill.btn-light:hover {
+        background: #f8fafc;
+        color: #111827 !important;
+        transform: translateY(-1px);
+    }
+
+    /* =========================
+       CARD / SECTION
+    ========================= */
+    .dashboard-card {
+        border: 1px solid #e9eef5;
+        border-radius: 20px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .dashboard-card .card-header {
+        border-bottom: 1px solid #edf1f5;
+        background: #fff;
+        padding: 1rem 1.15rem;
+    }
+
+    .dashboard-card .card-body {
+        padding: 1.1rem 1.15rem;
+    }
+
+    .section-title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #172b4d;
+    }
+
+    .section-subtitle {
+        margin: .15rem 0 0;
+        color: #6b7280;
+        font-size: .88rem;
+    }
+
+    .alert-appointment-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .alert-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        padding: .35rem .7rem;
+        font-size: .84rem;
+        font-weight: 600;
+    }
+
+    /* =========================
+       TABLE
+    ========================= */
+    .appointment-table {
+        margin-bottom: 0;
+    }
+
+    .appointment-table thead th {
+        background: #f8fafc;
+        color: #334155;
+        font-weight: 700;
+        border-bottom-color: #e5e7eb;
+        white-space: nowrap;
+    }
+
+    .appointment-table tbody td {
+        vertical-align: middle;
+    }
+
+    .appointment-date {
+        color: #b91c1c;
+        font-weight: 700;
+    }
+
+    .table-card .table {
+        margin-bottom: 0;
+    }
+
+    .table-card .table thead th {
+        background: #f8fafc;
+        color: #334155;
+        font-weight: 700;
+        border-bottom-color: #e5e7eb;
+        white-space: nowrap;
+    }
+
+    .table-card .table tbody td {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .table-student-name {
+        font-weight: 600;
+        color: #111827;
+        min-width: 180px;
+    }
+
+    .table-student-name a {
+        transition: all .2s ease;
+        text-decoration: none !important;
+    }
+
+    .table-student-name a:hover {
+        color: #0d6efd !important;
+        text-decoration: none !important;
+    }
+
+    .table-muted {
+        color: #6b7280;
+    }
+
+    .dashboard-empty {
+        padding: 1rem;
+        text-align: center;
+        color: #6b7280;
+    }
+
+    .dashboard-table-scroll {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 14px;
+        position: relative;
+    }
+
+    .dashboard-table-scroll table {
+        min-width: 860px;
+    }
+
+    .dashboard-table-scroll .dataTables_wrapper {
+        width: 100%;
+    }
+
+    .dashboard-table-scroll .dataTables_scroll {
+        width: 100%;
+    }
+
+    .dashboard-table-scroll .dataTables_scrollHead {
+        overflow: hidden !important;
+        border-top-left-radius: 14px;
+        border-top-right-radius: 14px;
+    }
+
+    .dashboard-table-scroll .dataTables_scrollBody {
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        border-bottom-left-radius: 14px;
+        border-bottom-right-radius: 14px;
+    }
+
+    .dashboard-table-scroll .dataTables_scrollBody table {
+        min-width: 860px !important;
+        width: 100% !important;
+    }
+
+    .dashboard-table-scroll::-webkit-scrollbar,
+    .dashboard-table-scroll .dataTables_scrollBody::-webkit-scrollbar {
+        height: 10px;
+        width: 10px;
+    }
+
+    .dashboard-table-scroll::-webkit-scrollbar-thumb,
+    .dashboard-table-scroll .dataTables_scrollBody::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, .75);
+        border-radius: 999px;
+    }
+
+    .dashboard-table-scroll::-webkit-scrollbar-track,
+    .dashboard-table-scroll .dataTables_scrollBody::-webkit-scrollbar-track {
+        background: rgba(241, 245, 249, .95);
+        border-radius: 999px;
+    }
+
+    .dashboard-table-fade {
+        position: relative;
+    }
+
+    .dashboard-table-fade::before,
+    .dashboard-table-fade::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: 24px;
+        height: 100%;
+        pointer-events: none;
+        z-index: 3;
+    }
+
+    .dashboard-table-fade::before {
+        left: 0;
+        background: linear-gradient(to right, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0));
+    }
+
+    .dashboard-table-fade::after {
+        right: 0;
+        background: linear-gradient(to left, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0));
+    }
+
+    #clientsTable_wrapper .dataTables_length,
+    #clientsTable_wrapper .dataTables_filter {
+        margin-bottom: .85rem;
+    }
+
+    #clientsTable_wrapper .dataTables_length select,
+    #clientsTable_wrapper .dataTables_filter input {
+        border-radius: 10px;
+        border: 1px solid #dbe3ec;
+        min-height: 38px;
+        padding: .35rem .65rem;
+        box-shadow: none !important;
+        background: #fff;
+    }
+
+    #clientsTable_wrapper .dataTables_info,
+    #clientsTable_wrapper .dataTables_paginate,
+    #clientsTable_wrapper .dataTables_filter,
+    #clientsTable_wrapper .dataTables_length {
+        font-size: .88rem;
+        color: #475569;
+        margin-top: .55rem;
+    }
+
+    #clientsTable_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+    }
+
+    /* =========================
+       MINI STAT
+    ========================= */
+    .mini-stat-card {
+        height: 100%;
+        border: 1px solid #e8edf3;
+        border-radius: 20px;
+        padding: 1rem;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .mini-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px rgba(15, 23, 42, .08);
+    }
+
+    .mini-stat-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        margin-bottom: .85rem;
+    }
+
+    .mini-stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: #fff;
+        flex: 0 0 52px;
+    }
+
+    .mini-stat-icon.absent {
+        background: linear-gradient(135deg, #ef4444, #f97316);
+    }
+
+    .mini-stat-icon.accident {
+        background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    }
+
+    .mini-stat-icon.escape {
+        background: linear-gradient(135deg, #2563eb, #38bdf8);
+    }
+
+    .mini-stat-label {
+        margin: 0;
+        color: #111827;
+        font-size: .98rem;
+        font-weight: 700;
+    }
+
+    .mini-stat-date {
+        margin: .15rem 0 0;
+        color: #6b7280;
+        font-size: .82rem;
+    }
+
+    .mini-stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: .7rem;
+    }
+
+    .mini-stat-number.absent {
+        color: #dc2626;
+    }
+
+    .mini-stat-number.accident {
+        color: #d97706;
+    }
+
+    .mini-stat-number.escape {
+        color: #1d4ed8;
+    }
+
+    .name-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .45rem;
+    }
+
+    .name-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: .32rem .65rem;
+        border-radius: 999px;
+        background: #f3f4f6;
+        color: #374151;
+        font-size: .84rem;
+        font-weight: 500;
+    }
+
+    /* =========================
+       FILTER
+    ========================= */
+    .filter-card {
+        border: 1px solid #e8edf3;
+        border-radius: 22px;
+        background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+        box-shadow: 0 12px 26px rgba(15, 23, 42, .05);
+        margin-top: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .filter-card .card-body {
+        padding: 1.2rem;
+    }
+
+    .filter-title {
+        font-size: 1.02rem;
+        font-weight: 700;
+        color: #172b4d;
+        margin-bottom: .2rem;
+    }
+
+    .filter-subtitle {
+        color: #6b7280;
+        font-size: .88rem;
+        margin-bottom: 1rem;
+    }
+
+    .filter-section-label {
+        font-size: .92rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: .55rem;
+    }
+
+    .filter-card .form-label {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: .4rem;
+    }
+
+    .filter-card .form-control,
+    .filter-card .form-select {
+        min-height: 44px;
+        border-radius: 12px;
+        border-color: #dbe3ec;
+        box-shadow: none !important;
+    }
+
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus {
+        border-color: #60a5fa;
+    }
+
+    .status-radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.5rem;
+        padding: .25rem 0;
+    }
+
+    .status-radio-group .form-check {
+        margin: 0;
+    }
+
+    .status-radio-group .form-check-input {
+        box-shadow: none;
+    }
+
+    .status-radio-group .form-check-label {
+        font-weight: 500;
+        color: #334155;
+    }
+
+    .filter-divider {
+        border-top: 1px dashed #dbe3ec;
+        margin: 1rem 0 1.1rem;
+    }
+
+    .filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .75rem;
+        align-items: center;
+    }
+
+    .filter-submit-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .8rem 1.15rem;
+        border-radius: 14px;
+        font-weight: 700;
+    }
+
+    /* =========================
+       METRIC / CHART
+    ========================= */
+    .metric-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 22px;
+        padding: 1.15rem 1rem;
+        color: #fff;
+        box-shadow: 0 16px 30px rgba(15, 23, 42, .08);
+        height: 100%;
+    }
+
+    .metric-card::after {
+        content: "";
+        position: absolute;
+        top: -30px;
+        right: -30px;
+        width: 120px;
+        height: 120px;
+        background: rgba(255, 255, 255, .12);
+        border-radius: 50%;
+    }
+
+    .metric-card .metric-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, .18);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .metric-card .metric-label {
+        margin: 0 0 .3rem;
+        font-size: .95rem;
+        font-weight: 600;
+        opacity: .95;
+    }
+
+    .metric-card .metric-value {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .metric-card.metric-total {
+        background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    }
+
+    .metric-card.metric-male {
+        background: linear-gradient(135deg, #16a34a, #4ade80);
+    }
+
+    .metric-card.metric-female {
+        background: linear-gradient(135deg, #ec4899, #f472b6);
+    }
+
+    .chart-card .card-header,
+    .table-card .card-header {
+        padding: 1rem 1.15rem;
+    }
+
+    .chart-card .card-body,
+    .table-card .card-body {
+        padding: 1.15rem;
+    }
+
+    .widget-icon-box {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #dbeafe;
+        flex: 0 0 42px;
+    }
+
+    .chart-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+    }
+
+    .chart-panel {
+        min-height: 360px;
+    }
+
+    /* =========================
+       กิจกรรมล่าสุดของเคส
+    ========================= */
+    .case-feed-card {
+        border: 1px solid #e8edf3;
+        border-radius: 22px;
+        background: #fff;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .06);
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+    }
+
+    .case-feed-header {
+        padding: 1rem 1.15rem;
+        border-bottom: 1px solid #edf1f5;
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .case-feed-title-wrap {
+        display: flex;
+        gap: .75rem;
+        align-items: center;
+    }
+
+    .case-feed-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 15px;
+        background: #eff6ff;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex: 0 0 44px;
+    }
+
+    .case-feed-title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #172b4d;
+    }
+
+    .case-feed-subtitle {
+        margin: .12rem 0 0;
+        font-size: .86rem;
+        color: #64748b;
+    }
+
+    .case-feed-chip {
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #334155;
+        padding: .38rem .75rem;
+        font-size: .82rem;
+        font-weight: 700;
+    }
+
+    .case-feed-body {
+        padding: .9rem 1.15rem 1.05rem;
+    }
+
+    .case-feed-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 14px;
+    }
+
+    .case-feed-item {
+        position: relative;
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr);
+        gap: .85rem;
+        padding: 1rem;
+        border: 1px solid #e9eef5;
+        border-radius: 18px;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+        text-decoration: none !important;
+        color: inherit !important;
+    }
+
+    .case-feed-item::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        border-radius: 18px 18px 0 0;
+        background: linear-gradient(90deg, #2563eb, #38bdf8);
+    }
+
+    .case-feed-item:hover {
+        transform: translateY(-2px);
+        border-color: #cfe0ff;
+        box-shadow: 0 16px 30px rgba(37, 99, 235, .08);
+        color: inherit !important;
+    }
+
+    .case-feed-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        box-shadow: 0 10px 20px rgba(37, 99, 235, .18);
+    }
+
+    .case-feed-name {
+        font-size: .96rem;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: .15rem;
+        line-height: 1.25;
+    }
+
+    .case-feed-desc {
+        font-size: .88rem;
+        color: #475569;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .case-feed-meta {
+        margin-top: .45rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .45rem .7rem;
+        font-size: .8rem;
+        color: #64748b;
+    }
+
+    .case-feed-meta span {
+        display: inline-flex;
+        align-items: center;
+        min-width: 0;
+    }
+
+    .case-feed-empty {
+        text-align: center;
+        color: #64748b;
+        padding: 1.15rem;
+        background: #f8fafc;
+        border: 1px dashed #dbe3ec;
+        border-radius: 16px;
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+    @media (min-width: 1400px) {
+        .dashboard-btn-pill {
+            width: 270px;
+            flex-basis: 270px;
+            min-height: 58px;
+            font-size: .96rem;
+        }
+    }
+
+    @media (max-width: 1399.98px) and (min-width: 1200px) {
         .dashboard-hero-title {
-            margin: 0;
-            font-size: 2rem;
-            font-weight: 800;
-            line-height: 1.2;
-            letter-spacing: -0.02em;
-            color: #ffffff !important;
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            font-size: 1.85rem;
         }
 
         .dashboard-hero-subtitle {
-            margin: .55rem 0 0;
-            color: rgba(255, 255, 255, .88);
-            max-width: 820px;
-            font-size: .98rem;
+            font-size: .94rem;
         }
 
         .dashboard-hero-actions {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            justify-content: flex-end;
-            align-items: flex-start;
-            height: 100%;
+            gap: .65rem;
         }
 
         .dashboard-btn-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: .55rem;
-            border-radius: 999px;
-            padding: .8rem 1.15rem;
-            font-weight: 600;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, .12);
-            white-space: nowrap;
-        }
-
-        /* =========================
-           CARD / SECTION
-        ========================= */
-        .dashboard-card {
-            border: 1px solid #e9eef5;
-            border-radius: 20px;
-            box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
-            overflow: hidden;
-            background: #fff;
-        }
-
-        .dashboard-card .card-header {
-            border-bottom: 1px solid #edf1f5;
-            background: #fff;
-            padding: 1rem 1.15rem;
-        }
-
-        .dashboard-card .card-body {
-            padding: 1.1rem 1.15rem;
-        }
-
-        .section-title {
-            margin: 0;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #172b4d;
-        }
-
-        .section-subtitle {
-            margin: .15rem 0 0;
-            color: #6b7280;
-            font-size: .88rem;
-        }
-
-        .alert-appointment-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .alert-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: .45rem;
-            border-radius: 999px;
-            background: #eff6ff;
-            color: #1d4ed8;
-            padding: .35rem .7rem;
-            font-size: .84rem;
-            font-weight: 600;
-        }
-
-        /* =========================
-           TABLE
-        ========================= */
-        .appointment-table {
-            margin-bottom: 0;
-        }
-
-        .appointment-table thead th {
-            background: #f8fafc;
-            color: #334155;
-            font-weight: 700;
-            border-bottom-color: #e5e7eb;
-            white-space: nowrap;
-        }
-
-        .appointment-table tbody td {
-            vertical-align: middle;
-        }
-
-        .appointment-date {
-            color: #b91c1c;
-            font-weight: 700;
-        }
-
-        .table-card .table {
-            margin-bottom: 0;
-        }
-
-        .table-card .table thead th {
-            background: #f8fafc;
-            color: #334155;
-            font-weight: 700;
-            border-bottom-color: #e5e7eb;
-            white-space: nowrap;
-        }
-
-        .table-card .table tbody td {
-            vertical-align: middle;
-            white-space: nowrap;
-        }
-
-        .table-student-name {
-            font-weight: 600;
-            color: #111827;
-            min-width: 180px;
-        }
-
-        .table-muted {
-            color: #6b7280;
-        }
-
-        .dashboard-empty {
-            padding: 1rem;
-            text-align: center;
-            color: #6b7280;
-        }
-
-        /* wrapper สำหรับเลื่อนตารางแนวนอน */
-        .dashboard-table-scroll {
-            width: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            border-radius: 14px;
-            position: relative;
-        }
-
-        .dashboard-table-scroll table {
-            min-width: 860px;
-        }
-
-        /* DataTable wrapper ให้เลื่อนได้จริง */
-        .dashboard-table-scroll .dataTables_wrapper {
-            width: 100%;
-        }
-
-        .dashboard-table-scroll .dataTables_scroll {
-            width: 100%;
-        }
-
-        .dashboard-table-scroll .dataTables_scrollHead {
-            overflow: hidden !important;
-            border-top-left-radius: 14px;
-            border-top-right-radius: 14px;
-        }
-
-        .dashboard-table-scroll .dataTables_scrollBody {
-            overflow-x: auto !important;
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch;
-            border-bottom-left-radius: 14px;
-            border-bottom-right-radius: 14px;
-        }
-
-        .dashboard-table-scroll .dataTables_scrollBody table {
-            min-width: 860px !important;
-            width: 100% !important;
-        }
-
-        .dashboard-table-scroll::-webkit-scrollbar,
-        .dashboard-table-scroll .dataTables_scrollBody::-webkit-scrollbar {
-            height: 10px;
-            width: 10px;
-        }
-
-        .dashboard-table-scroll::-webkit-scrollbar-thumb,
-        .dashboard-table-scroll .dataTables_scrollBody::-webkit-scrollbar-thumb {
-            background: rgba(148, 163, 184, .75);
-            border-radius: 999px;
-        }
-
-        .dashboard-table-scroll::-webkit-scrollbar-track,
-        .dashboard-table-scroll .dataTables_scrollBody::-webkit-scrollbar-track {
-            background: rgba(241, 245, 249, .95);
-            border-radius: 999px;
-        }
-
-        /* เงาบอกว่ามีการเลื่อน */
-        .dashboard-table-fade {
-            position: relative;
-        }
-
-        .dashboard-table-fade::before,
-        .dashboard-table-fade::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            width: 24px;
-            height: 100%;
-            pointer-events: none;
-            z-index: 3;
-        }
-
-        .dashboard-table-fade::before {
-            left: 0;
-            background: linear-gradient(to right, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0));
-        }
-
-        .dashboard-table-fade::after {
-            right: 0;
-            background: linear-gradient(to left, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0));
-        }
-
-        /* จัด style DataTable controls */
-        #clientsTable_wrapper .dataTables_length,
-        #clientsTable_wrapper .dataTables_filter {
-            margin-bottom: .85rem;
-        }
-
-        #clientsTable_wrapper .dataTables_length select,
-        #clientsTable_wrapper .dataTables_filter input {
-            border-radius: 10px;
-            border: 1px solid #dbe3ec;
-            min-height: 38px;
-            padding: .35rem .65rem;
-            box-shadow: none !important;
-            background: #fff;
-        }
-
-        #clientsTable_wrapper .dataTables_info,
-        #clientsTable_wrapper .dataTables_paginate,
-        #clientsTable_wrapper .dataTables_filter,
-        #clientsTable_wrapper .dataTables_length {
-            font-size: .88rem;
-            color: #475569;
-            margin-top: .55rem;
-        }
-
-        #clientsTable_wrapper .dataTables_paginate .paginate_button {
-            border-radius: 10px !important;
-        }
-
-        /* =========================
-           MINI STAT
-        ========================= */
-        .mini-stat-card {
-            height: 100%;
-            border: 1px solid #e8edf3;
-            border-radius: 20px;
-            padding: 1rem;
-            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-            box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
-            transition: transform .2s ease, box-shadow .2s ease;
-        }
-
-        .mini-stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 14px 28px rgba(15, 23, 42, .08);
-        }
-
-        .mini-stat-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: .75rem;
-            margin-bottom: .85rem;
-        }
-
-        .mini-stat-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 16px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            color: #fff;
-            flex: 0 0 52px;
-        }
-
-        .mini-stat-icon.absent {
-            background: linear-gradient(135deg, #ef4444, #f97316);
-        }
-
-        .mini-stat-icon.accident {
-            background: linear-gradient(135deg, #f59e0b, #fbbf24);
-        }
-
-        .mini-stat-icon.escape {
-            background: linear-gradient(135deg, #2563eb, #38bdf8);
-        }
-
-        .mini-stat-label {
-            margin: 0;
-            color: #111827;
-            font-size: .98rem;
-            font-weight: 700;
-        }
-
-        .mini-stat-date {
-            margin: .15rem 0 0;
-            color: #6b7280;
-            font-size: .82rem;
-        }
-
-        .mini-stat-number {
-            font-size: 2rem;
-            font-weight: 800;
-            line-height: 1;
-            margin-bottom: .7rem;
-        }
-
-        .mini-stat-number.absent {
-            color: #dc2626;
-        }
-
-        .mini-stat-number.accident {
-            color: #d97706;
-        }
-
-        .mini-stat-number.escape {
-            color: #1d4ed8;
-        }
-
-        .name-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: .45rem;
-        }
-
-        .name-pill {
-            display: inline-flex;
-            align-items: center;
-            padding: .32rem .65rem;
-            border-radius: 999px;
-            background: #f3f4f6;
-            color: #374151;
-            font-size: .84rem;
-            font-weight: 500;
-        }
-
-        /* =========================
-           FILTER
-        ========================= */
-        .filter-card {
-            border: 1px solid #e8edf3;
-            border-radius: 22px;
-            background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
-            box-shadow: 0 12px 26px rgba(15, 23, 42, .05);
-            margin-top: 1.25rem;
-            margin-bottom: 1.25rem;
-        }
-
-        .filter-card .card-body {
-            padding: 1.2rem;
-        }
-
-        .filter-title {
-            font-size: 1.02rem;
-            font-weight: 700;
-            color: #172b4d;
-            margin-bottom: .2rem;
-        }
-
-        .filter-subtitle {
-            color: #6b7280;
-            font-size: .88rem;
-            margin-bottom: 1rem;
-        }
-
-        .filter-section-label {
-            font-size: .92rem;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: .55rem;
-        }
-
-        .filter-card .form-label {
-            font-weight: 600;
-            color: #334155;
-            margin-bottom: .4rem;
-        }
-
-        .filter-card .form-control,
-        .filter-card .form-select {
-            min-height: 44px;
-            border-radius: 12px;
-            border-color: #dbe3ec;
-            box-shadow: none !important;
-        }
-
-        .filter-card .form-control:focus,
-        .filter-card .form-select:focus {
-            border-color: #60a5fa;
-        }
-
-        .status-radio-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem 1.5rem;
-            padding: .25rem 0;
-        }
-
-        .status-radio-group .form-check {
-            margin: 0;
-        }
-
-        .status-radio-group .form-check-input {
-            box-shadow: none;
-        }
-
-        .status-radio-group .form-check-label {
-            font-weight: 500;
-            color: #334155;
-        }
-
-        .filter-divider {
-            border-top: 1px dashed #dbe3ec;
-            margin: 1rem 0 1.1rem;
-        }
-
-        .filter-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: .75rem;
-            align-items: center;
-        }
-
-        .filter-submit-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: .5rem;
-            padding: .8rem 1.15rem;
-            border-radius: 14px;
-            font-weight: 700;
-        }
-
-        .table-student-name a {
-            transition: all .2s ease;
-            text-decoration: none !important;
-        }
-
-        .table-student-name a:hover {
-            color: #0d6efd !important;
-            text-decoration: none !important;
-        }
-
-        /* =========================
-           METRIC / CHART
-        ========================= */
-        .metric-card {
-            position: relative;
-            overflow: hidden;
-            border-radius: 22px;
-            padding: 1.15rem 1rem;
-            color: #fff;
-            box-shadow: 0 16px 30px rgba(15, 23, 42, .08);
-            height: 100%;
-        }
-
-        .metric-card::after {
-            content: "";
-            position: absolute;
-            top: -30px;
-            right: -30px;
-            width: 120px;
-            height: 120px;
-            background: rgba(255, 255, 255, .12);
-            border-radius: 50%;
-        }
-
-        .metric-card .metric-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, .18);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
-
-        .metric-card .metric-label {
-            margin: 0 0 .3rem;
-            font-size: .95rem;
-            font-weight: 600;
-            opacity: .95;
-        }
-
-        .metric-card .metric-value {
-            margin: 0;
-            font-size: 2rem;
-            font-weight: 800;
-            line-height: 1;
-        }
-
-        .metric-card.metric-total {
-            background: linear-gradient(135deg, #3b82f6, #60a5fa);
-        }
-
-        .metric-card.metric-male {
-            background: linear-gradient(135deg, #16a34a, #4ade80);
-        }
-
-        .metric-card.metric-female {
-            background: linear-gradient(135deg, #ec4899, #f472b6);
-        }
-
-        .chart-card .card-header,
-        .table-card .card-header {
-            padding: 1rem 1.15rem;
-        }
-
-        .chart-card .card-body,
-        .table-card .card-body {
-            padding: 1.15rem;
-        }
-
-        .widget-icon-box {
-            width: 42px;
-            height: 42px;
-            border-radius: 14px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: #eff6ff;
-            color: #2563eb;
-            border: 1px solid #dbeafe;
-            flex: 0 0 42px;
-        }
-
-        .chart-title-wrap {
-            display: flex;
-            align-items: center;
-            gap: .75rem;
-        }
-
-        .chart-panel {
-            min-height: 360px;
-        }
-
-        .case-feed-card {
-            border: 1px solid #e8edf3;
-            border-radius: 22px;
-            background: #fff;
-            box-shadow: 0 12px 28px rgba(15, 23, 42, .06);
-            overflow: hidden;
-            margin-bottom: 1.25rem;
-        }
-
-        /* =========================
-   กิจกรรมล่าสุดของเคส
-========================= */
-        .case-feed-header {
-            padding: 1rem 1.15rem;
-            border-bottom: 1px solid #edf1f5;
-            display: flex;
-            justify-content: space-between;
-            gap: 1rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .case-feed-title-wrap {
-            display: flex;
-            gap: .75rem;
-            align-items: center;
-        }
-
-        .case-feed-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 15px;
-            background: #eff6ff;
-            color: #2563eb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex: 0 0 44px;
-        }
-
-        .case-feed-title {
-            margin: 0;
-            font-size: 1.05rem;
-            font-weight: 800;
-            color: #172b4d;
-        }
-
-        .case-feed-subtitle {
-            margin: .12rem 0 0;
+            width: 245px;
+            flex-basis: 245px;
+            min-height: 54px;
             font-size: .86rem;
-            color: #64748b;
+            padding: 0 .75rem;
+            gap: .5rem;
         }
 
-        .case-feed-chip {
-            border-radius: 999px;
-            background: #f1f5f9;
-            color: #334155;
-            padding: .38rem .75rem;
-            font-size: .82rem;
-            font-weight: 700;
+        .dashboard-btn-pill i,
+        .dashboard-btn-pill svg {
+            width: 21px;
+            height: 21px;
+            font-size: 1.12rem;
+            flex-basis: 21px;
+        }
+    }
+
+    @media (max-width: 1199.98px) and (min-width: 992px) {
+        .dashboard-hero {
+            padding: 1.35rem 1.2rem;
         }
 
-        .case-feed-body {
-            padding: .9rem 1.15rem 1.05rem;
+        .dashboard-hero-title {
+            font-size: 1.6rem;
+        }
+
+        .dashboard-hero-subtitle {
+            font-size: .88rem;
+            line-height: 1.55;
+        }
+
+        .dashboard-hero-badge {
+            font-size: .78rem;
+            padding: .38rem .65rem;
+        }
+
+        .dashboard-hero-actions {
+            gap: .5rem;
+        }
+
+        .dashboard-btn-pill {
+            width: 220px;
+            flex-basis: 220px;
+            min-height: 52px;
+            font-size: .78rem;
+            padding: 0 .55rem;
+            gap: .45rem;
+        }
+
+        .dashboard-btn-pill i,
+        .dashboard-btn-pill svg {
+            width: 19px;
+            height: 19px;
+            font-size: 1.05rem;
+            flex-basis: 19px;
+        }
+    }
+
+    @media (max-width: 991.98px) {
+        .dashboard-hero {
+            padding: 1.25rem;
+        }
+
+        .dashboard-hero-title {
+            font-size: 1.6rem;
+        }
+
+        .dashboard-hero-action-col {
+            justify-content: flex-start;
+        }
+
+        .dashboard-hero-actions {
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            margin-top: .5rem;
+        }
+
+        .dashboard-btn-pill {
+            width: 245px;
+            flex-basis: 245px;
         }
 
         .case-feed-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .dashboard-page {
+            padding-top: .85rem;
+        }
+
+        .dashboard-hero {
+            border-radius: 20px;
+            padding: 1rem;
+        }
+
+        .dashboard-hero-title {
+            font-size: 1.35rem;
+        }
+
+        .dashboard-hero-subtitle {
+            font-size: .92rem;
+        }
+
+        .dashboard-hero-badge {
+            white-space: normal;
+        }
+
+        .dashboard-hero-actions {
+            gap: .7rem;
+        }
+
+        .dashboard-btn-pill {
+            width: 100%;
+            flex-basis: 100%;
+            min-height: 52px;
+            justify-content: center;
+            font-size: .92rem;
+        }
+
+        .case-feed-header,
+        .case-feed-body {
+            padding: 1rem;
+        }
+
+        .case-feed-list {
+            grid-template-columns: 1fr;
+            gap: 12px;
         }
 
         .case-feed-item {
-            position: relative;
-            display: grid;
-            grid-template-columns: 46px minmax(0, 1fr);
-            gap: .85rem;
-            padding: 1rem;
-            border: 1px solid #e9eef5;
-            border-radius: 18px;
-            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-            box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
-            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+            grid-template-columns: 40px minmax(0, 1fr);
+            padding: .9rem;
+            border-radius: 16px;
         }
 
         .case-feed-item::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            border-radius: 18px 18px 0 0;
-            background: linear-gradient(90deg, #2563eb, #38bdf8);
-        }
-
-        .case-feed-item:hover {
-            transform: translateY(-2px);
-            border-color: #cfe0ff;
-            box-shadow: 0 16px 30px rgba(37, 99, 235, .08);
+            border-radius: 16px 16px 0 0;
         }
 
         .case-feed-avatar {
-            width: 46px;
-            height: 46px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            box-shadow: 0 10px 20px rgba(37, 99, 235, .18);
-        }
-
-        .case-feed-name {
-            font-size: .96rem;
-            font-weight: 800;
-            color: #111827;
-            margin-bottom: .15rem;
-            line-height: 1.25;
-        }
-
-        .case-feed-desc {
-            font-size: .88rem;
-            color: #475569;
-            line-height: 1.35;
-            word-break: break-word;
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            font-size: 1rem;
         }
 
         .case-feed-meta {
-            margin-top: .45rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: .45rem .7rem;
-            font-size: .8rem;
-            color: #64748b;
+            gap: .38rem .6rem;
+            font-size: .78rem;
         }
 
-        .case-feed-meta span {
-            display: inline-flex;
-            align-items: center;
-            min-width: 0;
+        .filter-card .card-body,
+        .dashboard-card .card-body,
+        .chart-card .card-body,
+        .table-card .card-body {
+            padding: 1rem;
         }
 
-        .case-feed-empty {
-            text-align: center;
-            color: #64748b;
-            padding: 1.15rem;
-            background: #f8fafc;
-            border: 1px dashed #dbe3ec;
-            border-radius: 16px;
+        .status-radio-group {
+            gap: .85rem 1rem;
         }
 
-        .case-feed-item {
-            text-decoration: none !important;
-            color: inherit !important;
+        .metric-card .metric-value {
+            font-size: 1.7rem;
         }
 
-        .case-feed-item:hover {
-            color: inherit !important;
+        .chart-panel {
+            min-height: 300px;
         }
 
-        @media(max-width:991.98px) {
-            .dashboard-hero {
-                padding: 1.25rem;
-            }
-
-            .dashboard-hero-title {
-                font-size: 1.6rem;
-            }
-
-            .dashboard-hero-actions {
-                justify-content: flex-start;
-                margin-top: 1rem;
-            }
-
-            .case-feed-list {
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            }
+        .dashboard-table-scroll {
+            margin: 0 -2px;
+            padding-bottom: .15rem;
         }
 
-        @media(max-width:767.98px) {
-            .dashboard-page {
-                padding-top: .85rem;
-            }
-
-            .dashboard-hero {
-                border-radius: 20px;
-                padding: 1rem;
-            }
-
-            .dashboard-hero-title {
-                font-size: 1.35rem;
-            }
-
-            .dashboard-hero-subtitle {
-                font-size: .92rem;
-            }
-
-            .dashboard-btn-pill {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .case-feed-header,
-            .case-feed-body {
-                padding: 1rem;
-            }
-
-            .case-feed-list {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            .case-feed-item {
-                grid-template-columns: 40px minmax(0, 1fr);
-                padding: .9rem;
-                border-radius: 16px;
-            }
-
-            .case-feed-item::before {
-                border-radius: 16px 16px 0 0;
-            }
-
-            .case-feed-avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 14px;
-                font-size: 1rem;
-            }
-
-            .case-feed-meta {
-                gap: .38rem .6rem;
-                font-size: .78rem;
-            }
-
-            .filter-card .card-body,
-            .dashboard-card .card-body,
-            .chart-card .card-body,
-            .table-card .card-body {
-                padding: 1rem;
-            }
-
-            .status-radio-group {
-                gap: .85rem 1rem;
-            }
-
-            .metric-card .metric-value {
-                font-size: 1.7rem;
-            }
-
-            .chart-panel {
-                min-height: 300px;
-            }
-
-            .dashboard-table-scroll {
-                margin: 0 -2px;
-                padding-bottom: .15rem;
-            }
-
-            .dashboard-table-scroll table,
-            .dashboard-table-scroll .dataTables_scrollBody table {
-                min-width: 820px !important;
-            }
-
-            #clientsTable_wrapper .dataTables_length,
-            #clientsTable_wrapper .dataTables_filter {
-                width: 100%;
-                text-align: left;
-            }
-
-            #clientsTable_wrapper .dataTables_filter input {
-                width: 100%;
-                margin-left: 0 !important;
-            }
+        .dashboard-table-scroll table,
+        .dashboard-table-scroll .dataTables_scrollBody table {
+            min-width: 820px !important;
         }
-    </style>
+
+        #clientsTable_wrapper .dataTables_length,
+        #clientsTable_wrapper .dataTables_filter {
+            width: 100%;
+            text-align: left;
+        }
+
+        #clientsTable_wrapper .dataTables_filter input {
+            width: 100%;
+            margin-left: 0 !important;
+        }
+    }
+</style>
 
     <div class="content">
         <div class="container-fluid dashboard-page">
@@ -919,125 +1067,223 @@
                 $month = $thaiDate->translatedFormat('F');
                 $year = $thaiDate->year + 543;
             @endphp
-
-            <div class="dashboard-hero">
-                <div class="row align-items-center g-3">
-                    <div class="col-lg-8">
-                        <div class="dashboard-hero-content">
-                            <div class="dashboard-hero-badge">
-                                <i class="bi bi-shield-check"></i>
-                                <span>Social Welfare Intelligence Dashboard</span>
-                            </div>
-                            <h1 class="dashboard-hero-title">
-                                ระบบฐานข้อมูลเด็กและสวัสดิการสังคม
-                            </h1>
-                            <p class="dashboard-hero-subtitle">
-                                ศูนย์กลางสำหรับติดตามสถานะผู้รับบริการ การนัดหมายทางการแพทย์ สถิติการศึกษา
-                                และข้อมูลเชิงวิเคราะห์เพื่อการดูแลอย่างเป็นระบบ
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4">
-                        <div class="dashboard-hero-actions">
-                            <a href="{{ route('client.show') }}" class="btn btn-light dashboard-btn-pill">
-                                <i data-feather="arrow-right-circle"></i>
-                                <span>แสดงรายชื่อผู้รับบริการ</span>
-                            </a>
-                        </div>
-                    </div>
+<div class="dashboard-hero">
+    <div class="row align-items-center g-3">
+        <div class="col-12 col-lg-6">
+            <div class="dashboard-hero-content">
+                <div class="dashboard-hero-badge">
+                    <i class="bi bi-shield-check"></i>
+                    <span>Social Welfare Intelligence Dashboard</span>
                 </div>
-            </div>
 
+                <h1 class="dashboard-hero-title">
+                    ระบบฐานข้อมูลเด็กและสวัสดิการสังคม
+                </h1>
 
-<!-- กิจกรรมผู้รับบริการล่าสุด -->
-<div class="case-feed-card">
-    <div class="case-feed-header">
-        <div class="case-feed-title-wrap">
-            <div class="case-feed-icon">
-                <i class="bi bi-activity"></i>
-            </div>
-
-            <div>
-                <h5 class="case-feed-title">
-                    กิจกรรมผู้รับบริการล่าสุด
-                </h5>
-
-                <p class="case-feed-subtitle">
-                    ติดตามความเคลื่อนไหวและการดำเนินงานล่าสุดของผู้รับบริการในระบบ
+                <p class="dashboard-hero-subtitle">
+                    ศูนย์กลางสำหรับติดตามสถานะผู้รับบริการ การนัดหมายทางการแพทย์ สถิติการศึกษา
+                    และข้อมูลเชิงวิเคราะห์เพื่อการดูแลอย่างเป็นระบบ
                 </p>
             </div>
         </div>
 
-        <div class="case-feed-chip">
-            {{ isset($latestCaseActivities) ? $latestCaseActivities->count() : 0 }} รายการล่าสุด
+        <div class="col-12 col-lg-6 dashboard-hero-action-col">
+            <div class="dashboard-hero-actions">
+                <a href="{{ route('client.show') }}" class="btn btn-light dashboard-btn-pill">
+                    <i data-feather="arrow-right-circle"></i>
+                    <span>แสดงรายชื่อผู้รับบริการ</span>
+                </a>
+
+                @if(auth()->check() && in_array(auth()->user()->role, ['admin', 'executive', 'social_worker'], true))
+                    <a href="{{ route('child.analytics.report.index') }}"
+                       class="btn dashboard-btn-pill dashboard-btn-report">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <span>รายงานวิเคราะห์เด็ก</span>
+                    </a>
+                @endif
+            </div>
         </div>
     </div>
-
-  <div class="case-feed-body">
-    @php
-        $safeActivities = collect($latestCaseActivities ?? [])->filter(function ($activity) {
-            return $activity
-                && $activity->client
-                && ($activity->client->release_status ?? null) === 'show';
-        });
-    @endphp
-
-    @if($safeActivities->isNotEmpty())
-        <div class="case-feed-list">
-            @foreach($safeActivities as $activity)
-                @php
-                    $client = $activity->client;
-
-                    $activityDate = $activity->occurred_at
-                        ? \Carbon\Carbon::parse($activity->occurred_at)->timezone('Asia/Bangkok')
-                        : null;
-
-                    $cardUrl = route('admin.index', $client->id);
-                @endphp
-
-                <a href="{{ $cardUrl }}" class="case-feed-item" title="ดูข้อมูลผู้รับบริการ">
-                    <div class="case-feed-avatar">
-                        <i class="bi bi-person-lines-fill"></i>
-                    </div>
-
-                    <div class="case-feed-content">
-                        <div class="case-feed-name">
-                            {{ $client->fullname ?? '-' }}
-                        </div>
-
-                        <div class="case-feed-desc">
-                            {{ $activity->title ?: ($activity->type ?: 'บันทึกกิจกรรมผู้รับบริการ') }}
-                        </div>
-
-                        <div class="case-feed-meta">
-                            <span>
-                                <i class="bi bi-person-circle me-1"></i>
-                                {{ $activity->user->name ?? 'ระบบ' }}
-                            </span>
-
-                            <span title="{{ $activityDate ? $activityDate->format('d/m/Y H:i') : '-' }}">
-                                <i class="bi bi-clock me-1"></i>
-                                {{ $activityDate ? $activityDate->locale('th')->diffForHumans() : '-' }}
-                            </span>
-
-                            <span class="case-feed-status active">
-                                <i class="bi bi-person-check me-1"></i>
-                                อยู่ในความดูแล
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            @endforeach
-        </div>
-    @else
-        <div class="case-feed-empty">
-            ยังไม่มีกิจกรรมผู้รับบริการล่าสุด
-        </div>
-    @endif
-</div>
 </div>
 
+           <div class="row g-4 mb-4">
+                {{-- แจ้งเตือนเรื่องช่วยเหลือ --}}
+                @if (
+                    auth()->check() &&
+                    in_array(auth()->user()->role, ['admin', 'executive']) &&
+                    isset($pendingIssues) &&
+                    $pendingIssues->count() > 0
+                )
+                <div class="col-lg-3">
+                    <div class="card dashboard-card h-100">
+                        <div class="card-header">
+                            <div class="alert-appointment-header">
+                                <div>
+                                    <h5 class="section-title mb-1">
+                                        🚨 แจ้งเรื่องช่วยเหลือ
+                                    </h5>
+
+                                    <p class="section-subtitle mb-0">
+                                        รายการที่ยังไม่ได้เปิดดู
+                                    </p>
+                                </div>
+
+                                <div class="alert-chip"
+                                    style="background:#fff1f2;color:#be123c;">
+                                    <i class="bi bi-bell-fill"></i>
+                                    <span>{{ $pendingIssues->count() }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-body d-flex align-items-end">
+                            <a href="{{ route('issues.index') }}"
+                            class="btn btn-danger w-100">
+                                <i class="bi bi-eye"></i>
+                                เปิดดูรายการ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+
+                {{-- แจ้งเตือนผู้สนับสนุนทุน --}}
+                @if (
+                    auth()->check() &&
+                    auth()->user()->role === 'admin' &&
+                    isset($pendingScholarships) &&
+                    $pendingScholarships->count() > 0
+                )
+                <div class="col-lg-3">
+                    <div class="card dashboard-card h-100">
+
+                        <div class="card-header">
+                            <div class="alert-appointment-header">
+
+                                <div>
+                                    <h5 class="section-title mb-1">
+                                        🎓 ผู้สนใจสนับสนุนทุน
+                                    </h5>
+
+                                    <p class="section-subtitle mb-0">
+                                        รายการที่ยังไม่ได้เปิดดู
+                                    </p>
+                                </div>
+
+                                <div class="alert-chip"
+                                    style="background:#ecfdf5;color:#047857;">
+                                    <i class="bi bi-mortarboard-fill"></i>
+                                    <span>{{ $pendingScholarships->count() }}</span>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="card-body d-flex align-items-end">
+                            <a href="{{ route('scholarship.index') }}"
+                            class="btn btn-success w-100">
+                                <i class="bi bi-eye"></i>
+                                เปิดดูรายการ
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+                @endif
+            </div>
+                    
+
+
+        <!-- กิจกรรมผู้รับบริการล่าสุด -->
+        <div class="case-feed-card">
+            <div class="case-feed-header">
+                <div class="case-feed-title-wrap">
+                    <div class="case-feed-icon">
+                        <i class="bi bi-activity"></i>
+                    </div>
+
+                    <div>
+                        <h5 class="case-feed-title">
+                            กิจกรรมผู้รับบริการล่าสุด
+                        </h5>
+
+                        <p class="case-feed-subtitle">
+                            ติดตามความเคลื่อนไหวและการดำเนินงานล่าสุดของผู้รับบริการในระบบ
+                        </p>
+                    </div>
+                </div>
+
+                <div class="case-feed-chip">
+                    {{ isset($latestCaseActivities) ? $latestCaseActivities->count() : 0 }} รายการล่าสุด
+                </div>
+            </div>
+
+        <div class="case-feed-body">
+            @php
+                $safeActivities = collect($latestCaseActivities ?? [])->filter(function ($activity) {
+                    return $activity
+                        && $activity->client
+                        && ($activity->client->release_status ?? null) === 'show';
+                });
+            @endphp
+
+            @if($safeActivities->isNotEmpty())
+                <div class="case-feed-list">
+                    @foreach($safeActivities as $activity)
+                        @php
+                            $client = $activity->client;
+
+                            $activityDate = $activity->occurred_at
+                                ? \Carbon\Carbon::parse($activity->occurred_at)->timezone('Asia/Bangkok')
+                                : null;
+
+                            $cardUrl = route('admin.index', $client->id);
+                        @endphp
+
+                        <a href="{{ $cardUrl }}" class="case-feed-item" title="ดูข้อมูลผู้รับบริการ">
+                            <div class="case-feed-avatar">
+                                <i class="bi bi-person-lines-fill"></i>
+                            </div>
+
+                            <div class="case-feed-content">
+                                <div class="case-feed-name">
+                                    {{ $client->fullname ?? '-' }}
+                                </div>
+
+                                <div class="case-feed-desc">
+                                    {{ $activity->title ?: ($activity->type ?: 'บันทึกกิจกรรมผู้รับบริการ') }}
+                                </div>
+
+                                <div class="case-feed-meta">
+                                    <span>
+                                        <i class="bi bi-person-circle me-1"></i>
+                                        {{ $activity->user->name ?? 'ระบบ' }}
+                                    </span>
+
+                                    <span title="{{ $activityDate ? $activityDate->format('d/m/Y H:i') : '-' }}">
+                                        <i class="bi bi-clock me-1"></i>
+                                        {{ $activityDate ? $activityDate->locale('th')->diffForHumans() : '-' }}
+                                    </span>
+
+                                    <span class="case-feed-status active">
+                                        <i class="bi bi-person-check me-1"></i>
+                                        อยู่ในความดูแล
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <div class="case-feed-empty">
+                    ยังไม่มีกิจกรรมผู้รับบริการล่าสุด
+                </div>
+            @endif
+        </div>
+     </div>
+
+      
             @if (auth()->check() &&
                     in_array(auth()->user()->role, ['admin', 'executive']) &&
                     isset($pendingReferApprovals) &&
@@ -1340,8 +1586,9 @@
                                         max="99">
                                 </div>
 
-                            {{-- สถานศึกษา --}}
-                            <div class="col-12 col-md-4 col-lg-4">
+                      
+                           {{-- สถานศึกษา --}}
+                            <div class="col-12 col-md-6 col-lg-3">
                                 <label class="form-label">สถานศึกษา</label>
 
                                 <select name="institution_id" class="form-select">
@@ -1358,7 +1605,7 @@
                             </div>
 
                             {{-- ระดับการศึกษาเริ่มต้น --}}
-                            <div class="col-12 col-md-4 col-lg-4">
+                            <div class="col-12 col-md-6 col-lg-3">
                                 <label class="form-label">
                                     ระดับการศึกษา
                                 </label>
@@ -1381,7 +1628,7 @@
                             </div>
 
                             {{-- ระดับการศึกษาสิ้นสุด --}}
-                            <div class="col-12 col-md-4 col-lg-4">
+                            <div class="col-12 col-md-6 col-lg-3">
                                 <label class="form-label">
                                     ถึงระดับการศึกษา
                                 </label>
@@ -1402,6 +1649,30 @@
                                     เลือกช่วงระดับชั้น เช่น ป.1 - ม.3
                                 </small>
                             </div>
+
+
+                            {{-- กลุ่มเป้าหมาย --}}
+                                <div class="col-12 col-md-6 col-lg-3">
+                                    <label class="form-label">
+                                        กลุ่มเป้าหมาย
+                                    </label>
+
+                                    <select name="target_id" class="form-select">
+                                        <option value="">ทั้งหมด</option>
+
+                                        @foreach (\App\Models\Target::orderBy('target_name')->get() as $target)
+                                            <option value="{{ $target->id }}"
+                                                {{ ($targetId ?? '') == $target->id ? 'selected' : '' }}>
+
+                                                {{ $target->target_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+
+                                    <small class="text-muted d-block mt-1">
+                                        เลือกกลุ่มเป้าหมายที่ต้องการประมวลผล
+                                    </small>
+                                </div>
 
                             </div>
 

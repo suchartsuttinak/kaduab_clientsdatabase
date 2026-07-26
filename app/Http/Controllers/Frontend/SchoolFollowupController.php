@@ -62,102 +62,101 @@ class SchoolFollowupController extends Controller
             'followups'
         ));
     }
-    public function SchoolFollowupStore(StoreSchoolFollowupRequest $request)
-        {
-            $validated = $request->validated();
+   public function SchoolFollowupStore(StoreSchoolFollowupRequest $request)
+    {
+        $validated = $request->validated();
 
-            $client = Client::forUser(auth()->user())
-                ->where('id', $validated['client_id'])
-                ->firstOrFail();
+        $client = Client::forUser(auth()->user())
+            ->where('id', $validated['client_id'])
+            ->firstOrFail();
 
-            if (empty($validated['education_record_id'])) {
-                $educationRecord = $this->getLatestEducationRecord($validated['client_id']);
-                $validated['education_record_id'] = $educationRecord?->id;
+        if (empty($validated['education_record_id'])) {
+            $educationRecord = $this->getLatestEducationRecord($client->id);
+            $validated['education_record_id'] = $educationRecord?->id;
+        }
+
+        $validated['client_id'] = $client->id;
+
+        $schoolFollowup = SchoolFollowup::create($validated);
+
+        CaseActivity::where('client_id', $client->id)
+            ->where('module', 'school_followup')
+            ->delete();
+
+        CaseActivity::record([
+            'client_id'   => $client->id,
+            'module'      => 'school_followup',
+            'type'        => 'success',
+            'title'       => 'บันทึกการติดตามการศึกษา',
+            'description' => 'วันที่ติดตาม: ' . ($validated['follow_date'] ?? '-') .
+                            ' | ประเภท: ' . ($validated['follow_type'] ?? '-') .
+                            ' | ผู้ติดตาม: ' . ($validated['teacher_name'] ?? '-'),
+            'occurred_at' => $validated['follow_date'] ?? now('Asia/Bangkok'),
+            'icon'        => 'bi-journal-check',
+            'url'         => route('school_followup_add', $client->id),
+        ]);
+
+        return redirect()
+            ->route('school_followup_add', $client->id)
+            ->with([
+                'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว',
+                'alert-type' => 'success'
+            ]);
+    }
+    public function SchoolFollowupEdit($id)
+    {
+        try {
+            $followup = SchoolFollowup::with([
+                    'educationRecord.education',
+                    'educationRecord.semester'
+                ])
+                ->whereHas('client', function ($q) {
+                    $q->forUser(auth()->user());
+                })
+                ->findOrFail($id);
+
+            $educationRecord = $followup->educationRecord;
+
+            // ✅ ดึงภาคเรียนแบบชัวร์จาก semester_id โดยตรง
+            $semesterName = 'ไม่พบข้อมูล';
+
+            if ($educationRecord && $educationRecord->semester_id) {
+                $semesterName = \App\Models\Semester::where('id', $educationRecord->semester_id)
+                    ->value('semester_name') ?? 'ไม่พบข้อมูล';
             }
 
-            $validated['client_id'] = $client->id;
+            $academicYear = $this->extractAcademicYear($semesterName);
 
-            $schoolFollowup = SchoolFollowup::create($validated);
-
-                CaseActivity::where('client_id', $client->id)
-                ->where('module', 'school_followup')
-                ->delete();
-
-                CaseActivity::record([
-                'client_id'   => $client->id,
-                'module'      => 'school_followup',
-                'type'        => 'success',
-                'title'       => 'บันทึกการติดตามการศึกษา',
-                'description' => 'วันที่ติดตาม: ' . ($validated['follow_date'] ?? '-') .
-                                ' | ประเภท: ' . ($validated['follow_type'] ?? '-') .
-                                ' | ผู้ติดตาม: ' . ($validated['teacher_name'] ?? '-'),
-                'occurred_at' => now(),
-                'icon'        => 'bi-journal-check',
-                'url'         => route('school_followup_add', $client->id),
+            return response()->json([
+                'success' => true,
+                'message' => 'โหลดข้อมูลเรียบร้อยแล้ว',
+                'data' => [
+                    'id' => $followup->id,
+                    'client_id' => $followup->client_id,
+                    'education_record_id' => $followup->education_record_id,
+                    'follow_date' => $followup->follow_date
+                        ? Carbon::parse($followup->follow_date)->format('Y-m-d')
+                        : null,
+                    'teacher_name' => $followup->teacher_name,
+                    'tel' => $followup->tel,
+                    'follow_type' => $followup->follow_type,
+                    'result' => $followup->result,
+                    'remark' => $followup->remark,
+                    'contact_name' => $followup->contact_name,
+                    'school_name' => $educationRecord?->school_name ?? 'ไม่พบข้อมูล',
+                    'education_name' => data_get($educationRecord, 'education.education_name', 'ไม่พบข้อมูล'),
+                    'semester_name' => $semesterName,
+                    'academic_year' => $academicYear,
+                ]
             ]);
-
-            return redirect()
-                ->route('school_followup_add', $validated['client_id'])
-                ->with([
-                    'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว',
-                    'alert-type' => 'success'
-                ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบข้อมูลการติดตามที่ต้องการแก้ไข',
+                'errors' => [$e->getMessage()]
+            ], 404);
         }
-
-   public function SchoolFollowupEdit($id)
-{
-    try {
-        $followup = SchoolFollowup::with([
-                'educationRecord.education',
-                'educationRecord.semester'
-            ])
-            ->whereHas('client', function ($q) {
-                $q->forUser(auth()->user());
-            })
-            ->findOrFail($id);
-
-        $educationRecord = $followup->educationRecord;
-
-        // ✅ ดึงภาคเรียนแบบชัวร์จาก semester_id โดยตรง
-        $semesterName = 'ไม่พบข้อมูล';
-
-        if ($educationRecord && $educationRecord->semester_id) {
-            $semesterName = \App\Models\Semester::where('id', $educationRecord->semester_id)
-                ->value('semester_name') ?? 'ไม่พบข้อมูล';
-        }
-
-        $academicYear = $this->extractAcademicYear($semesterName);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'โหลดข้อมูลเรียบร้อยแล้ว',
-            'data' => [
-                'id' => $followup->id,
-                'client_id' => $followup->client_id,
-                'education_record_id' => $followup->education_record_id,
-                'follow_date' => $followup->follow_date
-                    ? Carbon::parse($followup->follow_date)->format('Y-m-d')
-                    : null,
-                'teacher_name' => $followup->teacher_name,
-                'tel' => $followup->tel,
-                'follow_type' => $followup->follow_type,
-                'result' => $followup->result,
-                'remark' => $followup->remark,
-                'contact_name' => $followup->contact_name,
-                'school_name' => $educationRecord?->school_name ?? 'ไม่พบข้อมูล',
-                'education_name' => data_get($educationRecord, 'education.education_name', 'ไม่พบข้อมูล'),
-                'semester_name' => $semesterName,
-                'academic_year' => $academicYear,
-            ]
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'ไม่พบข้อมูลการติดตามที่ต้องการแก้ไข',
-            'errors' => [$e->getMessage()]
-        ], 404);
     }
-}
 
     public function SchoolFollowupUpdate(UpdateSchoolFollowupRequest $request, $id)
     {
@@ -174,23 +173,22 @@ class SchoolFollowupController extends Controller
 
         $followup->update($validated);
 
+        CaseActivity::where('client_id', $followup->client_id)
+            ->where('module', 'school_followup')
+            ->delete();
 
-            CaseActivity::where('client_id', $followup->client_id)
-                ->where('module', 'school_followup')
-                ->delete();
-
-            CaseActivity::record([
-                'client_id'   => $followup->client_id,
-                'module'      => 'school_followup',
-                'type'        => 'success',
-                'title'       => 'แก้ไขการติดตามการศึกษา',
-                'description' => 'วันที่ติดตาม: ' . ($validated['follow_date'] ?? '-') .
-                                ' | ประเภท: ' . ($validated['follow_type'] ?? '-') .
-                                ' | ผู้ติดตาม: ' . ($validated['teacher_name'] ?? '-'),
-                'occurred_at' => now(),
-                'icon'        => 'bi-journal-check',
-                'url'         => route('school_followup_add', $followup->client_id),
-            ]);
+        CaseActivity::record([
+            'client_id'   => $followup->client_id,
+            'module'      => 'school_followup',
+            'type'        => 'success',
+            'title'       => 'แก้ไขการติดตามการศึกษา',
+            'description' => 'วันที่ติดตาม: ' . ($validated['follow_date'] ?? '-') .
+                            ' | ประเภท: ' . ($validated['follow_type'] ?? '-') .
+                            ' | ผู้ติดตาม: ' . ($validated['teacher_name'] ?? '-'),
+            'occurred_at' => $validated['follow_date'] ?? now('Asia/Bangkok'),
+            'icon'        => 'bi-journal-check',
+            'url'         => route('school_followup_add', $followup->client_id),
+        ]);
 
         if ($request->ajax()) {
             $freshFollowup = $followup->fresh([

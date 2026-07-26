@@ -26,13 +26,25 @@ class ClientFileController extends Controller
     {
         $client = Client::forUser(auth()->user())->findOrFail($client_id);
 
-        $fileTypes = [
-            'id_card' => 'บัตรประชาชน',
-            'house_registration' => 'ทะเบียนบ้าน',
-            'education_certificate' => 'วุฒิการศึกษา',
-            'birth_certificate' => 'สูติบัตร',
-            'other' => 'อื่น ๆ',
-        ];
+         $fileTypes = [
+        'id_card'                 => 'บัตรประชาชน',
+        'house_registration'      => 'ทะเบียนบ้าน',
+        'education_certificate'   => 'วุฒิการศึกษา',
+        'birth_certificate'       => 'สูติบัตร',
+
+        // เพิ่มได้ตรงนี้
+        'police_report'           => 'ใบแจ้งความ',
+        'education_document'      => 'เอกสารทางการศึกษา',
+        'court_order'             => 'คำสั่งศาล',
+        'medical_certificate'     => 'ใบรับรองแพทย์',
+        'disability_card'         => 'บัตรประจำตัวคนพิการ',
+        'welfare_card'            => 'บัตรสวัสดิการแห่งรัฐ',
+        'passport'                => 'หนังสือเดินทาง',
+        'photo'                   => 'รูปถ่าย',
+        'consent_form'            => 'หนังสือยินยอม',
+        'assessment_document'     => 'เอกสารการประเมิน',
+        'other'                   => 'อื่น ๆ',
+    ];
 
         return view('frontend.client.client_files.create', compact('client', 'fileTypes'));
     }
@@ -41,7 +53,7 @@ class ClientFileController extends Controller
         {
             $client = Client::forUser(auth()->user())->findOrFail($client_id);
 
-            $request->validate([
+           $request->validate([
                 'file_type' => 'required|string',
                 'file' => 'required|mimes:pdf|max:20480',
             ], [

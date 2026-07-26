@@ -114,6 +114,7 @@ class ScholarshipChildController extends Controller
         $request->validate([
             'first_name'      => 'required|string|max:255',
             'last_name'       => 'required|string|max:255',
+            'gender'          => 'nullable|in:male,female',
             'age'             => 'nullable|integer|min:1|max:120',
             'education_level' => 'nullable|string|max:255',
             'school_name'     => 'nullable|string|max:255',
@@ -150,6 +151,7 @@ class ScholarshipChildController extends Controller
         $request->validate([
             'first_name'      => 'required|string|max:255',
             'last_name'       => 'required|string|max:255',
+            'gender'          => 'nullable|in:male,female',
             'age'             => 'nullable|integer|min:1|max:120',
             'education_level' => 'nullable|string|max:255',
             'school_name'     => 'nullable|string|max:255',
@@ -164,6 +166,7 @@ class ScholarshipChildController extends Controller
         ], [
             'academic_year.required' => 'กรุณากรอกปีการศึกษาที่ขอรับทุน',
             'academic_year.regex'    => 'ปีการศึกษาต้องเป็นตัวเลข พ.ศ. 4 หลักเท่านั้น เช่น 2568',
+            'gender.in'              => 'กรุณาเลือกเพศให้ถูกต้อง',
         ]);
 
         $data = $request->except(['photo', '_token', '_method']);

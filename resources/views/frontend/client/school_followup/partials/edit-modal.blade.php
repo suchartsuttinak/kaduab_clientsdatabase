@@ -71,12 +71,20 @@
 
                                 <div class="form-side-body">
                                     <div class="row g-3">
-                                        <div class="col-md-4">
-                                            <label class="form-label form-label-modern">วันที่ติดตาม <span class="text-danger">*</span></label>
-                                            <input type="date" id="edit_follow_date" name="follow_date" class="form-control form-control-modern" required>
-                                            <div class="invalid-feedback"></div>
-                                        </div>
+                                       <div class="col-md-4">
+                                                <label class="form-label form-label-modern">
+                                                    วันที่ติดตาม <span class="text-danger">*</span>
+                                                </label>
 
+                                                <input type="date"
+                                                    id="edit_follow_date"
+                                                    name="follow_date"
+                                                    class="form-control form-control-modern"
+                                                    max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                                    required>
+
+                                                <div class="invalid-feedback"></div>
+                                            </div>
                                         <div class="col-md-4">
                                             <label class="form-label form-label-modern">ครูประจำชั้น</label>
                                             <input type="text" id="edit_teacher_name" name="teacher_name" class="form-control form-control-modern">

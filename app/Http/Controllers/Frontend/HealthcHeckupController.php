@@ -80,7 +80,13 @@ class HealthcHeckupController extends Controller
 
             $validated = $request->validate([
                 'client_id' => 'required|integer|exists:clients,id',
-                'checkup_date' => 'required|date',
+
+                'checkup_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
                 'hospital_name' => 'required|string|max:255',
                 'checkup_result' => 'required|in:normal,abnormal',
                 'abnormal_detail' => 'nullable|string',
@@ -88,6 +94,7 @@ class HealthcHeckupController extends Controller
             ], [
                 'client_id.required' => 'กรุณาเลือกผู้รับบริการ',
                 'checkup_date.required' => 'กรุณาระบุวันที่ตรวจ',
+                'checkup_date.before_or_equal' => 'วันที่ตรวจต้องไม่เกินวันปัจจุบัน',
                 'hospital_name.required' => 'กรุณาระบุสถานพยาบาล',
                 'checkup_result.required' => 'กรุณาเลือกผลการตรวจ',
                 'medical_document.mimes' => 'ไฟล์เอกสารต้องเป็น PDF เท่านั้น',
@@ -175,7 +182,11 @@ class HealthcHeckupController extends Controller
 
         $validated = $request->validate([
             'client_id' => 'required|integer|exists:clients,id',
-            'checkup_date' => 'required|date',
+            'checkup_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
             'hospital_name' => 'required|string|max:255',
             'checkup_result' => 'required|in:normal,abnormal',
             'abnormal_detail' => 'nullable|string',
@@ -183,6 +194,7 @@ class HealthcHeckupController extends Controller
         ], [
             'client_id.required' => 'กรุณาเลือกผู้รับบริการ',
             'checkup_date.required' => 'กรุณาระบุวันที่ตรวจ',
+            'checkup_date.before_or_equal' => 'วันที่ตรวจต้องไม่เกินวันปัจจุบัน',
             'hospital_name.required' => 'กรุณาระบุสถานพยาบาล',
             'checkup_result.required' => 'กรุณาเลือกผลการตรวจ',
             'medical_document.mimes' => 'ไฟล์เอกสารต้องเป็น PDF เท่านั้น',

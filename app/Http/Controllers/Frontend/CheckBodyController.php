@@ -63,7 +63,7 @@ class CheckBodyController extends Controller
                 'description' => 'วันที่ตรวจ: ' . ($validated['assessor_date'] ?? '-') .
                                 ' | พัฒนาการ: ' . ($validated['development'] ?? '-') .
                                 ' | ประเภทพัฒนาการ: ' . ($validated['development_type'] ?? '-'),
-                'occurred_at' => now(),
+                'occurred_at' => $validated['assessor_date'] ?? now('Asia/Bangkok'),
                 'icon'        => 'bi-person-heart',
                 'url'         => route('check_body.add', $validated['client_id']),
             ]);
@@ -199,12 +199,13 @@ class CheckBodyController extends Controller
             'client_id' => ['required', 'exists:clients,id'],
 
             'assessor_date' => [
-                'required',
-                'date',
-                Rule::unique('check_bodies')
-                    ->where(fn ($query) => $query->where('client_id', $request->client_id))
-                    ->ignore($ignoreId),
-            ],
+            'required',
+            'date',
+            'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            Rule::unique('check_bodies')
+                ->where(fn ($query) => $query->where('client_id', $request->client_id))
+                ->ignore($ignoreId),
+        ],
 
             'development' => ['required', 'in:สมวัย,ไม่สมวัย'],
             'detail' => ['nullable', 'string'],

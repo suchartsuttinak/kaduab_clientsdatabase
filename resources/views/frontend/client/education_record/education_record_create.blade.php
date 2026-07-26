@@ -210,12 +210,13 @@
                                     <label for="record_date" class="edurec-label">
                                         วันที่บันทึก <span class="text-danger">*</span>
                                     </label>
-                                    <input type="date"
-                                           name="record_date"
-                                           id="record_date"
-                                           class="form-control @error('record_date') is-invalid @enderror"
-                                           value="{{ old('record_date') }}"
-                                           required>
+                                 <input type="date"
+                                    name="record_date"
+                                    id="record_date"
+                                    class="form-control @error('record_date') is-invalid @enderror"
+                                    value="{{ old('record_date') }}"
+                                    max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                    required>
                                     @error('record_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -275,16 +276,14 @@
                                         <div class="edurec-helper">คะแนนเต็ม 100</div>
                                     </div>
 
-                                    <div class="edurec-field">
+                                  <div class="edurec-field">
                                         <label class="edurec-label">เกรด</label>
-                                        <select name="subjects[0][grade]" class="form-select subject-grade">
-                                            <option value="">-- เลือกเกรด --</option>
-                                            <option value="4">4</option>
-                                            <option value="3">3</option>
-                                            <option value="2">2</option>
-                                            <option value="1">1</option>
-                                            <option value="0">0</option>
-                                        </select>
+                                        <input type="text"
+                                            name="subjects[0][grade]"
+                                            class="form-control subject-grade"
+                                            value=""
+                                            placeholder="คำนวณอัตโนมัติ"
+                                            readonly>
                                     </div>
 
                                     <div class="edurec-field">
@@ -378,12 +377,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function calculateGrade(score) {
         const numericScore = parseFloat(score);
-        if (isNaN(numericScore)) return '';
-        if (numericScore >= 80) return '4';
-        if (numericScore >= 70) return '3';
-        if (numericScore >= 60) return '2';
-        if (numericScore >= 50) return '1';
-        return '0';
+
+        if (isNaN(numericScore)) {
+            return '';
+        }
+
+        if (numericScore >= 80) return '4.00';
+        if (numericScore >= 75) return '3.50';
+        if (numericScore >= 70) return '3.00';
+        if (numericScore >= 65) return '2.50';
+        if (numericScore >= 60) return '2.00';
+        if (numericScore >= 55) return '1.50';
+        if (numericScore >= 50) return '1.00';
+
+        return '0.00';
     }
 
     function refreshSubjectLabels() {
@@ -409,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function () {
         items.forEach((item, index) => {
             const subjectSelect = item.querySelector('select[name*="[subject_id]"]');
             const scoreInput = item.querySelector('input[name*="[score]"]');
-            const gradeSelect = item.querySelector('select[name*="[grade]"]');
+            const gradeSelect = item.querySelector('input[name*="[grade]"]');
 
             if (subjectSelect) subjectSelect.name = `subjects[${index}][subject_id]`;
             if (scoreInput) scoreInput.name = `subjects[${index}][score]`;
@@ -431,64 +438,61 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function createSubjectItem(index) {
-        return `
-            <div class="edurec-subject-item subject-item">
-                <div class="edurec-subject-head">
-                    <div class="edurec-subject-badge">
-                        <i class="bi bi-book-half"></i>
-                        <span>วิชาที่ ${index + 1}</span>
-                    </div>
-                </div>
-
-                <div class="edurec-subject-grid">
-                    <div class="edurec-field">
-                        <label class="edurec-label">วิชา</label>
-                        <select name="subjects[${index}][subject_id]" class="form-select" required>
-                            <option value="">-- เลือกวิชา --</option>
-                            @foreach($subjects as $subject)
-                                <option value="{{ $subject->id }}">{{ $subject->subject_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="edurec-field">
-                        <label class="edurec-label">คะแนน</label>
-                        <input type="number"
-                               name="subjects[${index}][score]"
-                               class="form-control subject-score"
-                               min="0"
-                               max="100"
-                               inputmode="numeric"
-                               placeholder="0 - 100"
-                               required>
-                        <div class="edurec-helper">คะแนนเต็ม 100</div>
-                    </div>
-
-                    <div class="edurec-field">
-                        <label class="edurec-label">เกรด</label>
-                        <select name="subjects[${index}][grade]" class="form-select subject-grade" required>
-                            <option value="">-- เลือกเกรด --</option>
-                            <option value="4">4</option>
-                            <option value="3">3</option>
-                            <option value="2">2</option>
-                            <option value="1">1</option>
-                            <option value="0">0</option>
-                        </select>
-                    </div>
-
-                    <div class="edurec-field">
-                        <label class="edurec-label d-none d-md-block">&nbsp;</label>
-                        <button type="button"
-                                class="btn btn-edurec-remove remove-subject"
-                                aria-label="ลบวิชา">
-                            <i class="bi bi-trash3"></i>
-                        </button>
-                    </div>
+    return `
+        <div class="edurec-subject-item subject-item">
+            <div class="edurec-subject-head">
+                <div class="edurec-subject-badge">
+                    <i class="bi bi-book-half"></i>
+                    <span>วิชาที่ ${index + 1}</span>
                 </div>
             </div>
-        `;
-    }
 
+            <div class="edurec-subject-grid">
+                <div class="edurec-field">
+                    <label class="edurec-label">วิชา</label>
+                    <select name="subjects[${index}][subject_id]" class="form-select" required>
+                        <option value="">-- เลือกวิชา --</option>
+                        @foreach($subjects as $subject)
+                            <option value="{{ $subject->id }}">{{ $subject->subject_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="edurec-field">
+                    <label class="edurec-label">คะแนน</label>
+                    <input type="number"
+                           name="subjects[${index}][score]"
+                           class="form-control subject-score"
+                           min="0"
+                           max="100"
+                           inputmode="numeric"
+                           placeholder="0 - 100"
+                           required>
+                    <div class="edurec-helper">คะแนนเต็ม 100</div>
+                </div>
+
+                <div class="edurec-field">
+                    <label class="edurec-label">เกรด</label>
+                    <input type="text"
+                           name="subjects[${index}][grade]"
+                           class="form-control subject-grade"
+                           value=""
+                           placeholder="คำนวณอัตโนมัติ"
+                           readonly>
+                </div>
+
+                <div class="edurec-field">
+                    <label class="edurec-label d-none d-md-block">&nbsp;</label>
+                    <button type="button"
+                            class="btn btn-edurec-remove remove-subject"
+                            aria-label="ลบวิชา">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
     function addSubject() {
         const index = container.querySelectorAll('.subject-item').length;
         container.insertAdjacentHTML('beforeend', createSubjectItem(index));

@@ -59,8 +59,8 @@
                                 <div class="form-side-body">
                                     @include('frontend.client.absent.partials.form-fields', [
                                         'prefix' => '',
-                                        'absentDate' => old('absent_date', now()->format('Y-m-d')),
-                                        'recordDate' => old('record_date', now()->format('Y-m-d')),
+                                        'absentDate' => old('absent_date', now('Asia/Bangkok')->toDateString()),
+                                        'recordDate' => old('record_date', now('Asia/Bangkok')->toDateString()),
                                         'cause' => old('cause'),
                                         'operation' => old('operation'),
                                         'remark' => old('remark'),
@@ -73,7 +73,8 @@
                 </div>
 
                 <div class="modal-footer px-4 py-3 border-0">
-                    <button type="button" class="btn btn-light btn-cancel" data-bs-dismiss="modal" id="btn-cancel-absent">
+                    <button type="button" class="btn btn-light btn-cancel" data-bs-dismiss="modal"
+                        id="btn-cancel-absent">
                         <i class="bi bi-x-circle me-2"></i>ยกเลิก
                     </button>
                     <button type="submit" class="btn btn-success btn-save">

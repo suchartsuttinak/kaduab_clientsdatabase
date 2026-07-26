@@ -191,18 +191,20 @@
                         </div>
 
                         <div class="row g-3">
-                            <div class="col-12 col-md-4 col-lg-3">
-                                <label class="form-label form-label-modern">
-                                    วันที่ตรวจ <span class="text-danger">*</span>
-                                </label>
-                                <input type="date"
-                                       name="date"
-                                       class="form-control form-control-modern @error('date') is-invalid @enderror"
-                                       value="{{ old('date', \Carbon\Carbon::now()->format('Y-m-d')) }}">
-                                @error('date')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
+                           <div class="col-12 col-md-4 col-lg-3">
+                                    <label class="form-label form-label-modern">
+                                        วันที่ตรวจ <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date"
+                                        name="date"
+                                        class="form-control form-control-modern @error('date') is-invalid @enderror"
+                                        value="{{ old('date', now('Asia/Bangkok')->toDateString()) }}"
+                                        max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                        required>
+                                    @error('date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
 
                             <div class="col-12 col-md-4 col-lg-3">
                                 <label class="form-label form-label-modern">ครั้งที่</label>

@@ -21,15 +21,16 @@
                 <div class="modal-body">
                     <div class="vaccine-form-body p-3 p-md-4">
                         <div class="vaccine-form-section">
-                            <div class="vaccine-section-title">ข้อมูลการรับวัคซีน</div>
+                           
 
                             <div class="row g-3">
                                 <div class="col-12 col-md-4">
                                     <label class="form-label required">วันที่รับวัคซีน</label>
                                     <input type="date"
-                                           name="date"
-                                           class="form-control @error('date') is-invalid @enderror"
-                                           value="{{ old('date') }}">
+                                    name="date"
+                                    class="form-control @error('date') is-invalid @enderror"
+                                    value="{{ old('date') }}"
+                                    max="{{ now('Asia/Bangkok')->toDateString() }}">
                                     @error('date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

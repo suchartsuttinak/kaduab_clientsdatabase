@@ -27,7 +27,12 @@
                             <div class="row g-3">
                                 <div class="col-12 col-md-4 col-lg-3">
                                     <label class="form-label required">วันที่</label>
-                                    <input type="date" name="medical_date" id="edit_medical_date" class="form-control" required>
+                                    <input type="date"
+                                        name="medical_date"
+                                        id="edit_medical_date"
+                                        class="form-control"
+                                        max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                        required>
                                 </div>
 
                                 <div class="col-12 col-md-8 col-lg-4">

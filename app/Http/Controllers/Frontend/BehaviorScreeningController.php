@@ -39,14 +39,15 @@ class BehaviorScreeningController extends Controller
 
             $validated = $request->validate([
                 'screening_date' => [
-                    'required',
-                    'date',
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
 
-                    Rule::unique('behavior_screenings', 'screening_date')
-                        ->where(function ($query) use ($client) {
-                            return $query->where('client_id', $client->id);
-                        }),
-                ],
+                Rule::unique('behavior_screenings', 'screening_date')
+                    ->where(function ($query) use ($client) {
+                        return $query->where('client_id', $client->id);
+                    }),
+            ],
 
                 'observer_name'  => ['nullable', 'string', 'max:255'],
                 'age_text'       => ['nullable', 'string', 'max:100'],
@@ -56,11 +57,12 @@ class BehaviorScreeningController extends Controller
 
             ], [
 
-                'screening_date.required' => 'กรุณาเลือกวันที่ประเมิน',
-                'screening_date.date'     => 'รูปแบบวันที่ไม่ถูกต้อง',
-                'screening_date.unique'   => 'ผู้รับบริการรายนี้มีการประเมินในวันที่ดังกล่าวแล้ว',
+                'screening_date.required'        => 'กรุณาเลือกวันที่ประเมิน',
+                'screening_date.date'            => 'รูปแบบวันที่ไม่ถูกต้อง',
+                'screening_date.before_or_equal' => 'วันที่ประเมินต้องไม่เกินวันปัจจุบัน',
+                'screening_date.unique'          => 'ผู้รับบริการรายนี้มีการประเมินในวันที่ดังกล่าวแล้ว',
 
-                'answers.required'        => 'กรุณาประเมินอย่างน้อย 1 รายการ',
+                'answers.required'              => 'กรุณาประเมินอย่างน้อย 1 รายการ',
 
             ]);
 

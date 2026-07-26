@@ -37,12 +37,14 @@
             <div class="row g-3">
                 <div class="col-md-6 col-xl-3">
                     <label class="modern-label">วันที่เกิดเหตุ <span class="required">*</span></label>
-                    <input
+                  <input
                         type="date"
                         name="incident_date"
                         class="form-control @error('incident_date') is-invalid @enderror"
                         value="{{ old('incident_date', \App\Helpers\ThaiDateHelper::toInputDate($accident->incident_date ?? null)) }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                     >
+                 
                     @error('incident_date')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -230,11 +232,12 @@
 
                 <div class="col-md-4">
                     <label class="modern-label">วันที่บันทึก <span class="required">*</span></label>
-                    <input
+                   <input
                         type="date"
                         name="record_date"
                         class="form-control @error('record_date') is-invalid @enderror"
-                        value="{{ old('record_date', !empty($accident->record_date) ? \Carbon\Carbon::parse($accident->record_date)->format('Y-m-d') : now()->format('Y-m-d')) }}"
+                        value="{{ old('record_date', !empty($accident->record_date) ? \Carbon\Carbon::parse($accident->record_date)->format('Y-m-d') : now('Asia/Bangkok')->toDateString()) }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                     >
                     @error('record_date')
                         <div class="invalid-feedback">{{ $message }}</div>

@@ -33,10 +33,12 @@
                                     วันที่ส่งตรวจ <span class="psy-required">*</span>
                                 </label>
                                 <input type="date"
-                                       id="create_sent_date"
-                                       name="sent_date"
-                                       class="form-control @error('sent_date') is-invalid @enderror"
-                                       value="{{ old('sent_date') }}">
+                                id="create_sent_date"
+                                name="sent_date"
+                                class="form-control @error('sent_date') is-invalid @enderror"
+                                value="{{ old('sent_date') }}"
+                                max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                required>
                                 @error('sent_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

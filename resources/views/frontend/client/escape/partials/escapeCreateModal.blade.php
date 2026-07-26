@@ -33,17 +33,28 @@
                             </div>
 
                             <div class="row g-4">
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label escape-label escape-label--required">วันที่ออก</label>
+                              <div class="col-12 col-md-4">
+                                    <label class="form-label escape-label escape-label--required">
+                                        วันที่ออก
+                                    </label>
+
                                     <div class="escape-field">
                                         <span class="escape-field__icon">
                                             <i class="bi bi-calendar-event"></i>
                                         </span>
+
                                         <input type="date"
-                                               name="retire_date"
-                                               class="form-control escape-input escape-input--with-icon"
-                                               required
-                                               value="{{ old('retire_date') }}">
+                                            name="retire_date"
+                                            class="form-control escape-input escape-input--with-icon @error('retire_date') is-invalid @enderror"
+                                            value="{{ old('retire_date', now('Asia/Bangkok')->toDateString()) }}"
+                                            max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                            required>
+
+                                        @error('retire_date')
+                                            <div class="invalid-feedback">
+                                                {{ $message }}
+                                            </div>
+                                        @enderror
                                     </div>
                                 </div>
 

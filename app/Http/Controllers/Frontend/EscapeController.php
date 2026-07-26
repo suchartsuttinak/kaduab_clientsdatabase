@@ -47,23 +47,26 @@ class EscapeController extends Controller
         {
             $data = $request->validate([
                 'client_id'   => 'required|exists:clients,id',
-                'retire_date' => [
-                    'required',
-                    'date',
-                    Rule::unique('escapes')->where(function ($query) use ($request) {
-                        return $query->where('client_id', $request->client_id);
-                    }),
-                ],
+               'retire_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+
+                Rule::unique('escapes')->where(function ($query) use ($request) {
+                    return $query->where('client_id', $request->client_id);
+                }),
+            ],
                 'retire_id'   => 'required|exists:retires,id',
                 'stories'     => 'nullable|string',
             ], [
                 'client_id.required'   => 'กรุณาเลือกผู้รับบริการ',
                 'client_id.exists'     => 'รหัสผู้รับบริการไม่ถูกต้อง',
-                'retire_date.required' => 'กรุณาระบุวันที่เกษียณ',
+                 'retire_date.before_or_equal' => 'วันที่ออกต้องไม่เกินวันปัจจุบัน',
+                'retire_date.required' => 'กรุณาระบุวันที่ออก',
                 'retire_date.date'     => 'รูปแบบวันที่ไม่ถูกต้อง',
-                'retire_date.unique'   => 'วันที่เกษียณนี้ถูกบันทึกแล้วสำหรับผู้รับบริการรายนี้',
-                'retire_id.required'   => 'กรุณาเลือกประเภทการเกษียณ',
-                'retire_id.exists'     => 'รหัสการเกษียณไม่ถูกต้อง',
+                'retire_date.unique'   => 'วันที่ออกนี้ถูกบันทึกแล้วสำหรับผู้รับบริการรายนี้',
+                'retire_id.required'   => 'กรุณาเลือกประเภทการออก/หลบหนี',
+                'retire_id.exists'     => 'รหัสการออก/หลบหนีไม่ถูกต้อง',
                 'stories.string'       => 'เรื่องราวต้องเป็นข้อความ',
             ]);
 

@@ -300,18 +300,45 @@
             <thead>
                 <tr>
                     <th style="width:60px;">ลำดับ</th>
-                    <th>ชื่อ - นามสกุล</th>
+
+                    @auth
+                        <th>ชื่อ - นามสกุล</th>
+                    @else
+                        <th style="width:90px;">เพศ</th>
+                    @endauth
+
                     <th style="width:90px;">อายุ</th>
                     <th>ระดับการศึกษา</th>
                     <th>สถานศึกษา</th>
                     <th>เหตุผล / ความจำเป็น</th>
                 </tr>
             </thead>
+
             <tbody>
                 @foreach($children as $index => $child)
                     <tr>
                         <td class="center">{{ $index + 1 }}</td>
-                        <td>{{ trim(($child->first_name ?? '') . ' ' . ($child->last_name ?? '')) ?: '-' }}</td>
+
+                        <td class="center">
+                            @auth
+                                {{ trim(($child->first_name ?? '') . ' ' . ($child->last_name ?? '')) ?: '-' }}
+                            @else
+                                @php
+                                    $gender = strtolower($child->gender ?? '');
+                                @endphp
+
+                                @if($gender === 'male')
+                                    ชาย
+                                @elseif($gender === 'female')
+                                    หญิง
+                                @elseif($gender)
+                                    {{ $child->gender }}
+                                @else
+                                    -
+                                @endif
+                            @endauth
+                        </td>
+
                         <td class="center">{{ $child->age ?? '-' }}</td>
                         <td>{{ $child->education_level ?? '-' }}</td>
                         <td>{{ $child->school_name ?? '-' }}</td>

@@ -33,10 +33,12 @@
                                 <label class="psy-label" for="edit_sent_date">
                                     วันที่ส่งตรวจ <span class="psy-required">*</span>
                                 </label>
-                                <input type="date"
-                                       id="edit_sent_date"
-                                       name="sent_date"
-                                       class="form-control">
+                               <input type="date"
+                                id="edit_sent_date"
+                                name="sent_date"
+                                class="form-control"
+                                max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                required>
                             </div>
 
                             <div class="psy-field psy-col-4">

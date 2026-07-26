@@ -1,338 +1,565 @@
+@php
+    use App\Helpers\ThaiDateHelper;
+@endphp
+
 @extends('admin_client.admin_client')
 
 @section('content')
 <style>
+.school-followup-report-page{
+    padding:16px 12px 28px;
+    background:#eef2f7;
+}
+
+.report-page{
+    max-width:1280px;
+    margin:0 auto;
+    background:#fff;
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.05);
+    overflow:hidden;
+    border:1px solid #e5e7eb;
+}
+
+.report-toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:14px 18px 0;
+}
+
+.toolbar-left,
+.toolbar-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.report-btn{
+    border-radius:10px;
+    padding:7px 14px;
+    font-size:14px;
+    cursor:pointer;
+    border:1px solid #d1d5db;
+    background:#fff;
+    color:#374151;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    text-decoration:none;
+    transition:all .2s ease;
+}
+
+.report-btn:hover{
+    background:#f9fafb;
+    color:#111827;
+}
+
+.report-btn-primary{
+    background:#2563eb;
+    color:#fff;
+    border-color:#2563eb;
+}
+
+.report-btn-primary:hover{
+    background:#1d4ed8;
+    border-color:#1d4ed8;
+    color:#fff;
+}
+
+.report-wrap{
+    padding:16px 18px 22px;
+}
+
+.report-header{
+    text-align:center;
+    border-bottom:1px solid #e5e7eb;
+    padding-bottom:12px;
+    margin-bottom:14px;
+}
+
+.report-title{
+    margin:0;
+    font-size:24px;
+    font-weight:700;
+    color:#111827;
+    line-height:1.2;
+}
+
+.report-subtitle{
+    margin:4px 0 0;
+    color:#6b7280;
+    font-size:14px;
+}
+
+.client-info{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:8px 18px;
+    margin-bottom:12px;
+}
+
+.client-info-item{
+    font-size:15px;
+    color:#1f2937;
+}
+
+.client-info-label{
+    font-weight:700;
+    color:#111827;
+    margin-right:6px;
+}
+
+.report-meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    background:#f8fafc;
+    padding:9px 12px;
+    border-radius:12px;
+    margin-bottom:12px;
+    font-size:14px;
+    border:1px solid #e5e7eb;
+}
+
+.report-meta strong{
+    color:#111827;
+}
+
+.table-wrap{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+}
+
+.report-table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:1180px;
+}
+
+.report-table th,
+.report-table td{
+    border:1px solid #e5e7eb;
+    padding:7px 8px;
+    font-size:14px;
+    vertical-align:top;
+    line-height:1.35;
+}
+
+.report-table th{
+    background:#f1f5f9;
+    color:#334155;
+    font-weight:700;
+    text-align:center;
+    white-space:nowrap;
+}
+
+.report-table td{
+    color:#1f2937;
+}
+
+.text-center{
+    text-align:center;
+}
+
+.date-col{
+    width:95px;
+    white-space:nowrap;
+}
+
+.type-col{
+    width:110px;
+    white-space:nowrap;
+}
+
+.tel-col{
+    width:110px;
+    white-space:nowrap;
+}
+
+.contact-col{
+    width:130px;
+}
+
+.teacher-col{
+    width:130px;
+}
+
+.school-col{
+    width:170px;
+}
+
+.education-col{
+    width:130px;
+}
+
+.result-col,
+.remark-col{
+    min-width:180px;
+}
+
+.signature-wrap{
+    margin-top:30px;
+    display:flex;
+    justify-content:flex-end;
+}
+
+.signature-box{
+    width:280px;
+    text-align:center;
+    color:#374151;
+    font-size:15px;
+}
+
+.signature-line{
+    margin-bottom:8px;
+    padding-top:24px;
+    border-bottom:1px solid #111827;
+    height:36px;
+}
+
+@media (max-width:768px){
     .school-followup-report-page{
-        padding: 16px 12px 28px;
+        padding:0;
     }
 
-    .school-followup-report-shell{
-        max-width: 980px;
-        margin: 0 auto;
+    .report-page{
+        margin:0;
+        border:0;
+        border-radius:0;
+        box-shadow:none;
     }
 
-    .school-followup-report-card{
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 20px;
-        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
-        overflow: hidden;
+    .report-toolbar,
+    .report-wrap{
+        padding-left:14px;
+        padding-right:14px;
     }
 
-    .school-followup-report-toolbar{
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        padding: 18px 20px 0;
+    .client-info{
+        grid-template-columns:1fr;
     }
 
-    .school-followup-report-back-btn{
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border-radius: 12px;
-        padding: 10px 16px;
-        font-weight: 600;
-        box-shadow: none !important;
+    .report-title{
+        font-size:22px;
+    }
+}
+
+@media print{
+    @page{
+        size:A4 landscape;
+        margin:6mm;
     }
 
-    .school-followup-report-body{
-        padding: 12px 22px 26px;
+    html,
+    body{
+        width:297mm !important;
+        min-height:auto !important;
+        height:auto !important;
+        margin:0 !important;
+        padding:0 !important;
+        background:#fff !important;
+        overflow:visible !important;
+        font-size:12px !important;
     }
 
-    .school-followup-report-header{
-        text-align: center;
-        padding-bottom: 18px;
-        margin-bottom: 20px;
-        border-bottom: 1px solid #e5e7eb;
+    body{
+        -webkit-print-color-adjust:exact !important;
+        print-color-adjust:exact !important;
     }
 
-    .school-followup-report-title{
-        margin: 0;
-        font-size: 1.55rem;
-        font-weight: 700;
-        color: #111827;
-        line-height: 1.3;
+    /* ซ่อนส่วน layout หลักที่ติดมาตอนพิมพ์ */
+    nav,
+    header,
+    footer,
+    aside,
+    .navbar,
+    .sidebar,
+    .main-footer,
+    .footer,
+    .app-footer,
+    .content-footer,
+    .page-footer,
+    .report-toolbar{
+        display:none !important;
     }
 
-    .school-followup-report-subtitle{
-        margin: 8px 0 0;
-        color: #6b7280;
-        font-size: .96rem;
+    .content-wrapper,
+    .main-content,
+    .page-content,
+    .container,
+    .container-fluid{
+        margin:0 !important;
+        padding:0 !important;
+        width:100% !important;
+        max-width:100% !important;
     }
 
-    .school-followup-report-section{
-        margin-bottom: 18px;
+    .school-followup-report-page{
+        width:100% !important;
+        padding:0 !important;
+        margin:0 !important;
+        background:#fff !important;
     }
 
-    .school-followup-report-section-title{
-        margin: 0 0 12px;
-        font-size: 1.02rem;
-        font-weight: 700;
-        color: #1f2937;
+    .report-page{
+        width:100% !important;
+        max-width:100% !important;
+        margin:0 !important;
+        padding:0 !important;
+        border:0 !important;
+        border-radius:0 !important;
+        box-shadow:none !important;
+        overflow:visible !important;
+        page-break-after:auto !important;
     }
 
-    .school-followup-report-info-grid{
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+    .report-wrap{
+        padding:0 !important;
+        margin:0 !important;
     }
 
-    .school-followup-report-info-card{
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 12px 14px;
-        min-height: 74px;
+    .report-header{
+        margin-bottom:7px !important;
+        padding-bottom:6px !important;
     }
 
-    .school-followup-report-label{
-        display: block;
-        font-size: .88rem;
-        font-weight: 600;
-        color: #64748b;
-        margin-bottom: 4px;
-        line-height: 1.35;
+    .report-title{
+        font-size:20px !important;
+        line-height:1.15 !important;
     }
 
-    .school-followup-report-value{
-        display: block;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #111827;
-        line-height: 1.55;
-        word-break: break-word;
+    .report-subtitle{
+        font-size:12px !important;
+        margin-top:2px !important;
     }
 
-    .school-followup-report-detail-box{
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 16px;
-        overflow: hidden;
+    .client-info{
+        gap:4px 14px !important;
+        margin-bottom:8px !important;
     }
 
-    .school-followup-report-detail-row{
-        display: grid;
-        grid-template-columns: 220px minmax(0, 1fr);
-        border-bottom: 1px solid #eef2f7;
+    .client-info-item,
+    .report-meta{
+        font-size:12px !important;
+        line-height:1.3 !important;
     }
 
-    .school-followup-report-detail-row:last-child{
-        border-bottom: 0;
+    .report-meta{
+        padding:6px 9px !important;
+        margin-bottom:8px !important;
+        border-radius:8px !important;
     }
 
-    .school-followup-report-detail-key{
-        background: #f8fafc;
-        padding: 12px 14px;
-        font-weight: 700;
-        color: #334155;
-        line-height: 1.5;
+    .table-wrap{
+        overflow:visible !important;
     }
 
-    .school-followup-report-detail-value{
-        padding: 12px 14px;
-        color: #111827;
-        line-height: 1.6;
-        word-break: break-word;
-        white-space: pre-line;
+    .report-table{
+        width:100% !important;
+        min-width:unset !important;
+        table-layout:fixed !important;
+        border-collapse:collapse !important;
     }
 
-    .school-followup-report-signature{
-        margin-top: 28px;
-        display: flex;
-        justify-content: flex-end;
+    .report-table th,
+    .report-table td{
+        font-size:11.5px !important;
+        padding:4px 5px !important;
+        line-height:1.25 !important;
+        word-break:break-word !important;
+        white-space:normal !important;
     }
 
-    .school-followup-report-signature-box{
-        width: 280px;
-        text-align: center;
-        color: #374151;
+    .date-col{
+        width:78px !important;
     }
 
-    .school-followup-report-signature-line{
-        margin-bottom: 8px;
-        padding-top: 24px;
-        border-bottom: 1px solid #111827;
-        height: 36px;
+    .school-col{
+        width:105px !important;
     }
 
-    @media (max-width: 767.98px){
-        .school-followup-report-page{
-            padding: 12px 0 20px;
-        }
-
-        .school-followup-report-card{
-            border-radius: 0;
-            border-left: 0;
-            border-right: 0;
-        }
-
-        .school-followup-report-toolbar{
-            padding: 14px 14px 0;
-        }
-
-        .school-followup-report-body{
-            padding: 10px 14px 18px;
-        }
-
-        .school-followup-report-title{
-            font-size: 1.3rem;
-        }
-
-        .school-followup-report-info-grid{
-            grid-template-columns: 1fr;
-        }
-
-        .school-followup-report-detail-row{
-            grid-template-columns: 1fr;
-        }
-
-        .school-followup-report-detail-key{
-            padding-bottom: 6px;
-        }
-
-        .school-followup-report-detail-value{
-            padding-top: 0;
-        }
-
-        .school-followup-report-signature{
-            justify-content: center;
-        }
-
-        .school-followup-report-signature-box{
-            width: 100%;
-            max-width: 260px;
-        }
+    .education-col{
+        width:75px !important;
     }
 
-    @media print{
-        .school-followup-report-page{
-            padding: 0;
-        }
-
-        .school-followup-report-card{
-            box-shadow: none;
-            border: 0;
-            border-radius: 0;
-        }
-
-        .school-followup-report-toolbar{
-            display: none !important;
-        }
-
-        .school-followup-report-body{
-            padding: 0;
-        }
+    .teacher-col{
+        width:75px !important;
     }
+
+    .tel-col{
+        width:82px !important;
+    }
+
+    .type-col{
+        width:85px !important;
+    }
+
+    .contact-col{
+        width:85px !important;
+    }
+
+    .result-col,
+    .remark-col{
+        width:auto !important;
+    }
+
+    .signature-wrap{
+        margin-top:16px !important;
+        page-break-inside:avoid !important;
+    }
+
+    .signature-box{
+        width:250px !important;
+        font-size:12px !important;
+    }
+
+    .signature-line{
+        height:28px !important;
+        padding-top:16px !important;
+    }
+}
 </style>
 
 <div class="school-followup-report-page">
-    <div class="school-followup-report-shell">
-        <div class="school-followup-report-card">
-            <div class="school-followup-report-toolbar">
-                <a href="{{ route('school_followup_add', $client->id) }}" class="btn btn-primary school-followup-report-back-btn">
-                    <i class="bi bi-arrow-left-circle"></i>
-                    <span>กลับหน้าหลัก</span>
+    <div class="report-page">
+
+        <div class="report-toolbar">
+            <div class="toolbar-left">
+                <a href="{{ route('school_followup_add', $client->id) }}" class="report-btn">
+                    ← กลับ
                 </a>
             </div>
 
-            <div class="school-followup-report-body">
-                <div class="school-followup-report-header">
-                    <h2 class="school-followup-report-title">รายงานการติดตามเด็กในโรงเรียน</h2>
-                   
+            <div class="toolbar-right">
+                <button type="button" onclick="window.print()" class="report-btn report-btn-primary">
+                    🖨 พิมพ์
+                </button>
+            </div>
+        </div>
+
+        <div class="report-wrap">
+
+            <div class="report-header">
+                <h1 class="report-title">รายงานการติดตามในโรงเรียน</h1>
+                <p class="report-subtitle">รายละเอียดการติดตามผลการเรียนของผู้รับบริการ</p>
+            </div>
+
+            <div class="client-info">
+                <div class="client-info-item">
+                    <span class="client-info-label">ชื่อผู้รับบริการ:</span>
+                    {{ $client->fullname ?? $client->full_name ?? '-' }}
                 </div>
 
-                <div class="school-followup-report-section">
-                    <h3 class="school-followup-report-section-title">ข้อมูลผู้รับบริการ</h3>
-
-                    <div class="school-followup-report-info-grid">
-                        <div class="school-followup-report-info-card">
-                            <span class="school-followup-report-label">ชื่อ–นามสกุล</span>
-                            <span class="school-followup-report-value">{{ $client->full_name ?? $client->fullname ?? '-' }}</span>
-                        </div>
-
-                        <div class="school-followup-report-info-card">
-                            <span class="school-followup-report-label">อายุ</span>
-                            <span class="school-followup-report-value">{{ $age ?? '-' }} ปี</span>
-                        </div>
-
-                        <div class="school-followup-report-info-card">
-                            <span class="school-followup-report-label">ระดับการศึกษา</span>
-                            <span class="school-followup-report-value">{{ $education_name ?? '-' }}</span>
-                        </div>
-
-                        <div class="school-followup-report-info-card">
-                            <span class="school-followup-report-label">โรงเรียน</span>
-                            <span class="school-followup-report-value">{{ $school_name ?? '-' }}</span>
-                        </div>
-
-                        <div class="school-followup-report-info-card">
-                            <span class="school-followup-report-label">ภาคเรียน</span>
-                            <span class="school-followup-report-value">{{ $term ?? '-' }}</span>
-                        </div>
-                    </div>
+                <div class="client-info-item">
+                    <span class="client-info-label">อายุ:</span>
+                    {{ $age ?? '-' }} ปี
                 </div>
 
-                <div class="school-followup-report-section">
-                    <h3 class="school-followup-report-section-title">รายละเอียดการติดตาม</h3>
-
-                    <div class="school-followup-report-detail-box">
-                        <div class="school-followup-report-detail-row">
-                            <div class="school-followup-report-detail-key">วันที่ติดตาม</div>
-                            <div class="school-followup-report-detail-value">{{ $followup->follow_date ?? '-' }}</div>
-                        </div>
-
-                        <div class="school-followup-report-detail-row">
-                            <div class="school-followup-report-detail-key">ครั้งที่</div>
-                            <div class="school-followup-report-detail-value">{{ $followup->follo_no ?? '-' }}</div>
-                        </div>
-
-                        <div class="school-followup-report-detail-row">
-                            <div class="school-followup-report-detail-key">ครูผู้สอน</div>
-                            <div class="school-followup-report-detail-value">{{ $followup->teacher_name ?? '-' }}</div>
-                        </div>
-
-                        <div class="school-followup-report-detail-row">
-                            <div class="school-followup-report-detail-key">เบอร์โทร</div>
-                            <div class="school-followup-report-detail-value">{{ $followup->tel ?? '-' }}</div>
-                        </div>
-
-                        <div class="school-followup-report-detail-row">
-                            <div class="school-followup-report-detail-key">ประเภทการติดตาม</div>
-                            <div class="school-followup-report-detail-value">
-                                @switch($followup->follow_type)
-                                    @case('self') ติดตามด้วยตนเอง @break
-                                    @case('phone') โทรศัพท์ @break
-                                    @case('other') อื่นๆ @break
-                                    @default - 
-                                @endswitch
-                            </div>
-                        </div>
-
-                        <div class="school-followup-report-detail-row">
-                            <div class="school-followup-report-detail-key">ผลการติดตาม</div>
-                            <div class="school-followup-report-detail-value">{{ $followup->result ?? '-' }}</div>
-                        </div>
-
-                        <div class="school-followup-report-detail-row">
-                            <div class="school-followup-report-detail-key">ผู้ติดต่อ</div>
-                            <div class="school-followup-report-detail-value">{{ $followup->contact_name ?? '-' }}</div>
-                        </div>
-
-                        <div class="school-followup-report-detail-row">
-                            <div class="school-followup-report-detail-key">หมายเหตุ</div>
-                            <div class="school-followup-report-detail-value">{{ $followup->remark ?? '-' }}</div>
-                        </div>
-                    </div>
+                <div class="client-info-item">
+                    <span class="client-info-label">โรงเรียน:</span>
+                    {{ $school_name ?? '-' }}
                 </div>
 
-                <div class="school-followup-report-signature">
-                    <div class="school-followup-report-signature-box">
-                        <div class="school-followup-report-signature-line"></div>
-                        <div>ผู้จัดทำรายงาน</div>
-                    </div>
+                <div class="client-info-item">
+                    <span class="client-info-label">ระดับ / ภาคเรียน:</span>
+                    {{ $education_name ?? '-' }} / {{ $term ?? '-' }}
                 </div>
             </div>
+
+            <div class="report-meta">
+                <div>
+                    <strong>วันที่ติดตาม:</strong>
+                    {{ !empty($followup->follow_date) ? ThaiDateHelper::formatThaiDate($followup->follow_date) : '-' }}
+                </div>
+
+                <div>
+                    <strong>จำนวน:</strong> 1 รายการ
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th class="date-col">วันที่ติดตาม</th>
+                            <th class="school-col">สถานศึกษา</th>
+                            <th class="education-col">ระดับชั้น</th>
+                            <th class="teacher-col">ครูผู้สอน</th>
+                            <th class="tel-col">เบอร์โทร</th>
+                            <th class="type-col">ประเภทการติดตาม</th>
+                            <th class="contact-col">ผู้ติดต่อ</th>
+                            <th class="result-col">ผลการติดตาม</th>
+                            <th class="remark-col">หมายเหตุ</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td class="text-center date-col">
+                                {{ !empty($followup->follow_date) ? ThaiDateHelper::formatThaiDate($followup->follow_date) : '-' }}
+                            </td>
+
+                            <td>
+                                {{ $school_name ?? optional($followup->educationRecord)->school_name ?? '-' }}
+                            </td>
+
+                            <td>
+                                {{ $education_name ?? optional(optional($followup->educationRecord)->education)->education_name ?? '-' }}
+                            </td>
+
+                            <td>
+                                {{ $followup->teacher_name ?? '-' }}
+                            </td>
+
+                            <td class="text-center tel-col">
+                                {{ $followup->tel ?? '-' }}
+                            </td>
+
+                            <td class="text-center type-col">
+                                @switch($followup->follow_type)
+                                    @case('self')
+                                        ติดตามด้วยตนเอง
+                                        @break
+                                    @case('phone')
+                                        โทรศัพท์
+                                        @break
+                                    @case('other')
+                                        อื่นๆ
+                                        @break
+                                    @default
+                                        {{ $followup->follow_type ?? '-' }}
+                                @endswitch
+                            </td>
+
+                            <td>
+                                {{ $followup->contact_name ?? '-' }}
+                            </td>
+
+                            <td>
+                                {{ $followup->result ?? '-' }}
+                            </td>
+
+                            <td>
+                                {{ $followup->remark ?? '-' }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="signature-wrap">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div>ผู้จัดทำรายงาน</div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

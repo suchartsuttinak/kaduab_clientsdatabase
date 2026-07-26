@@ -269,9 +269,14 @@
                             <div class="form-text">พิมพ์ชื่อ แล้วเลือกชื่อจากรายการที่แสดง</div>
                         </div>
 
-                        <div class="col-12 col-md-6">
+                      <div class="col-12 col-md-6">
                             <label class="form-label">วันที่ตรวจ <span class="text-danger">*</span></label>
-                            <input type="date" name="checkup_date" id="checkup_date" class="form-control" required>
+                            <input type="date"
+                                name="checkup_date"
+                                id="checkup_date"
+                                class="form-control"
+                                max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                required>
                         </div>
 
                         <div class="col-12">

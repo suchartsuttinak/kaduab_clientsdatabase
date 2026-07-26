@@ -36,20 +36,28 @@ class ObserveController extends Controller
     public function StoreObserve(Request $request)
         {
             $data = $request->validate([
-                'date' => [
-                    'required',
-                    'date',
-                    Rule::unique('observes')->where(function ($query) use ($request) {
-                        return $query->where('client_id', $request->client_id);
-                    }),
-                ],
+               'date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+
+                Rule::unique('observes')->where(function ($query) use ($request) {
+                    return $query->where('client_id', $request->client_id);
+                }),
+            ],
                 'behavior'       => 'required|string',
                 'cause'          => 'required|string',
                 'solution'       => 'required|string',
                 'action'         => 'required|string',
                 'obstacles'      => 'nullable|string',
                 'result'         => 'required|string',
-                'record_date'    => 'required|date',
+
+                'record_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
                 'recorder'       => 'nullable|string|max:100',
                 'misbehavior_id' => 'required|integer',
                 'client_id'      => 'required|integer',
@@ -63,6 +71,8 @@ class ObserveController extends Controller
                 'action.required'         => 'กรุณาระบุการดำเนินการ',
                 'result.required'         => 'กรุณาระบุผลการดำเนินการ',
                 'record_date.required'    => 'กรุณาระบุวันที่บันทึก',
+                'date.before_or_equal'        => 'วันที่เกิดเหตุต้องไม่เกินวันปัจจุบัน',
+                'record_date.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันปัจจุบัน',
                 'misbehavior_id.required' => 'กรุณาเลือกประเภทพฤติกรรมไม่เหมาะสม',
                 'client_id.required'      => 'กรุณาเลือกนักเรียน',
             ]);
@@ -152,21 +162,40 @@ class ObserveController extends Controller
 
     $data = $request->validate([
         'date' => [
-            'required',
-            'date',
-            Rule::unique('observes')->where(function ($query) use ($observe) {
+        'required',
+        'date',
+        'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+
+        Rule::unique('observes')
+            ->where(function ($query) use ($observe) {
                 return $query->where('client_id', $observe->client_id);
-            })->ignore($id),
-        ],
+            })
+            ->ignore($id),
+    ],
         'behavior'       => 'required|string',
         'cause'          => 'required|string',
         'solution'       => 'required|string',
         'action'         => 'required|string',
         'result'         => 'required|string',
-        'record_date'    => 'required|date',
+
+       'record_date' => [
+        'required',
+        'date',
+        'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+    ],
+
         'recorder'       => 'nullable|string|max:100',
         'misbehavior_id' => 'required|integer',
         'client_id'      => 'required|integer',
+    ],[
+        'date.required'            => 'กรุณาระบุวันที่เกิดเหตุ',
+        'date.date'                => 'วันที่เกิดเหตุไม่ถูกต้อง',
+        'date.before_or_equal'     => 'วันที่เกิดเหตุต้องไม่เกินวันปัจจุบัน',
+        'date.unique'              => 'วันที่นี้ถูกบันทึกแล้วสำหรับนักเรียนรายนี้',
+
+        'record_date.required'        => 'กรุณาระบุวันที่บันทึก',
+        'record_date.date'            => 'วันที่บันทึกไม่ถูกต้อง',
+        'record_date.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันปัจจุบัน',
     ]);
 
     // =========================

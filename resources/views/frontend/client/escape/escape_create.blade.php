@@ -20,11 +20,24 @@
         <input type="hidden" name="client_id" value="{{ $client->id }}">
 
         <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">วันที่ออก</label>
-                <input type="date" name="retire_date" class="form-control" required
-                    value="{{ old('retire_date', isset($escape) ? $escape->retire_date?->format('Y-m-d') : '') }}">
-            </div>
+           <div class="col-md-3">
+                    <label class="form-label">
+                        วันที่ออก <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="date"
+                        name="retire_date"
+                        class="form-control @error('retire_date') is-invalid @enderror"
+                        value="{{ old('retire_date', isset($escape) ? $escape->retire_date?->format('Y-m-d') : now('Asia/Bangkok')->toDateString()) }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
+                        required>
+
+                    @error('retire_date')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
 
             <div class="col-md-4">
                 <label class="form-label">ประเภทการออกจากหน่วยงาน</label>

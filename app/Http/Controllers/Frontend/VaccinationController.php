@@ -85,7 +85,7 @@ class VaccinationController extends Controller
                     ' | ชนิดวัคซีน: ' . ($validated['vaccine_name'] ?? '-') .
                     ' | สถานพยาบาล: ' . ($validated['hospital'] ?? '-'),
 
-                'occurred_at' => now(),
+                    'occurred_at' => $validated['date'] ?? now('Asia/Bangkok'),'occurred_at' => now(),
 
                 'icon'        => 'bi-shield-plus',
 
@@ -180,7 +180,7 @@ class VaccinationController extends Controller
                 ' | ชนิดวัคซีน: ' . ($data['vaccine_name'] ?? '-') .
                 ' | สถานพยาบาล: ' . ($data['hospital'] ?? '-'),
 
-            'occurred_at' => now(),
+            'occurred_at' => $validated['date'] ?? now('Asia/Bangkok'),
 
             'icon'        => 'bi-shield-plus',
 

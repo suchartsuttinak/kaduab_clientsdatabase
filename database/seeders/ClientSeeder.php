@@ -14,7 +14,7 @@ class ClientSeeder extends Seeder
         $problemIds = Problem::pluck('id')->toArray();
 
         Client::factory()
-            ->count(200)
+            ->count(100)
             ->create()
             ->each(function ($client) use ($problemIds) {
 

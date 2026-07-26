@@ -186,7 +186,12 @@ protected function saveVisitImage($file, bool $cover = false): array
             $client = Client::forUser(auth()->user())->findOrFail($client_id);
 
             $validated = $request->validate([
-                'visit_date'      => 'required|date',
+                'visit_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
                 'family_fname'    => 'required|string|max:255',
                 'family_age'      => 'nullable|integer',
                 'member'          => 'nullable|string|max:255',
@@ -218,8 +223,10 @@ protected function saveVisitImage($file, bool $cover = false): array
                 'images'          => 'nullable|array',
                 'images.*'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
             ], [
-                'visit_date.required'      => 'กรุณาระบุวันที่เยี่ยม',
-                'visit_date.date'          => 'รูปแบบวันที่ไม่ถูกต้อง',
+                'visit_date.required' => 'กรุณาระบุวันที่เยี่ยมบ้าน',
+                'visit_date.date' => 'รูปแบบวันที่เยี่ยมบ้านไม่ถูกต้อง',
+                'visit_date.before_or_equal' => 'วันที่เยี่ยมบ้านต้องไม่เกินวันที่ปัจจุบัน',
+
                 'family_fname.required'    => 'กรุณากรอกชื่อผู้ให้ข้อมูล',
                 'family_fname.max'         => 'ชื่อผู้ให้ข้อมูลต้องไม่เกิน 255 ตัวอักษร',
                 'family_age.integer'       => 'อายุต้องเป็นตัวเลข',
@@ -321,7 +328,12 @@ protected function saveVisitImage($file, bool $cover = false): array
     public function UpdateVisitFamily(Request $request, $id)
     {
         $validated = $request->validate([
-            'visit_date'      => 'required|date',
+              'visit_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
             'family_fname'    => 'required|string|max:255',
             'family_age'      => 'nullable|integer',
             'member'          => 'nullable|string|max:255',
@@ -352,7 +364,24 @@ protected function saveVisitImage($file, bool $cover = false): array
             'remark'          => 'nullable|string',
             'images'          => 'nullable|array',
             'images.*'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
-        ]);
+        ],[
+               'visit_date.required' => 'กรุณาระบุวันที่เยี่ยมบ้าน',
+                'visit_date.date' => 'รูปแบบวันที่เยี่ยมบ้านไม่ถูกต้อง',
+                'visit_date.before_or_equal' => 'วันที่เยี่ยมบ้านต้องไม่เกินวันที่ปัจจุบัน',
+
+                'family_fname.required'    => 'กรุณากรอกชื่อผู้ให้ข้อมูล',
+                'family_fname.max'         => 'ชื่อผู้ให้ข้อมูลต้องไม่เกิน 255 ตัวอักษร',
+                'family_age.integer'       => 'อายุต้องเป็นตัวเลข',
+                'province_id.required'     => 'กรุณาเลือกจังหวัด',
+                'district_id.required'     => 'กรุณาเลือกอำเภอ',
+                'sub_district_id.required' => 'กรุณาเลือกตำบล',
+                'zipcode.required'         => 'กรุณากรอกรหัสไปรษณีย์',
+                'zipcode.max'              => 'รหัสไปรษณีย์ต้องไม่เกิน 10 หลัก',
+                'teacher.required'         => 'กรุณาระบุผู้ที่เยี่ยมบ้าน',
+                'images.*.image'           => 'ไฟล์ต้องเป็นรูปภาพ',
+                'images.*.mimes'           => 'รูปภาพต้องเป็นไฟล์ชนิด jpg, jpeg, png หรือ webp',
+                'images.*.max'             => 'ขนาดไฟล์รูปภาพต้องไม่เกิน 10MB',
+            ]);
 
         $visitFamily = VisitFamily::where('id', $id)
             ->whereHas('client', function ($q) {

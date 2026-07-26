@@ -102,7 +102,7 @@ class MedicalController extends Controller
                 'description' => 'วันที่รักษา: ' . ($data['medical_date'] ?? '-') .
                                 ' | โรค/อาการ: ' . ($data['disease_name'] ?? '-') .
                                 ' | การส่งต่อ: ' . ($data['refer'] ?? '-'),
-                'occurred_at' => now(),
+                'occurred_at' => $data['medical_date'] ?? now('Asia/Bangkok'),
                 'icon'        => 'bi-heart-pulse',
                 'url'         => route('medical.add', $client->id),
             ]);
@@ -234,7 +234,7 @@ public function MedicalUpdate(Request $request, $id)
         'description' => 'วันที่รักษา: ' . ($data['medical_date'] ?? '-') .
                         ' | โรค/อาการ: ' . ($data['disease_name'] ?? '-') .
                         ' | การส่งต่อ: ' . ($data['refer'] ?? '-'),
-        'occurred_at' => now(),
+        'occurred_at' => $data['medical_date'] ?? now('Asia/Bangkok'),
         'icon'        => 'bi-heart-pulse',
         'url'         => route('medical.add', $medical->client_id),
     ]);

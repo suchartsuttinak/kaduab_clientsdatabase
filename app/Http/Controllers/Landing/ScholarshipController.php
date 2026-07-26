@@ -12,44 +12,57 @@ class ScholarshipController extends Controller
 {
   
 
-public function index(Request $request)
-{
-    $startDate = $request->start_date;
-    $endDate   = $request->end_date;
+        public function index(Request $request)
+        {
+            /*
+            |--------------------------------------------------------------------------
+            | เมื่อ Admin เปิดดูหน้ารายการผู้สนับสนุนทุน
+            | ให้ถือว่าอ่านแจ้งเตือนแล้ว
+            |--------------------------------------------------------------------------
+            */
+            if (auth()->check() && auth()->user()->role === 'admin') {
+                Scholarship::where('is_read', false)->update([
+                    'is_read' => true,
+                    'read_at' => now('Asia/Bangkok'),
+                ]);
+            }
 
-    $query = ScholarshipDonation::query();
+            $startDate = $request->start_date;
+            $endDate   = $request->end_date;
 
-    // ✅ filter ตามช่วงวันที่
-    if ($startDate && $endDate) {
-        $query->whereBetween('donation_date', [$startDate, $endDate]);
-    }
+            $query = ScholarshipDonation::query();
 
-    // ดึง id ผู้สนับสนุน
-    $scholarshipIds = $query->pluck('scholarship_id')->unique();
+            // filter ตามช่วงวันที่
+            if ($startDate && $endDate) {
+                $query->whereBetween('donation_date', [$startDate, $endDate]);
+            }
 
-    $scholarships = Scholarship::when($startDate && $endDate, function ($q) use ($scholarshipIds) {
-            $q->whereIn('id', $scholarshipIds);
-        })
-        ->latest()
-        ->paginate(20);
+            // ดึง id ผู้สนับสนุน
+            $scholarshipIds = $query->pluck('scholarship_id')->unique();
 
-    // ✅ รวมเงินตามช่วงวันที่
-    $totalDonationAmount = (clone $query)->sum('amount');
+            $scholarships = Scholarship::when($startDate && $endDate, function ($q) use ($scholarshipIds) {
+                    $q->whereIn('id', $scholarshipIds);
+                })
+                ->latest()
+                ->paginate(20);
 
-    // ✅ summary ตามปี (ยังใช้ได้)
-    $donationYearSummary = ScholarshipDonation::selectRaw('YEAR(donation_date) as year, SUM(amount) as total_amount')
-        ->groupBy(DB::raw('YEAR(donation_date)'))
-        ->orderByDesc('year')
-        ->get();
+            // รวมเงินตามช่วงวันที่
+            $totalDonationAmount = (clone $query)->sum('amount');
 
-    return view('landing.scholarship.scholarship.index', compact(
-        'scholarships',
-        'totalDonationAmount',
-        'donationYearSummary',
-        'startDate',
-        'endDate'
-    ));
-}
+            // summary ตามปี
+            $donationYearSummary = ScholarshipDonation::selectRaw('YEAR(donation_date) as year, SUM(amount) as total_amount')
+                ->groupBy(DB::raw('YEAR(donation_date)'))
+                ->orderByDesc('year')
+                ->get();
+
+            return view('landing.scholarship.scholarship.index', compact(
+                'scholarships',
+                'totalDonationAmount',
+                'donationYearSummary',
+                'startDate',
+                'endDate'
+            ));
+        }
 
     public function create()
     {
@@ -73,6 +86,8 @@ public function index(Request $request)
             'phone' => $request->phone,
             'email' => $request->email,
             'detail' => $request->detail,
+             // แจ้งเตือนใหม่ (ยังไม่ได้เปิดอ่าน)
+            'is_read' => false,
         ]);
 
         return redirect()

@@ -1,7 +1,6 @@
 @extends('admin.admin_master')
 @section('admin')
 
-
 <style>
     .client-page {
         padding-top: .5rem;
@@ -30,7 +29,7 @@
     }
 
     .client-title-box p {
-        margin: .15rem 0 0 0;
+        margin: .15rem 0 0;
         font-size: 13px;
         color: #6b7280;
     }
@@ -210,7 +209,6 @@
     }
 
     .client-list-card .dataTables_info,
-    .client-list-card .dataTables_paginate,
     .client-list-card .dataTables_length,
     .client-list-card .dataTables_filter {
         font-size: 13px;
@@ -236,38 +234,82 @@
         color: #64748b;
     }
 
+    /* ==============================
+       DataTables Pagination
+       แก้ปุ่มซ้อน / ลดช่องห่าง / จำกัดเฉพาะหน้านี้
+       ============================== */
     .client-list-card .dataTables_paginate {
-        padding-top: .55rem !important;
+        width: 100%;
+        padding-top: .75rem !important;
+        margin-top: .25rem !important;
+        text-align: center !important;
+        float: none !important;
+    }
+
+    .client-list-card .dataTables_paginate .pagination {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: .35rem;
+        margin: 0 !important;
+        padding: 0 !important;
+        flex-wrap: wrap;
+    }
+
+    .client-list-card .dataTables_paginate .page-item {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .client-list-card .dataTables_paginate .page-link {
+        min-width: 38px;
+        height: 36px;
+        padding: 0 .72rem !important;
+        border-radius: 10px !important;
+        border: 1px solid #dbe3ef !important;
+        background: #ffffff !important;
+        color: #475569 !important;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        line-height: 1;
+        box-shadow: none !important;
+    }
+
+    .client-list-card .dataTables_paginate .page-item.active .page-link {
+        background: #4f6ef7 !important;
+        border-color: #4f6ef7 !important;
+        color: #ffffff !important;
+    }
+
+    .client-list-card .dataTables_paginate .page-link:hover {
+        background: #eef4ff !important;
+        border-color: #c7d7fe !important;
+        color: #1d4f91 !important;
+    }
+
+    .client-list-card .dataTables_paginate .page-item.disabled .page-link {
+        background: #f8fafc !important;
+        border-color: #e5e7eb !important;
+        color: #94a3b8 !important;
+        cursor: not-allowed !important;
     }
 
     .client-list-card .dataTables_paginate .paginate_button {
-        border-radius: 9px !important;
-        margin: 0 2px !important;
-        padding: .28rem .65rem !important;
-        border: 1px solid transparent !important;
-        color: #475569 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
         background: transparent !important;
+        box-shadow: none !important;
     }
 
+    .client-list-card .dataTables_paginate .paginate_button:hover,
     .client-list-card .dataTables_paginate .paginate_button.current,
     .client-list-card .dataTables_paginate .paginate_button.current:hover {
-        background: #4f6ef7 !important;
-        color: #ffffff !important;
-        border-color: #4f6ef7 !important;
-    }
-
-    .client-list-card .dataTables_paginate .paginate_button:hover {
-        background: #eef4ff !important;
-        color: #1d4f91 !important;
-        border-color: #dbeafe !important;
-    }
-
-    .client-list-card .dataTables_paginate .paginate_button.disabled,
-    .client-list-card .dataTables_paginate .paginate_button.disabled:hover {
-        color: #94a3b8 !important;
-        background: #f8fafc !important;
-        border-color: #e5e7eb !important;
-        cursor: not-allowed !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }
 
     @media (max-width: 767.98px) {
@@ -334,7 +376,19 @@
         }
 
         .client-list-card .dataTables_paginate {
-            margin-top: .35rem;
+            margin-top: .5rem !important;
+        }
+
+        .client-list-card .dataTables_paginate .pagination {
+            gap: .28rem;
+        }
+
+        .client-list-card .dataTables_paginate .page-link {
+            min-width: 36px;
+            height: 34px;
+            font-size: 12px;
+            border-radius: 9px !important;
+            padding: 0 .62rem !important;
         }
     }
 </style>
@@ -355,7 +409,7 @@
                 </div>
             </div>
 
-           @if(auth()->check() && auth()->user()->hasRole(['admin','executive','social_worker']))
+            @if(auth()->check() && auth()->user()->hasRole(['admin','executive','social_worker']))
                 <div class="client-toolbar-right">
                     <a href="{{ route('client.add') }}" class="btn btn-success client-btn">
                         <i data-feather="plus-circle"></i>
@@ -365,54 +419,51 @@
             @endif
         </div>
 
+        @if(
+            auth()->check()
+            && in_array(auth()->user()->role, ['admin', 'executive'], true)
+            && isset($clients)
+            && $clients->isNotEmpty()
+        )
+            <div class="card client-list-card mb-3">
+                <div class="card-body">
+                    <form method="GET" action="{{ route('client.show') }}">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-8 col-lg-6">
+                                <label class="form-label fw-semibold">หน่วยงาน / โครงการ</label>
+                                <select name="project_id" class="form-select">
+                                    <option value="">-- ไม่กำหนดหน่วยงาน --</option>
+                                    <option value="all" {{ ($projectId ?? '') === 'all' ? 'selected' : '' }}>
+                                        ทั้งหมด
+                                    </option>
 
-
-            @if(
-                auth()->check()
-                && in_array(auth()->user()->role, ['admin', 'executive'], true)
-                && isset($clients)
-                && $clients->isNotEmpty()
-            )
-                <div class="card client-list-card mb-3">
-                    <div class="card-body">
-                        <form method="GET" action="{{ route('client.show') }}">
-                            <div class="row g-3 align-items-end">
-                                <div class="col-md-8 col-lg-6">
-                                    <label class="form-label fw-semibold">หน่วยงาน / โครงการ</label>
-                                    <select name="project_id" class="form-select">
-                                        <option value="">-- ไม่กำหนดหน่วยงาน --</option>
-                                        <option value="all" {{ ($projectId ?? '') === 'all' ? 'selected' : '' }}>
-                                            ทั้งหมด
+                                    @foreach($projects as $project)
+                                        <option value="{{ $project->id }}"
+                                            {{ (string)($projectId ?? '') === (string)$project->id ? 'selected' : '' }}>
+                                            {{ $project->project_name ?? $project->name ?? '-' }}
                                         </option>
-
-                                        @foreach($projects as $project)
-                                            <option value="{{ $project->id }}"
-                                                {{ (string)($projectId ?? '') === (string)$project->id ? 'selected' : '' }}>
-                                                {{ $project->project_name ?? $project->name ?? '-' }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="col-md-4 col-lg-3">
-                                    <button type="submit" class="btn btn-primary client-btn w-100 justify-content-center">
-                                        <i data-feather="filter"></i>
-                                        <span>กรองข้อมูล</span>
-                                    </button>
-                                </div>
-
-                                <div class="col-md-4 col-lg-3">
-                                    <a href="{{ route('client.show') }}" class="btn btn-outline-secondary client-btn w-100 justify-content-center">
-                                        <i data-feather="refresh-ccw"></i>
-                                        <span>ล้างตัวกรอง</span>
-                                    </a>
-                                </div>
+                                    @endforeach
+                                </select>
                             </div>
-                        </form>
-                    </div>
-                </div>
-            @endif
 
+                            <div class="col-md-4 col-lg-3">
+                                <button type="submit" class="btn btn-primary client-btn w-100 justify-content-center">
+                                    <i data-feather="filter"></i>
+                                    <span>กรองข้อมูล</span>
+                                </button>
+                            </div>
+
+                            <div class="col-md-4 col-lg-3">
+                                <a href="{{ route('client.show') }}" class="btn btn-outline-secondary client-btn w-100 justify-content-center">
+                                    <i data-feather="refresh-ccw"></i>
+                                    <span>ล้างตัวกรอง</span>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
 
         <div class="card client-list-card">
             <div class="card-header">
@@ -527,16 +578,16 @@
                                                     </button>
                                                 @endif
 
-                                           <a title="จำหน่าย"
-                                                href="{{ route('refers.index', $client->id) }}"
-                                                class="btn btn-secondary btn-sm action-btn">
+                                                <a title="จำหน่าย"
+                                                   href="{{ route('refers.index', $client->id) }}"
+                                                   class="btn btn-secondary btn-sm action-btn">
                                                     <span class="mdi mdi-file-export-outline mdi-18px"></span>
                                                 </a>
 
                                                 @if(auth()->user()->role === 'admin')
                                                     <a title="ย้ายเคส"
-                                                    href="{{ route('client.transfer.create', $client->id) }}"
-                                                    class="btn btn-warning btn-sm action-btn">
+                                                       href="{{ route('client.transfer.create', $client->id) }}"
+                                                       class="btn btn-warning btn-sm action-btn">
                                                         <span class="mdi mdi-arrow-right-bold mdi-18px"></span>
                                                     </a>
                                                 @endif
@@ -560,78 +611,77 @@
 
 @endsection
 
-    @push('scripts')
-    <script>
-        $(document).ready(function() {
-            if ($('#datatable').length && $.fn.DataTable.isDataTable('#datatable')) {
-                $('#datatable').DataTable().destroy();
-            }
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        if ($('#datatable').length && $.fn.DataTable.isDataTable('#datatable')) {
+            $('#datatable').DataTable().destroy();
+        }
 
-            if ($('#datatable').length) {
-                $('#datatable').DataTable({
-                    responsive: false,
-                    autoWidth: false,
-                    scrollX: true,
-                    scrollCollapse: true,
-                    fixedHeader: false,
-                    pageLength: 10,
-                    order: [[0, 'asc']],
-                    language: {
-                        search: "ค้นหา:",
-                        lengthMenu: "แสดง _MENU_ รายการ",
-                        info: "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
-                        infoEmpty: "ไม่มีข้อมูลให้แสดง",
-                        paginate: {
-                            first: "หน้าแรก",
-                            last: "หน้าสุดท้าย",
-                            next: "ถัดไป",
-                            previous: "ก่อนหน้า"
-                        },
-                        zeroRecords: "ไม่พบข้อมูลที่ค้นหา"
+        if ($('#datatable').length) {
+            $('#datatable').DataTable({
+                responsive: false,
+                autoWidth: false,
+                scrollX: true,
+                scrollCollapse: true,
+                fixedHeader: false,
+                pageLength: 10,
+                pagingType: 'simple_numbers',
+                order: [[0, 'asc']],
+                language: {
+                    search: "ค้นหา:",
+                    lengthMenu: "แสดง _MENU_ รายการ",
+                    info: "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
+                    infoEmpty: "ไม่มีข้อมูลให้แสดง",
+                    paginate: {
+                        next: "ถัดไป",
+                        previous: "ก่อนหน้า"
                     },
-                    drawCallback: function() {
-                        $('.client-list-card .dataTables_paginate .paginate_button').addClass('btn-sm');
-                    }
-                });
-            }
+                    zeroRecords: "ไม่พบข้อมูลที่ค้นหา"
+                },
+                drawCallback: function() {
+                    $('.client-list-card .dataTables_paginate .paginate_button').addClass('btn-sm');
+                }
+            });
+        }
 
-            if (window.feather) {
-                feather.replace();
-            }
+        if (window.feather) {
+            feather.replace();
+        }
 
-            $(document)
-                .off('click.clientDeleteBtn')
-                .on('click.clientDeleteBtn', '.client-delete-btn', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
+        $(document)
+            .off('click.clientDeleteBtn')
+            .on('click.clientDeleteBtn', '.client-delete-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-                    const deleteUrl = $(this).data('url');
+                const deleteUrl = $(this).data('url');
 
-                    if (!deleteUrl) {
-                        return false;
-                    }
-
-                    Swal.fire({
-                        title: 'ยืนยันการลบข้อมูล?',
-                        text: 'หากลบแล้ว ข้อมูลนี้อาจไม่สามารถกู้คืนได้',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'ลบข้อมูล',
-                        cancelButtonText: 'ยกเลิก',
-                        confirmButtonColor: '#dc3545',
-                        cancelButtonColor: '#6c757d',
-                        reverseButtons: true,
-                        focusCancel: true,
-                        allowOutsideClick: false,
-                        allowEscapeKey: true
-                    }).then(function(result) {
-                        if (result.isConfirmed === true) {
-                            window.location.href = deleteUrl;
-                        }
-                    });
-
+                if (!deleteUrl) {
                     return false;
+                }
+
+                Swal.fire({
+                    title: 'ยืนยันการลบข้อมูล?',
+                    text: 'หากลบแล้ว ข้อมูลนี้อาจไม่สามารถกู้คืนได้',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'ลบข้อมูล',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    reverseButtons: true,
+                    focusCancel: true,
+                    allowOutsideClick: false,
+                    allowEscapeKey: true
+                }).then(function(result) {
+                    if (result.isConfirmed === true) {
+                        window.location.href = deleteUrl;
+                    }
                 });
-        });
-    </script>
-    @endpush
+
+                return false;
+            });
+    });
+</script>
+@endpush

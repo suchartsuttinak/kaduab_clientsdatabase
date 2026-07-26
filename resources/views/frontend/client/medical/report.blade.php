@@ -10,489 +10,575 @@
     }
 @endphp
 
-<div class="container-fluid medical-report-page">
+<style>
+.medical-report-page{
+    padding:16px 12px 28px;
+    background:#eef2f7;
+}
 
-    <style>
-        .medical-report-page{
-            font-family: "TH Sarabun New", "Sarabun", sans-serif;
-            font-size: 17px;
-            line-height: 1.45;
-            color: #1f2937;
-        }
+.report-page{
+    max-width:1280px;
+    margin:0 auto;
+    background:#fff;
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.05);
+    overflow:hidden;
+    border:1px solid #e5e7eb;
+}
 
-        .medical-report-page .medical-report-shell{
-            max-width: 1320px;
-            margin: 24px auto;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
-            overflow: hidden;
-        }
+.report-toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:14px 18px 0;
+}
 
-        .medical-report-page .medical-report-body{
-            padding: 24px 24px 22px;
-        }
+.report-btn{
+    border-radius:10px;
+    padding:7px 14px;
+    font-size:14px;
+    cursor:pointer;
+    border:1px solid #d1d5db;
+    background:#fff;
+    color:#374151;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    text-decoration:none;
+}
 
-        .medical-report-page .medical-report-toolbar{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 18px;
-        }
+.report-btn-primary{
+    background:#2563eb;
+    color:#fff;
+    border-color:#2563eb;
+}
 
-        .medical-report-page .medical-report-toolbar-left,
-        .medical-report-page .medical-report-toolbar-right{
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
+.report-wrap{
+    padding:16px 18px 22px;
+}
 
-        .medical-report-page .medical-btn{
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 44px;
-            padding: .66rem 1rem;
-            border-radius: 12px;
-            font-weight: 700;
-            border: 1px solid transparent;
-            text-decoration: none;
-            transition: all .2s ease;
-            white-space: nowrap;
-        }
+.report-header{
+    text-align:center;
+    border-bottom:1px solid #e5e7eb;
+    padding-bottom:12px;
+    margin-bottom:14px;
+}
 
-        .medical-report-page .medical-btn-back{
-            background: #334155;
-            border-color: #334155;
-            color: #ffffff;
-        }
+.report-title{
+    margin:0;
+    font-size:24px;
+    font-weight:700;
+    color:#111827;
+}
 
-        .medical-report-page .medical-btn-back:hover{
-            background: #1f2937;
-            border-color: #1f2937;
-            color: #ffffff;
-        }
+.report-subtitle{
+    margin:4px 0 0;
+    color:#6b7280;
+    font-size:14px;
+}
 
-        .medical-report-page .medical-btn-print{
-            background: #2563eb;
-            border-color: #2563eb;
-            color: #ffffff;
-        }
+.client-info{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:8px 18px;
+    margin-bottom:12px;
+}
 
-        .medical-report-page .medical-btn-print:hover{
-            background: #1d4ed8;
-            border-color: #1d4ed8;
-            color: #ffffff;
-        }
+.client-info-item{
+    font-size:15px;
+    color:#1f2937;
+}
 
-        .medical-report-page .medical-report-header{
-            text-align: center;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 12px;
-            margin-bottom: 14px;
-        }
+.client-info-label{
+    font-weight:700;
+    color:#111827;
+    margin-right:6px;
+}
 
-        .medical-report-page .medical-report-title{
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin: 0;
-            color: #0f172a;
-        }
+.report-meta{
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    background:#f8fafc;
+    padding:9px 12px;
+    border-radius:12px;
+    margin-bottom:12px;
+    font-size:14px;
+    border:1px solid #e5e7eb;
+}
 
-        .medical-report-page .medical-report-subtitle{
-            font-size: .95rem;
-            color: #6b7280;
-            margin-top: 4px;
-            line-height: 1.6;
-        }
+.table-wrap{
+    overflow-x:auto;
+}
 
-        .medical-report-page .medical-report-meta{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 18px 28px;
-            align-items: center;
-            margin-bottom: 16px;
-            padding: 10px 0 2px;
-            border-bottom: 1px dashed #e2e8f0;
-        }
+.report-table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:1180px;
+}
 
-        .medical-report-page .medical-report-meta-item{
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-            min-width: 0;
-        }
+.report-table th,
+.report-table td{
+    border:1px solid #e5e7eb;
+    padding:7px 8px;
+    font-size:14px;
+    vertical-align:top;
+    line-height:1.35;
+}
 
-        .medical-report-page .medical-report-meta-label{
-            font-size: .88rem;
-            font-weight: 700;
-            color: #64748b;
-            white-space: nowrap;
-        }
+.report-table th{
+    background:#f1f5f9;
+    color:#334155;
+    font-weight:700;
+    text-align:center;
+    white-space:nowrap;
+}
 
-        .medical-report-page .medical-report-meta-value{
-            font-size: 1rem;
-            font-weight: 700;
-            color: #0f172a;
-            word-break: break-word;
-        }
+.report-table td{
+    color:#1f2937;
+    word-break:break-word;
+}
 
-        .medical-report-page .medical-report-table-wrap{
-            overflow-x: auto;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-        }
+.text-center{
+    text-align:center;
+}
 
-        .medical-report-page .medical-report-table{
-            width: 100%;
-            min-width: 1200px;
-            margin-bottom: 0;
-        }
+.date-col{
+    width:120px;
+    min-width:120px;
+    white-space:nowrap;
+}
 
-        .medical-report-page .medical-report-table thead th{
-            background: #f8fafc;
-            color: #0f172a;
-            font-weight: 800;
-            font-size: .86rem;
-            text-align: center;
-            vertical-align: middle;
-            border-bottom: 1px solid #e5e7eb;
-            white-space: nowrap;
-        }
+.disease-col{
+    width:130px;
+}
 
-        .medical-report-page .medical-report-table tbody td{
-            font-size: .92rem;
-            vertical-align: middle;
-            color: #1f2937;
-        }
+.illness-col{
+    width:170px;
+}
 
-        .medical-report-page .medical-report-table tbody tr:nth-child(even){
-            background: #fcfcfd;
-        }
+.treatment-col{
+    width:170px;
+}
 
-        .medical-report-page .medical-report-table tbody tr:hover{
-            background: #f8fafc;
-        }
+.refer-col{
+    width:95px;
+}
 
-        .medical-report-page .medical-status{
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 90px;
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-weight: 700;
-            font-size: .82rem;
-        }
+.diagnosis-col{
+    width:145px;
+}
 
-        .medical-report-page .medical-status--yes{
-            background: #dcfce7;
-            color: #166534;
-        }
+.teacher-col{
+    width:110px;
+}
 
-        .medical-report-page .medical-status--no{
-            background: #fee2e2;
-            color: #991b1b;
-        }
+.remark-col{
+    width:120px;
+    min-width:120px;
+}
 
-        .medical-report-page .medical-report-empty{
-            text-align: center;
-            padding: 42px 20px;
-            color: #6b7280;
-            border: 1px dashed #d1d5db;
-            border-radius: 12px;
-            background: #fafafa;
-        }
+.medical-status{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:70px;
+    padding:2px 8px;
+    border-radius:999px;
+    font-weight:700;
+    font-size:12px;
+}
 
-        .medical-report-page .medical-report-empty i{
-            font-size: 2rem;
-            color: #94a3b8;
-            display: block;
-            margin-bottom: 8px;
-        }
+.medical-status--yes{
+    background:#dcfce7;
+    color:#166534;
+}
 
-        @page{
-            size: A4 landscape;
-            margin: 10mm;
-        }
+.medical-status--no{
+    background:#fee2e2;
+    color:#991b1b;
+}
 
-    @page{
-    size:A4 landscape;
-    margin:10mm 14mm;
+.empty-state{
+    text-align:center;
+    padding:32px 16px;
+    border:1px dashed #d9e2ef;
+    border-radius:16px;
+    background:#fff;
+    color:#64748b;
+}
+
+.signature-wrap{
+    margin-top:30px;
+    display:flex;
+    justify-content:flex-end;
+}
+
+.signature-box{
+    width:280px;
+    text-align:center;
+    color:#374151;
+    font-size:15px;
+}
+
+.signature-line{
+    margin-bottom:8px;
+    padding-top:24px;
+    border-bottom:1px solid #111827;
+    height:36px;
+}
+
+@media (max-width:768px){
+    .medical-report-page{
+        padding:0;
+    }
+
+    .report-page{
+        margin:0;
+        border:0;
+        border-radius:0;
+        box-shadow:none;
+    }
+
+    .report-toolbar,
+    .report-wrap{
+        padding-left:14px;
+        padding-right:14px;
+    }
+
+    .client-info{
+        grid-template-columns:1fr;
+    }
+
+    .report-title{
+        font-size:22px;
+    }
 }
 
 @media print{
+    @page{
+        size:A4 landscape;
+        margin:6mm;
+    }
 
     html,
     body{
         width:297mm !important;
-        min-height:210mm !important;
         margin:0 !important;
         padding:0 !important;
         background:#fff !important;
-        font-family:"TH Sarabun New","Sarabun",sans-serif !important;
         overflow:visible !important;
+        font-size:12px !important;
+    }
+
+    body{
         -webkit-print-color-adjust:exact !important;
         print-color-adjust:exact !important;
     }
 
+    nav,
+    header,
+    footer,
+    aside,
     .navbar,
     .sidebar,
+    .main-footer,
     .footer,
-    .page-title-box,
-    .medical-report-page .medical-report-toolbar,
-    header,
-    footer{
+    .app-footer,
+    .content-footer,
+    .page-footer,
+    .report-toolbar{
         display:none !important;
     }
 
-    .container-fluid,
+    .content-wrapper,
+    .main-content,
+    .page-content,
+    .container,
+    .container-fluid{
+        margin:0 !important;
+        padding:0 !important;
+        width:100% !important;
+        max-width:100% !important;
+    }
+
     .medical-report-page{
         width:100% !important;
-        max-width:100% !important;
-        margin:0 auto !important;
         padding:0 !important;
+        margin:0 !important;
         background:#fff !important;
-        overflow:visible !important;
     }
 
-    .medical-report-page .medical-report-shell{
+    .report-page{
         width:100% !important;
         max-width:100% !important;
-        min-height:auto !important;
-        margin:0 auto !important;
+        margin:0 !important;
         padding:0 !important;
-        border:none !important;
+        border:0 !important;
         border-radius:0 !important;
         box-shadow:none !important;
-        background:#fff !important;
         overflow:visible !important;
-        page-break-after:avoid !important;
-        break-after:avoid !important;
     }
 
-    .medical-report-page .medical-report-body{
+    .report-wrap{
         padding:0 !important;
         margin:0 !important;
     }
 
-    .medical-report-page .medical-report-header{
-        text-align:center !important;
-        border-bottom:1px solid #cbd5e1 !important;
-        padding:0 0 5px !important;
-        margin:0 0 6px !important;
+    .report-header{
+        margin-bottom:7px !important;
+        padding-bottom:6px !important;
     }
 
-    .medical-report-page .medical-report-title{
+    .report-title{
         font-size:20px !important;
-        font-weight:900 !important;
-        line-height:1.1 !important;
-        color:#0f172a !important;
-        margin:0 !important;
+        line-height:1.15 !important;
     }
 
-    .medical-report-page .medical-report-subtitle{
-        font-size:11px !important;
-        color:#64748b !important;
+    .report-subtitle{
+        font-size:12px !important;
         margin-top:2px !important;
-        line-height:1.1 !important;
-        font-weight:600 !important;
     }
 
-    .medical-report-page .medical-report-meta{
-        display:flex !important;
-        align-items:center !important;
-        justify-content:flex-start !important;
-        flex-wrap:wrap !important;
-        flex-direction:row !important;
-        gap:4px 22px !important;
-        margin:0 0 6px !important;
-        padding:0 0 5px 4px !important;
-        border-bottom:1px solid #dbe4f0 !important;
+    .client-info{
+        gap:4px 14px !important;
+        margin-bottom:8px !important;
     }
 
-    .medical-report-page .medical-report-meta > *{
-        border:none !important;
-        background:none !important;
-        box-shadow:none !important;
-        padding:0 !important;
-        margin:0 !important;
-        min-width:auto !important;
-        width:auto !important;
-        flex:none !important;
-        font-size:12.5px !important;
-        font-weight:800 !important;
-        color:#2563eb !important;
-        line-height:1.1 !important;
+    .client-info-item,
+    .report-meta{
+        font-size:12px !important;
+        line-height:1.3 !important;
     }
 
-    .medical-report-page .medical-report-table-wrap{
-        width:100% !important;
-        max-width:100% !important;
+    .report-meta{
+        padding:6px 9px !important;
+        margin-bottom:8px !important;
+        border-radius:8px !important;
+    }
+
+    .table-wrap{
         overflow:visible !important;
-        border:none !important;
-        border-radius:0 !important;
-        margin:0 !important;
-        padding:0 !important;
     }
 
-    .medical-report-page .medical-report-table{
+    .report-table{
         width:100% !important;
-        min-width:0 !important;
-        max-width:100% !important;
-        margin:0 !important;
+        min-width:unset !important;
         table-layout:fixed !important;
         border-collapse:collapse !important;
-        border-spacing:0 !important;
-        background:#fff !important;
-        page-break-inside:auto !important;
     }
 
-    .medical-report-page .medical-report-table thead{
-        display:table-header-group !important;
-    }
-
-    .medical-report-page .medical-report-table tr{
-        page-break-inside:avoid !important;
-        break-inside:avoid !important;
-    }
-
-    .medical-report-page .medical-report-table thead th{
-        background:#eef4ff !important;
-        color:#0f172a !important;
-        border:1px solid #111827 !important;
-        text-align:center !important;
-        vertical-align:middle !important;
-        padding:3px 3px !important;
-        font-size:10px !important;
-        font-weight:900 !important;
-        line-height:1.08 !important;
-        white-space:normal !important;
-    }
-
-    .medical-report-page .medical-report-table tbody td{
-        border:1px solid #111827 !important;
-        padding:3px 3px !important;
-        font-size:9.8px !important;
-        font-weight:600 !important;
-        color:#111827 !important;
-        line-height:1.08 !important;
-        vertical-align:middle !important;
-        white-space:normal !important;
+    .report-table th,
+    .report-table td{
+        font-size:10.8px !important;
+        padding:4px 4px !important;
+        line-height:1.2 !important;
         word-break:break-word !important;
-        overflow-wrap:anywhere !important;
-        text-align:center !important;
+        white-space:normal !important;
     }
 
-    .medical-report-page .medical-report-table tbody tr:nth-child(even){
-        background:#fcfdff !important;
+    .date-col{
+        width:95px !important;
+        min-width:95px !important;
+        white-space:nowrap !important;
     }
 
-    .medical-report-page .medical-report-empty{
-        border:1px dashed #94a3b8 !important;
-        border-radius:0 !important;
-        padding:14px !important;
-        text-align:center !important;
-        color:#475569 !important;
+    .disease-col{
+        width:105px !important;
+    }
+
+    .illness-col{
+        width:135px !important;
+    }
+
+    .treatment-col{
+        width:135px !important;
+    }
+
+    .refer-col{
+        width:70px !important;
+    }
+
+    .diagnosis-col{
+        width:115px !important;
+    }
+
+    .teacher-col{
+        width:80px !important;
+    }
+
+  .remark-col{
+    width:90px !important;
+}
+
+    .medical-status{
+        min-width:auto !important;
+        padding:1px 4px !important;
+        font-size:9.5px !important;
+        border-radius:8px !important;
+    }
+
+    .signature-wrap{
+        margin-top:16px !important;
+        page-break-inside:avoid !important;
+    }
+
+    .signature-box{
+        width:250px !important;
         font-size:12px !important;
     }
+
+    .signature-line{
+        height:28px !important;
+        padding-top:16px !important;
+    }
 }
-    </style>
+</style>
 
-    <div class="medical-report-shell">
-        <div class="medical-report-body">
+<div class="medical-report-page">
+    <div class="report-page">
 
-            <div class="medical-report-toolbar">
-                <div class="medical-report-toolbar-left">
-                    <a href="{{ route('medical.add', $client->id) }}" class="medical-btn medical-btn-back">
-                        <i class="bi bi-arrow-left-circle"></i>
-                        <span>กลับหน้าหลัก</span>
-                    </a>
+        <div class="report-toolbar">
+            <div>
+                <a href="{{ route('medical.add', $client->id) }}" class="report-btn">
+                    ← กลับ
+                </a>
+            </div>
+
+            <div>
+                <button onclick="window.print()" type="button" class="report-btn report-btn-primary">
+                    🖨 พิมพ์
+                </button>
+            </div>
+        </div>
+
+        <div class="report-wrap">
+
+            <div class="report-header">
+                <h1 class="report-title">รายงานการรักษาพยาบาลในหน่วยงาน</h1>
+                <p class="report-subtitle">
+                    แสดงข้อมูลสุขภาพ การรักษา การส่งต่อ และการนัดหมายของผู้รับบริการ
+                </p>
+            </div>
+
+            <div class="client-info">
+                <div class="client-info-item">
+                    <span class="client-info-label">ชื่อผู้รับบริการ:</span>
+                    {{ $client->fullname ?? $client->full_name ?? '-' }}
                 </div>
 
-                <div class="medical-report-toolbar-right">
-                    <button onclick="window.print()" type="button" class="medical-btn medical-btn-print">
-                        <i class="bi bi-printer"></i>
-                        <span>พิมพ์รายงาน</span>
-                    </button>
+                <div class="client-info-item">
+                    <span class="client-info-label">อายุ:</span>
+                    {{ $client->age ?? $age ?? '-' }} ปี
                 </div>
             </div>
 
-            <div class="medical-report-header">
-                <h1 class="medical-report-title">รายงานการรักษาพยาบาลในหน่วยงาน</h1>
-                <div class="medical-report-subtitle">
-                    แสดงข้อมูลสุขภาพ การรักษา การส่งต่อ และการนัดหมายของผู้รับบริการในรูปแบบที่อ่านง่ายและพร้อมสำหรับการพิมพ์
-                </div>
-            </div>
-
-            <div class="medical-report-meta">
-                <div class="medical-report-meta-item">
-                    <span class="medical-report-meta-label">ชื่อ-สกุล :</span>
-                    <span class="medical-report-meta-value">{{ $client->fullname ?? '-' }}</span>
+            <div class="report-meta">
+                <div>
+                    <strong>ประเภทรายงาน:</strong>
+                    รายงานการรักษาพยาบาล
                 </div>
 
-                <div class="medical-report-meta-item">
-                    <span class="medical-report-meta-label">อายุ :</span>
-                    <span class="medical-report-meta-value">{{ $client->age ?? '-' }} ปี</span>
-                </div>
-
-                <div class="medical-report-meta-item">
-                    <span class="medical-report-meta-label">จำนวนรายการ :</span>
-                    <span class="medical-report-meta-value">{{ $medicals->count() }} รายการ</span>
+                <div>
+                    <strong>จำนวน:</strong>
+                    {{ $medicals->count() }} รายการ
                 </div>
             </div>
 
             @if($medicals->isNotEmpty())
-                <div class="medical-report-table-wrap">
-                    <table class="table medical-report-table">
+                @php
+                    $hasDoctorVisit = $medicals->contains(function ($item) {
+                        return $item->refer === 'พบแพทย์';
+                    });
+                @endphp
+
+                <div class="table-wrap">
+                    <table class="report-table">
                         <thead>
                             <tr>
-                                <th style="width: 120px;">วันที่รักษา</th>
-                                <th style="min-width: 180px;">ชื่อโรค</th>
-                                <th style="min-width: 220px;">อาการเจ็บป่วย</th>
-                                <th style="min-width: 220px;">การรักษา</th>
-                                <th style="width: 120px;">การส่งต่อ</th>
-                                <th style="min-width: 180px;">การวินิจฉัย</th>
-                                <th style="width: 120px;">วันนัด</th>
-                                <th style="min-width: 160px;">ครูผู้ดูแล</th>
-                                <th style="min-width: 220px;">หมายเหตุ</th>
+                                <th class="date-col">วันที่รักษา</th>
+                                <th class="disease-col">ชื่อโรค</th>
+                                <th class="illness-col">อาการเจ็บป่วย</th>
+                                <th class="treatment-col">การรักษา</th>
+                                <th class="refer-col">การส่งต่อ</th>
+
+                                @if($hasDoctorVisit)
+                                    <th class="diagnosis-col">การวินิจฉัย</th>
+                                    <th class="date-col">วันนัด</th>
+                                @endif
+
+                                <th class="teacher-col">ครูผู้ดูแล</th>
+                                <th class="remark-col">หมายเหตุ</th>
                             </tr>
                         </thead>
+
                         <tbody>
-                            @foreach($medicals as $key => $item)
+                            @foreach($medicals as $item)
+                                @php
+                                    $isDoctorVisit = $item->refer === 'พบแพทย์';
+                                @endphp
+
                                 <tr>
-                                   
-                                    <td class="text-center">{{ thaiDateMedicalReport($item->medical_date) }}</td>
-                                    <td>{{ $item->disease_name ?? '-' }}</td>
-                                    <td>{{ $item->illness ?? '-' }}</td>
-                                    <td>{{ $item->treatment ?? '-' }}</td>
                                     <td class="text-center">
-                                        @if($item->refer === 'พบแพทย์')
-                                            <span class="medical-status medical-status--yes">{{ $item->refer }}</span>
+                                        {{ thaiDateMedicalReport($item->medical_date) }}
+                                    </td>
+
+                                    <td>{{ $item->disease_name ?: '-' }}</td>
+                                    <td>{{ $item->illness ?: '-' }}</td>
+                                    <td>{{ $item->treatment ?: '-' }}</td>
+
+                                    <td class="text-center">
+                                        @if($isDoctorVisit)
+                                            <span class="medical-status medical-status--yes">
+                                                พบแพทย์
+                                            </span>
                                         @else
-                                            <span class="medical-status medical-status--no">{{ $item->refer ?? '-' }}</span>
+                                            <span class="medical-status medical-status--no">
+                                                {{ $item->refer ?: 'ไม่พบแพทย์' }}
+                                            </span>
                                         @endif
                                     </td>
-                                    <td>{{ $item->diagnosis ?? '-' }}</td>
-                                    <td class="text-center">{{ thaiDateMedicalReport($item->appt_date) }}</td>
-                                    <td>{{ $item->teacher ?? '-' }}</td>
-                                    <td>{{ $item->remark ?? '-' }}</td>
+
+                                    @if($hasDoctorVisit)
+                                        <td>
+                                            @if($isDoctorVisit)
+                                                {{ $item->diagnosis ?: '-' }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+
+                                        <td class="text-center">
+                                            @if($isDoctorVisit)
+                                                {{ thaiDateMedicalReport($item->appt_date) }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                    @endif
+
+                                    <td>{{ $item->teacher ?: '-' }}</td>
+                                    <td>{{ $item->remark ?: '-' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
             @else
-                <div class="medical-report-empty">
-                    <i class="bi bi-inbox"></i>
-                    <div>ไม่มีข้อมูลรายงานการรักษาพยาบาล</div>
+                <div class="empty-state">
+                    ไม่มีข้อมูลรายงานการรักษาพยาบาล
                 </div>
             @endif
+
+            <div class="signature-wrap">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div>ผู้จัดทำรายงาน</div>
+                </div>
+            </div>
 
         </div>
     </div>

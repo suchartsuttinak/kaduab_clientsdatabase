@@ -53,7 +53,7 @@ class AccidentController extends Controller
             'description' => 'วันที่เกิดเหตุ: ' . ($validated['incident_date'] ?? '-') .
                             ' | สถานที่: ' . ($validated['location'] ?? '-') .
                             ' | การรักษา: ' . ($validated['treat_no'] ?? '-'),
-            'occurred_at' => now(),
+             'occurred_at' => $validated['incident_date'] ?? now('Asia/Bangkok'),
             'icon'        => 'bi-bandaid',
             'url'         => route('accident.add', $validated['client_id']),
         ]);
@@ -89,48 +89,48 @@ class AccidentController extends Controller
         ))->with('client_id', $client->id);
     }
 
-    public function AccidentUpdate(Request $request, $id)
-    {
-        $accident = Accident::where('id', $id)
-            ->whereHas('client', function ($q) {
-                $q->forUser(auth()->user());
-            })
-            ->firstOrFail();
+   public function AccidentUpdate(Request $request, $id)
+{
+    $accident = Accident::where('id', $id)
+        ->whereHas('client', function ($q) {
+            $q->forUser(auth()->user());
+        })
+        ->firstOrFail();
 
-        $validated = $this->validateAccident($request);
+    $validated = $this->validateAccident($request);
 
-        if (($validated['treat_no'] ?? null) === 'ไม่พบแพทย์') {
-            $validated['hospital'] = null;
-            $validated['diagnosis'] = null;
-            $validated['appointment'] = null;
-        }
-
-        $accident->update($validated);
-
-                CaseActivity::where('client_id', $accident->client_id)
-                ->where('module', 'accident')
-                ->delete();
-
-                CaseActivity::record([
-                'client_id'   => $accident->client_id,
-                'module'      => 'accident',
-                'type'        => 'warning',
-                'title'       => 'แก้ไขการบาดเจ็บ',
-                'description' => 'วันที่เกิดเหตุ: ' . ($validated['incident_date'] ?? '-') .
-                                ' | สถานที่: ' . ($validated['location'] ?? '-') .
-                                ' | การรักษา: ' . ($validated['treat_no'] ?? '-'),
-                'occurred_at' => now(),
-                'icon'        => 'bi-bandaid',
-                'url'         => route('accident.add', $accident->client_id),
-            ]);
-
-        return redirect()
-            ->route('accident.add', $accident->client_id)
-            ->with([
-                'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว',
-                'alert-type' => 'success',
-            ]);
+    if (($validated['treat_no'] ?? null) === 'ไม่พบแพทย์') {
+        $validated['hospital'] = null;
+        $validated['diagnosis'] = null;
+        $validated['appointment'] = null;
     }
+
+    $accident->update($validated);
+
+    CaseActivity::where('client_id', $accident->client_id)
+        ->where('module', 'accident')
+        ->delete();
+
+    CaseActivity::record([
+        'client_id'   => $accident->client_id,
+        'module'      => 'accident',
+        'type'        => 'warning',
+        'title'       => 'แก้ไขการบาดเจ็บ',
+        'description' => 'วันที่เกิดเหตุ: ' . ($validated['incident_date'] ?? '-') .
+                        ' | สถานที่: ' . ($validated['location'] ?? '-') .
+                        ' | การรักษา: ' . ($validated['treat_no'] ?? '-'),
+        'occurred_at' => $validated['incident_date'] ?? now('Asia/Bangkok'),
+        'icon'        => 'bi-bandaid',
+        'url'         => route('accident.add', $accident->client_id),
+    ]);
+
+    return redirect()
+        ->route('accident.add', $accident->client_id)
+        ->with([
+            'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว',
+            'alert-type' => 'success',
+        ]);
+}
 
     public function AccidentDelete($id)
     {

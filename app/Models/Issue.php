@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Issue extends Model
 {
-     protected $fillable = ['fullname', 'phone', 'subject'];
-
+    protected $fillable = [
+    'fullname',
+    'phone',
+    'subject',
+    'is_read',
+    'read_at',
+];
 }

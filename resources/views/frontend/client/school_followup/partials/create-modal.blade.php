@@ -56,13 +56,16 @@
 
                                 <div class="form-side-body">
                                     <div class="row g-3">
-                                        <div class="col-md-4">
-                                            <label class="form-label form-label-modern">วันที่ติดตาม <span class="text-danger">*</span></label>
+                                       <div class="col-md-4">
+                                            <label class="form-label form-label-modern">
+                                                วันที่ติดตาม <span class="text-danger">*</span>
+                                            </label>
                                             <input type="date"
-                                                   name="follow_date"
-                                                   class="form-control form-control-modern @error('follow_date') is-invalid @enderror"
-                                                   value="{{ old('follow_date', Carbon\Carbon::now()->format('Y-m-d')) }}"
-                                                   required>
+                                                name="follow_date"
+                                                class="form-control form-control-modern @error('follow_date') is-invalid @enderror"
+                                                value="{{ old('follow_date', now('Asia/Bangkok')->toDateString()) }}"
+                                                max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                                required>
                                             @error('follow_date')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror

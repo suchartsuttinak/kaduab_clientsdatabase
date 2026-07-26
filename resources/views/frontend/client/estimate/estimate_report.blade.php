@@ -400,10 +400,17 @@ body{
                             </div>
                         </div>
 
-                        <div class="estimate-report-line full">
-                            <div class="estimate-report-label">เนื่องจาก</div>
-                            <div class="estimate-report-value text-block">{{ $estimate->income_reason ?: '-' }}</div>
-                        </div>
+                      @if(
+                            $estimate->income_sufficiency === 'ไม่เพียงพอ'
+                            && !empty($estimate->income_reason)
+                        )
+                            <div class="estimate-report-line full">
+                                <div class="estimate-report-label">เนื่องจาก</div>
+                                <div class="estimate-report-value text-block">
+                                    {{ $estimate->income_reason }}
+                                </div>
+                            </div>
+                        @endif
 
                         <div class="estimate-report-line full">
                             <div class="estimate-report-label">หนี้สิน (ถ้ามี)</div>

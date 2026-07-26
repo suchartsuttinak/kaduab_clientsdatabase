@@ -37,8 +37,19 @@ class FactfindingController extends Controller
         {
             $validated = $request->validate([
                 'client_id'   => 'required|integer',
-                'date'        => 'required|date',
-                'receive_date'=> 'required|date',
+
+               'date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
+                'receive_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
                 'fact_name'   => 'required|string|max:255',
 
                 'appearance'  => 'nullable|string',
@@ -80,8 +91,9 @@ class FactfindingController extends Controller
                 'date.required'      => 'กรุณากรอกวันที่นำส่ง',
                 'date.date'          => 'รูปแบบวันที่ไม่ถูกต้อง',
 
-                'receive_date.required' => 'กรุณากรอกวันที่บันทึกข้อมูล',
-                'receive_date.date'     => 'รูปแบบวันที่รับบริการไม่ถูกต้อง',
+                'receive_date.required' => 'กรุณากรอกวันที่บันทึก',
+                'receive_date.date' => 'รูปแบบวันที่บันทึกไม่ถูกต้อง',
+                'receive_date.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน',
 
                 'fact_name.required' => 'กรุณากรอกชื่อผู้นำส่ง',
                 'fact_name.string'   => 'ชื่อข้อเท็จจริงต้องเป็นข้อความ',
@@ -180,8 +192,20 @@ class FactfindingController extends Controller
     {
         $validated = $request->validate([
             'client_id'   => 'required|integer',
-            'date'        => 'required|date',
-            'receive_date'=> 'required|date',
+
+            'date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
+                'receive_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+
+
             'fact_name'   => 'required|string|max:255',
 
             'appearance'  => 'nullable|string',
@@ -224,8 +248,10 @@ class FactfindingController extends Controller
             'date.required'      => 'กรุณากรอกวันที่นำส่ง',
             'date.date'          => 'รูปแบบวันที่ไม่ถูกต้อง',
 
-            'receive_date.required' => 'กรุณากรอกวันที่บันทึกข้อมูล',
-            'receive_date.date'     => 'รูปแบบวันที่รับบริการไม่ถูกต้อง',
+            'receive_date.required' => 'กรุณากรอกวันที่บันทึก',
+            'receive_date.date' => 'รูปแบบวันที่บันทึกไม่ถูกต้อง',
+            'receive_date.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน',
+
 
             'fact_name.required' => 'กรุณากรอกชื่อผู้นำส่ง',
             'fact_name.string'   => 'ชื่อข้อเท็จจริงต้องเป็นข้อความ',

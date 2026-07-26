@@ -499,10 +499,21 @@
                         <div class="ff-card-body">
                             <div class="ff-form-grid">
                                 <div class="ff-field ff-span-4">
-                                    <label for="date" class="ff-label">วันที่นำส่ง <span class="ff-required">*</span></label>
-                                    <input type="date" name="date" id="date" class="form-control ff-input @error('date') is-invalid @enderror" value="{{ old('date', $factFinding->date ?? '') }}">
+                                    <label for="date" class="ff-label">
+                                        วันที่นำส่ง <span class="ff-required">*</span>
+                                    </label>
+
+                                    <input type="date"
+                                        name="date"
+                                        id="date"
+                                        class="form-control ff-input @error('date') is-invalid @enderror"
+                                        value="{{ old('date', $factFinding->date ?? '') }}"
+                                        max="{{ now('Asia/Bangkok')->toDateString() }}">
+
                                     @error('date')
-                                        <span class="ff-error" id="date-error">{{ $message }}</span>
+                                        <span class="ff-error" id="date-error">
+                                            {{ $message }}
+                                        </span>
                                     @enderror
                                 </div>
 
@@ -801,12 +812,23 @@
                                 </div>
 
                                 <div class="ff-field ff-span-4">
-                                    <label for="receive_date" class="ff-label">วันที่บันทึก <span class="ff-required">*</span></label>
-                                    <input type="date" name="receive_date" id="receive_date" class="form-control ff-input @error('receive_date') is-invalid @enderror" value="{{ old('receive_date', $factFinding->receive_date ?? '') }}">
-                                    @error('receive_date')
-                                        <span class="ff-error" id="receive_date-error">{{ $message }}</span>
-                                    @enderror
-                                </div>
+                                        <label for="receive_date" class="ff-label">
+                                            วันที่บันทึก <span class="ff-required">*</span>
+                                        </label>
+
+                                        <input type="date"
+                                            name="receive_date"
+                                            id="receive_date"
+                                            class="form-control ff-input @error('receive_date') is-invalid @enderror"
+                                            value="{{ old('receive_date', $factFinding->receive_date ?? '') }}"
+                                            max="{{ now('Asia/Bangkok')->toDateString() }}">
+
+                                        @error('receive_date')
+                                            <span class="ff-error" id="receive_date-error">
+                                                {{ $message }}
+                                            </span>
+                                        @enderror
+                                    </div>
 
                                 <div class="ff-field ff-span-8">
                                     <label for="recorder" class="ff-label">ชื่อผู้บันทึก <span class="ff-required">*</span></label>

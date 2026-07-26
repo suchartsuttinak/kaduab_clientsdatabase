@@ -24,9 +24,11 @@
                             <div class="row g-3">
                                 <div class="col-12 col-md-4 col-lg-3">
                                     <label class="form-label required">วันที่</label>
-                                    <input type="date" name="medical_date"
-                                           class="form-control @error('medical_date') is-invalid @enderror"
-                                           value="{{ old('medical_date') }}">
+                                   <input type="date" name="medical_date"
+                                    class="form-control @error('medical_date') is-invalid @enderror"
+                                    value="{{ old('medical_date') }}"
+                                    max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                    required>
                                     @error('medical_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
