@@ -31,7 +31,7 @@
                 @csrf
 
                 <select name="type" class="w-full border rounded-xl px-4 py-3">
-                    <option value="history">ประวัติองค์กร</option>
+                    <option value="history">ประความเป็นมา</option>
                     <option value="objective">วัตถุประสงค์</option>
                     <option value="mission">พันธกิจ</option>
                 </select>

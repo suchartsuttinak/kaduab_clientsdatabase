@@ -54,6 +54,21 @@ public_report.blade.php
 report.blade.php
 ----------------------------------------------
 
+
+
+***************************
+//ข้อมูลขอรับทุนการศึกษา http://127.0.0.1:8000/scholarship/children
+
+Controller -> lading
+ScholarshipChildController
+--------------------
+views -> landing.scholarship.children.index.blade.php
+-----------------------------------------------------
+
+
+
+
+
 //สิ้นสุด โฟล์ หน้า Landing Pages
 ***********************************
 
