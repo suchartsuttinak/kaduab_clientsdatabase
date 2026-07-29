@@ -562,6 +562,7 @@ use Illuminate\Support\Facades\Route;
         require __DIR__.'/backend/scholarshipChild.php';
         require __DIR__.'/backend/citizen.php';
         require __DIR__.'/backend/citizenship.php';
+        require __DIR__.'/backend/house.php';
         
 
 

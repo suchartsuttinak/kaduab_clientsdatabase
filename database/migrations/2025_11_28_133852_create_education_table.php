@@ -1,11 +1,23 @@
 
-// ❌ ไม่ใช้แล้ว ระบบใช้ education_levels แทน
-public function up(): void
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+
+return new class extends Migration
 {
-    // ❌ ปิดไปเลย
-    // Schema::create('education', function (Blueprint $table) {
-    //     $table->id();
-    //     $table->string('education_name');
-    //     $table->timestamps();
-    // });
-}
+    /**
+     * ไม่ดำเนินการ เนื่องจากระบบใช้ตาราง education_levels แทน
+     */
+    public function up(): void
+    {
+        // ไม่ต้องสร้างตาราง education
+    }
+
+    /**
+     * ไม่มีสิ่งที่ต้องย้อนกลับ
+     */
+    public function down(): void
+    {
+        // ไม่ต้องดำเนินการ
+    }
+};

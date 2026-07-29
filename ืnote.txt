@@ -66,7 +66,69 @@ views -> landing.scholarship.children.index.blade.php
 -----------------------------------------------------
 
 
+*********************************
+เพิ่มปุ่มแก้ไขรายการค่าใช้จ่าย
 
+ไฟล์ที่ต้องแทนที่:
+resources/views/landing/scholarship/children/index.blade.php
+
+สิ่งที่เพิ่ม:
+- คอลัมน์ “จัดการ” ในประวัติรายการค่าใช้จ่าย
+- ปุ่มแก้ไขแต่ละรายการ
+- Modal แก้ไขวันที่ ภาคเรียน รายการ จำนวนเงิน และหมายเหตุ
+- คำนวณยอดรวมใหม่ทันที
+- แสดงไฟล์เดิมและเลือกไฟล์ที่ต้องการลบได้
+- เพิ่ม PDF เอกสารค่าใช้จ่ายและผลการเรียนใหม่ได้
+- เมื่อ Validation ไม่ผ่าน แสดง SweetAlert 3 วินาที แล้วเปิด Modal แก้ไขกลับมา
+- รองรับ Desktop, Notebook, Tablet และ Mobile
+
+ข้อกำหนดก่อนใช้งาน:
+- ต้องมี Route scholarship.children.expenses.update
+- Controller ต้องมีเมธอด updateExpense()
+- Controller ต้อง import Illuminate\Support\Facades\Validator
+
+หลังแทนที่ไฟล์ รัน:
+php artisan optimize:clear
+php artisan view:cache
+
+จากนั้นเปิด:
+http://127.0.0.1:8000/scholarship/children
+
+กด Ctrl + F5
+
+ระบบสรุปยอดค่าใช้จ่ายทุนการศึกษา แยกตามปีการศึกษา
+
+ไฟล์ที่ต้องแทนที่
+1. ScholarshipChildController_year_totals.php
+   เปลี่ยนชื่อเป็น ScholarshipChildController.php
+   วางที่:
+   app/Http/Controllers/Landing/ScholarshipChildController.php
+
+2. index_year_totals.blade.php
+   เปลี่ยนชื่อเป็น index.blade.php
+   วางที่:
+   resources/views/landing/scholarship/children/index.blade.php
+
+สิ่งที่เพิ่ม
+- ยอดรวมค่าใช้จ่ายทุกปีการศึกษาของระบบ
+- ยอดรวมแยกตามปีการศึกษา
+- จำนวนครั้งที่บันทึกและจำนวนเด็กที่มีค่าใช้จ่ายในแต่ละปี
+- ในรายละเอียดเด็ก: ยอดรวมทุกปี และยอดแยกแต่ละปี
+- แยกยอดภาคเรียนที่ 1 และภาคเรียนที่ 2
+- ประวัติค่าใช้จ่ายจัดกลุ่มตามปี พร้อมยอดรวมปีและยอดรวมทั้งหมด
+- แก้ Modal รายละเอียดซ้ำ และคืน Modal แก้ไขข้อมูลให้เหลืออย่างละหนึ่งชุด
+
+หลังวางไฟล์ รัน:
+php -l app\Http\Controllers\Landing\ScholarshipChildController.php
+php artisan optimize:clear
+php artisan view:cache
+
+จากนั้นเปิดหน้า:
+http://127.0.0.1:8000/scholarship/children
+
+กด Ctrl + F5
+
+****************************
 
 
 //สิ้นสุด โฟล์ หน้า Landing Pages
@@ -1147,3 +1209,14 @@ Export Excel (ไว้เพิ่มภายหลัง)
 
 ----------------------------------------------------------------------------
 git
+
+
+
+
+***********************
+*********************
+
+
+
+*****************************
+*************

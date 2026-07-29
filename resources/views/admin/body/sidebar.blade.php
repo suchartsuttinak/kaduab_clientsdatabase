@@ -35,6 +35,7 @@
     $isMasterMenu =
         Request::routeIs('institution.*') ||
         Request::routeIs('subject.*') ||
+        Request::routeIs('house.*') ||
         Request::routeIs('education.*') ||
         Request::routeIs('semester.*') ||
         Request::routeIs('psycho.*') ||
@@ -404,6 +405,7 @@
                             <ul class="nav-second-level">
                                 <li><a href="{{ route('institution.all') }}" class="tp-link {{ Request::routeIs('institution.*') ? 'active' : '' }}">รายการสถานศึกษา</a></li>
                                 <li><a href="{{ route('subject.show') }}" class="tp-link {{ Request::routeIs('subject.*') ? 'active' : '' }}">รายการวิชาเรียน</a></li>
+                                <li><a href="{{ route('house.show') }}"class="tp-link {{ Request::routeIs('house.*') ? 'active' : '' }}">รายการบ้านพัก</a></li>
                                 <li><a href="{{ route('education.show') }}" class="tp-link {{ Request::routeIs('education.*') ? 'active' : '' }}">รายการระดับการศึกษา</a></li>
                                 <li><a href="{{ route('semester.show') }}" class="tp-link {{ Request::routeIs('semester.*') ? 'active' : '' }}">รายการปีการศึกษา</a></li>
                                 <li><a href="{{ route('psycho.show') }}" class="tp-link {{ Request::routeIs('psycho.*') ? 'active' : '' }}">รายการโรคทางจิตเวช</a></li>

@@ -1,0 +1,1234 @@
+ช่วยฉันปรับปรุงระบบ ขอรับทุนการศึกษาเด็ก
+1 ในหน้า http://127.0.0.1:8000/scholarship/children ช่วยเพิ่มเติมสถานะการได้รับทุน คือ ได้รับทุน , รอการพิจารณา เมื่อสถานะได้รับทุน ให้นำข้อมูลเด็กในหน้า scholarship-children/public-report ออก
+2. เมื่อสถานะได้รับทุน ให้เพิ่มปุ่มบันทึกข้อมูล ให้ปุ่มทำงาน แต่ถ้าอยู่ในสถานะรอการพิจารณา ให้ซ่อนปุ่ม (เพิ่มในส่วนตาราง หัวข้อจัดการ)
+3 ปุ่มดังกล่าวจะไปที่หน้าบันทึกข้อมูล รายการค่าใช้จ่าย มีข้อมูล ดังนี้
+        3.1 วันที่บันทึก
+         3.2 ภาคเรียนที่ (ให้เป็นตัวเลข 1 2 ) โดยดึงปีการศึกษาของตารางเข้ามาใส่ไว้เพิ่ม
+         3.3 รายการ ให้ทำเป็น select ดังนี้  ทุนการศึกษา , ค่าเทอม , ค่าอุปกรณ์การเรียน, ค่าอาหาร, ค่าใช้จ่ายอื่น ๆ
+        3.4    จำนวนเงิน (บาท)  
+         3.5 คำนวณยอดรวมให้ด้วยครับ
+4. ทำเป็น modal
+5. ให้ทำเป็นตารางเลือกเช่นเดียวกับ http://127.0.0.1:8000/clients/206/help-sessions/create
+6. ช่วยออกแบบให้ผมด้วยนะครับ ทำให้ดีที่สุดระบบสากล 
+7. ช่วยทำว่าปัจจุบันอยู่ระหว่างรอการพิจารณา  อนุมัติทุนการศึกษา  ไม่ผ่านการอนุมัติ
+
+
+<?php
+
+namespace App\Http\Controllers\Landing;
+
+use App\Http\Controllers\Controller;
+use App\Models\ScholarshipChild;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+
+class ScholarshipChildController extends Controller
+{
+   protected function saveChildPhoto($file): string
+{
+    // =====================================================
+    // PATCH:
+    // path จริงสำหรับ shared hosting
+    // =====================================================
+    $destinationPath = public_path('upload/scholarship_children');
+
+    if (!File::exists($destinationPath)) {
+        File::makeDirectory($destinationPath, 0755, true);
+    }
+
+    $filename = Str::uuid()->toString() . '.jpg';
+
+    $relativePath = 'upload/scholarship_children/' . $filename;
+
+    $fullPath = public_path($relativePath);
+
+    $manager = new ImageManager(new Driver());
+
+    $image = $manager->read($file->getRealPath());
+
+    // =====================================================
+    // PATCH:
+    // หมุนภาพอัตโนมัติจากมือถือ
+    // =====================================================
+    $image = $image->orient();
+
+    // =====================================================
+    // PATCH:
+    // ลดขนาดภาพ
+    // =====================================================
+    $image->scaleDown(width: 1000);
+
+    // =====================================================
+    // PATCH:
+    // Progressive JPEG
+    // โหลดไวขึ้นบนเว็บจริง
+    // =====================================================
+    $encoded = $image->toJpeg(
+        quality: 70,
+        progressive: true
+    );
+
+    $encoded->save($fullPath);
+
+    return $relativePath;
+}
+
+    protected function deleteChildPhoto(?string $path): void
+    {
+        if (!$path) {
+            return;
+        }
+
+        $fullPath = str_starts_with($path, 'upload/')
+            ? public_path($path)
+            : public_path('storage/' . $path);
+
+        if (File::exists($fullPath)) {
+            File::delete($fullPath);
+        }
+    }
+
+    public function index(Request $request)
+    {
+        $academicYear = $request->academic_year;
+        $keyword = $request->keyword;
+
+        $years = ScholarshipChild::select('academic_year')
+            ->whereNotNull('academic_year')
+            ->distinct()
+            ->orderByDesc('academic_year')
+            ->pluck('academic_year');
+
+        $children = ScholarshipChild::query()
+            ->when($keyword, function ($q) use ($keyword) {
+                $q->where(function ($sub) use ($keyword) {
+                    $sub->where('first_name', 'like', '%' . $keyword . '%')
+                        ->orWhere('last_name', 'like', '%' . $keyword . '%');
+                });
+            })
+            ->when($academicYear, function ($query) use ($academicYear) {
+                $query->where('academic_year', $academicYear);
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('landing.scholarship.children.index', compact(
+            'children',
+            'years',
+            'academicYear',
+            'keyword'
+        ));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'first_name'      => 'required|string|max:255',
+            'last_name'       => 'required|string|max:255',
+            'gender'          => 'nullable|in:male,female',
+            'age'             => 'nullable|integer|min:1|max:120',
+            'education_level' => 'nullable|string|max:255',
+            'school_name'     => 'nullable|string|max:255',
+            'academic_year'   => ['required', 'regex:/^[0-9]{4}$/'],
+            'current_address' => 'nullable|string',
+            'guardian_name'   => 'nullable|string|max:255',
+            'phone'           => 'nullable|string|max:30',
+            'reason'          => 'nullable|string',
+            'help_needed'     => 'nullable|string',
+            'more_detail'     => 'nullable|string',
+            'photo'           => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
+        ], [
+            'academic_year.required' => 'กรุณากรอกปีการศึกษาที่ขอรับทุน',
+            'academic_year.regex'    => 'ปีการศึกษาต้องเป็นตัวเลข พ.ศ. 4 หลักเท่านั้น เช่น 2568',
+        ]);
+
+        $data = $request->except(['photo', '_token', '_method']);
+
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $this->saveChildPhoto($request->file('photo'));
+        }
+
+        ScholarshipChild::create($data);
+
+        return redirect()
+            ->route('scholarship.children.index')
+            ->with('success', 'บันทึกข้อมูลผู้ขอรับทุนเรียบร้อยแล้ว');
+    }
+
+    public function update(Request $request, $id)
+    {
+        $child = ScholarshipChild::findOrFail($id);
+
+        $request->validate([
+            'first_name'      => 'required|string|max:255',
+            'last_name'       => 'required|string|max:255',
+            'gender'          => 'nullable|in:male,female',
+            'age'             => 'nullable|integer|min:1|max:120',
+            'education_level' => 'nullable|string|max:255',
+            'school_name'     => 'nullable|string|max:255',
+            'academic_year'   => ['required', 'regex:/^[0-9]{4}$/'],
+            'current_address' => 'nullable|string',
+            'guardian_name'   => 'nullable|string|max:255',
+            'phone'           => 'nullable|string|max:30',
+            'reason'          => 'nullable|string',
+            'help_needed'     => 'nullable|string',
+            'more_detail'     => 'nullable|string',
+            'photo'           => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
+        ], [
+            'academic_year.required' => 'กรุณากรอกปีการศึกษาที่ขอรับทุน',
+            'academic_year.regex'    => 'ปีการศึกษาต้องเป็นตัวเลข พ.ศ. 4 หลักเท่านั้น เช่น 2568',
+            'gender.in'              => 'กรุณาเลือกเพศให้ถูกต้อง',
+        ]);
+
+        $data = $request->except(['photo', '_token', '_method']);
+
+        if ($request->hasFile('photo')) {
+            $this->deleteChildPhoto($child->photo);
+            $data['photo'] = $this->saveChildPhoto($request->file('photo'));
+        }
+
+        $child->update($data);
+
+        return redirect()
+            ->route('scholarship.children.index')
+            ->with('success', 'แก้ไขข้อมูลเรียบร้อยแล้ว');
+    }
+
+    public function destroy($id)
+    {
+        $child = ScholarshipChild::findOrFail($id);
+
+        $this->deleteChildPhoto($child->photo);
+
+        $child->delete();
+
+        return redirect()
+            ->route('scholarship.children.index')
+            ->with('success', 'ลบข้อมูลเรียบร้อยแล้ว');
+    }
+
+    public function report(Request $request)
+    {
+        $academicYear = $request->academic_year;
+        $keyword = $request->keyword;
+
+        $years = ScholarshipChild::select('academic_year')
+            ->whereNotNull('academic_year')
+            ->distinct()
+            ->orderByDesc('academic_year')
+            ->pluck('academic_year');
+
+        $children = ScholarshipChild::query()
+            ->when($keyword, function ($q) use ($keyword) {
+                $q->where(function ($sub) use ($keyword) {
+                    $sub->where('first_name', 'like', '%' . $keyword . '%')
+                        ->orWhere('last_name', 'like', '%' . $keyword . '%');
+                });
+            })
+            ->when($academicYear, function ($query) use ($academicYear) {
+                $query->where('academic_year', $academicYear);
+            })
+            ->orderBy('academic_year', 'desc')
+            ->orderBy('first_name')
+            ->get();
+
+        return view('landing.scholarship.children.report', compact(
+            'children',
+            'years',
+            'academicYear',
+            'keyword'
+        ));
+    }
+
+    public function publicReport()
+    {
+        $latestYear = ScholarshipChild::query()
+            ->whereNotNull('academic_year')
+            ->max('academic_year');
+
+        $children = ScholarshipChild::query()
+            ->when($latestYear, function ($query) use ($latestYear) {
+                $query->where('academic_year', $latestYear);
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+
+        return view('landing.scholarship.children.public_report', [
+            'children'   => $children,
+            'latestYear' => $latestYear,
+        ]);
+    }
+} 
+
+
+
+
+คุณช่วยปรับมาให้ผมทั้งไฟล์เลยนะครับ
+ 
+
+Pasted text(685).txt
+Document
+Pasted text(686).txt
+Document
+Pasted text(687).txt
+Document
+Pasted text(688).txt
+Document
+เมื่ออนุมัติแล้ว ต้องมีปุ่มให้เลือกไปที่หน้ากรอกข้อมูลตามที่บอกไว้ด้วยนะครับ ช่วยฉันปรับปรุงระบบ ขอรับทุนการศึกษาเด็ก
+1 ในหน้า http://127.0.0.1:8000/scholarship/children ช่วยเพิ่มเติมสถานะการได้รับทุน คือ ได้รับทุน , รอการพิจารณา เมื่อสถานะได้รับทุน ให้นำข้อมูลเด็กในหน้า scholarship-children/public-report ออก
+2. เมื่อสถานะได้รับทุน ให้เพิ่มปุ่มบันทึกข้อมูล ให้ปุ่มทำงาน แต่ถ้าอยู่ในสถานะรอการพิจารณา ให้ซ่อนปุ่ม (เพิ่มในส่วนตาราง หัวข้อจัดการ)
+3 ปุ่มดังกล่าวจะไปที่หน้าบันทึกข้อมูล รายการค่าใช้จ่าย มีข้อมูล ดังนี้
+        3.1 วันที่บันทึก
+         3.2 ภาคเรียนที่ (ให้เป็นตัวเลข 1 2 ) โดยดึงปีการศึกษาของตารางเข้ามาใส่ไว้เพิ่ม
+         3.3 รายการ ให้ทำเป็น select ดังนี้  ทุนการศึกษา , ค่าเทอม , ค่าอุปกรณ์การเรียน, ค่าอาหาร, ค่าใช้จ่ายอื่น ๆ
+        3.4    จำนวนเงิน (บาท)  
+         3.5 คำนวณยอดรวมให้ด้วยครับ
+4. ทำเป็น modal
+5. ให้ทำเป็นตารางเลือกเช่นเดียวกับ http://127.0.0.1:8000/clients/206/help-sessions/create
+6. ช่วยออกแบบให้ผมด้วยนะครับ ทำให้ดีที่สุดระบบสากล 
+7. ช่วยทำว่าปัจจุบันอยู่ระหว่างรอการพิจารณา  อนุมัติทุนการศึกษา  ไม่ผ่านการอนุมัติ
+ 
+8. ช่วยเพิ่มปุ่มอัปไฟล์ pdf ได้ รายการค่าใช้จ่าย (สามารถเพิ่มได้หลายไฟล์ครับ)
+9. ปุ่ม ผลการเรียน สามารถเพิ่มได้หลายไฟล์ด้วยเช่นกันครับ
+Pasted code(456).php
+File
+เลือกแล้วแต่เปลี่ยนสถานะไม่ได้ ปรับให้ฉันด้วย 
+ข้อความมาแสดงหน้านี้ แต่หน้าฟอร์มยังไม่ถูกปิดเลยครับ 
+ไม่ถูกต้อง modal มันปิดแจ้งเตือนไว้ ผู้้ใช้มองไม่เห็น คุณควรออกแบบใหม่ จะให้ปิด ฟอร์มบันทึกไปก่อน หรือจะใช่  switalert แทน ลองดูที่ดีที่สุดด้วยครับ ถ้าเป็นแจ้งเตือนผมอยากให้หน่วงเวลา ประมาณ 3 วินาท่ี แล้วซ่อนไป
+Pasted text(689).txt
+Document
+ผมหาไฟล์ที่คุณบอกไม่พบตรวจสอบให้ผมด้วย 
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-3 text-center">
+                            @if($modalPhotoUrl)
+                                <img src="{{ $modalPhotoUrl }}"
+                                     class="img-fluid rounded-4 border"
+                                     style="max-height:260px;object-fit:cover;"
+                                     alt="{{ $child->first_name }} {{ $child->last_name }}">
+                            @else
+                                <div class="sc-avatar mx-auto"
+                                     style="width:180px;height:180px;font-size:54px;">
+                                    {{ mb_substr($child->first_name, 0, 1) }}
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="col-md-9">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="detail-box">
+                                        <div class="detail-label">ชื่อ - นามสกุล</div>
+                                        <div class="detail-value">
+                                            {{ $child->first_name }} {{ $child->last_name }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="detail-box">
+                                        <div class="detail-label">อายุ</div>
+                                        <div class="detail-value">{{ $child->age ?? '-' }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="detail-box">
+                                        <div class="detail-label">ปีการศึกษา</div>
+                                        <div class="detail-value">{{ $child->academic_year }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="detail-box">
+                                        <div class="detail-label">ระดับการศึกษา</div>
+                                        <div class="detail-value">
+                                            {{ $child->education_level ?? '-' }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="detail-box">
+                                        <div class="detail-label">ชื่อสถานศึกษา</div>
+                                        <div class="detail-value">
+                                            {{ $child->school_name ?? '-' }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="detail-box">
+                                        <div class="detail-label">ชื่อผู้ปกครอง</div>
+                                        <div class="detail-value">
+                                            {{ $child->guardian_name ?? '-' }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="detail-box">
+                                        <div class="detail-label">เบอร์โทรศัพท์</div>
+                                        <div class="detail-value">
+                                            {{ $child->phone ?? '-' }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="detail-box">
+                                        <div class="detail-label">สถานะการพิจารณา</div>
+                                        <div class="detail-value">
+                                            <span class="sc-status-badge {{ $child->status_badge_class }} mb-0">
+                                                {{ $child->status_label }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="detail-box">
+                                <div class="detail-label">ที่อยู่ปัจจุบัน</div>
+                                <div class="detail-value">
+                                    {{ $child->current_address ?? '-' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="detail-box">
+                                <div class="detail-label">สาเหตุที่ขอรับทุน</div>
+                                <div class="detail-value">{{ $child->reason ?? '-' }}</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="detail-box">
+                                <div class="detail-label">ความต้องการความช่วยเหลือ</div>
+                                <div class="detail-value">
+                                    {{ $child->help_needed ?? '-' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="detail-box">
+                                <div class="detail-label">รายละเอียดเพิ่มเติม</div>
+                                <div class="detail-value">
+                                    {{ $child->more_detail ?? '-' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+ช่วยออกแบบให้สวยงามที่สุด เรียบง่าย และมีข้อตามที่ปรับเปลี่ยนใหม่ด้วยครับ
+  @if($children->count() > 0)
+            <div class="sc-table-wrap">
+                <table class="table table-hover align-middle sc-table">
+                    <thead>
+                        <tr>
+                            <th width="70">ภาพ</th>
+                            <th>ชื่อ - นามสกุล</th>
+                            <th>อายุ</th>
+                            <th>ระดับการศึกษา</th>
+                            <th>สถานศึกษา</th>
+                            <th>ปีการศึกษา</th>
+                            <th>ผู้ปกครอง</th>
+                            <th>โทรศัพท์</th>
+                            <th>สถานะการพิจารณา</th>
+                            <th width="260" class="text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach($children as $child)
+                            @php
+                                $photoUrl = null;
+
+                                if ($child->photo) {
+                                    $photoUrl = str_starts_with($child->photo, 'upload/')
+                                        ? asset($child->photo)
+                                        : asset('storage/' . $child->photo);
+                                }
+                            @endphp
+
+                            <tr>
+                                <td>
+                                    @if($photoUrl)
+                                        <img src="{{ $photoUrl }}"
+                                             loading="lazy"
+                                             decoding="async"
+                                             class="sc-photo"
+                                             alt="{{ $child->first_name }} {{ $child->last_name }}">
+                                    @else
+                                        <div class="sc-avatar">
+                                            {{ mb_substr($child->first_name, 0, 1) }}
+                                        </div>
+                                    @endif
+                                </td>
+
+                                <td>
+                                    <div class="sc-name">
+                                        {{ $child->first_name }} {{ $child->last_name }}
+                                    </div>
+                                    <div class="sc-subtext">
+                                        {{ \Illuminate\Support\Str::limit($child->reason, 45) }}
+                                    </div>
+                                </td>
+
+                                <td>{{ $child->age ?? '-' }}</td>
+                                <td>{{ $child->education_level ?? '-' }}</td>
+                                <td>{{ $child->school_name ?? '-' }}</td>
+
+                                <td>
+                                    <span class="sc-year-badge">
+                                        {{ $child->academic_year }}
+                                    </span>
+                                </td>
+
+                                <td>{{ $child->guardian_name ?? '-' }}</td>
+                                <td>{{ $child->phone ?? '-' }}</td>
+
+                                <td>
+                                    <span class="sc-status-badge {{ $child->status_badge_class }}">
+                                        @if($child->scholarship_status === \App\Models\ScholarshipChild::STATUS_APPROVED)
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        @elseif($child->scholarship_status === \App\Models\ScholarshipChild::STATUS_REJECTED)
+                                            <i class="bi bi-x-circle-fill"></i>
+                                        @else
+                                            <i class="bi bi-clock-fill"></i>
+                                        @endif
+
+                                        {{ $child->status_label }}
+                                    </span>
+
+                                    <form action="{{ route('scholarship.children.status', $child->id) }}"
+                                          method="POST"
+                                          class="status-update-form">
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <select name="scholarship_status"
+                                                class="form-select form-select-sm sc-status-select status-select"
+                                                data-current="{{ $child->scholarship_status }}"
+                                                data-name="{{ $child->first_name }} {{ $child->last_name }}">
+                                            @foreach(\App\Models\ScholarshipChild::statusOptions() as $statusValue => $statusLabel)
+                                                <option value="{{ $statusValue }}"
+                                                    {{ $child->scholarship_status === $statusValue ? 'selected' : '' }}>
+                                                    {{ $statusLabel }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </form>
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="sc-action-buttons">
+                                      @if($child->isApproved())
+                                            <button type="button"
+                                                    class="btn btn-success btn-sm px-3"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#expenseModal{{ $child->id }}"
+                                                    title="บันทึกรายการค่าใช้จ่าย">
+                                                <i class="bi bi-cash-coin me-1"></i>
+                                                บันทึกค่าใช้จ่าย
+                                            </button>
+                                        @endif
+
+                                        <button type="button"
+                                                class="btn btn-info btn-sm text-white"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#showChildModal{{ $child->id }}"
+                                                title="ดูรายละเอียด">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+
+                                        <button type="button"
+                                                class="btn btn-warning btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editChildModal{{ $child->id }}"
+                                                title="แก้ไขข้อมูล">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+
+                                        <form action="{{ route('scholarship.children.delete', $child->id) }}"
+                                              method="POST"
+                                              class="d-inline delete-child-form"
+                                              data-name="{{ $child->first_name }} {{ $child->last_name }}">
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button type="submit"
+                                                    class="btn btn-danger btn-sm"
+                                                    title="ลบข้อมูล">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-3">
+                {{ $children->links() }}
+            </div>
+        @else
+            <div class="sc-empty">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                ไม่พบข้อมูลผู้ขอรับทุนตามเงื่อนไขที่เลือก
+            </div>
+        @endif
+
+
+ปุ่มช่อง จัดการไม่สวย ปรับให้สวยงามด้วย และให้ปรับขนาดได้ตามหน้าจอด้วยนะครับ 
+Pasted text(690).txt
+Document
+ช่วยปรับให้ผมทั้งชุดด้วยครับ 
+Pasted code(457).php
+File
+Pasted text (2)(100).txt
+Document
+การคำนวนยอดเงินให้คำนวนแต่ละปีการศึกษา และคำนวนยอดรวมทั้งหมดด้วยครับ ช่วยออกแบบให้ผมด้วยตามที่คุณเห็นควรทำให้ดีที่สุดนะครับ
+ส่วนที่บันทึกไปแล้วถ้าผิดพลาดจะแก้ไขอย่างไร ควรแก้ไขได้ 
+Worked for 1m 12s
+
+Route ครบและถูกต้องทั้ง 3 รายการแล้วครับ ต่อไปเพิ่มเมธอด แก้ไข และ ลบรายการค่าใช้จ่าย ใน Controller โดยไม่กระทบเมธอดบันทึกเดิม
+
+ขั้นตอนที่ 20: เพิ่มเมธอดแก้ไขและลบค่าใช้จ่าย
+
+เปิดไฟล์:
+
+app\Http\Controllers\Landing\ScholarshipChildController.php
+20.1 เพิ่ม Validator
+
+บริเวณด้านบนของไฟล์ ค้นหา:
+
+use Illuminate\Support\Facades\File;
+
+เพิ่มบรรทัดนี้ต่อท้าย:
+
+use Illuminate\Support\Facades\Validator;
+
+ส่วน use จะมีลักษณะดังนี้:
+
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+20.2 เพิ่มเมธอด updateExpense()
+
+ค้นหาเมธอดนี้:
+
+public function destroy(ScholarshipChild $child)
+
+วางโค้ดต่อไปนี้ ก่อน เมธอด destroy():
+
+/**
+ * แก้ไขรายการค่าใช้จ่ายที่เคยบันทึก
+ */
+public function updateExpense(
+    Request $request,
+    ScholarshipChild $child,
+    ScholarshipExpense $expense
+) {
+    /*
+    |--------------------------------------------------------------------------
+    | ตรวจสอบว่ารายการค่าใช้จ่ายเป็นของเด็กคนนี้จริง
+    |--------------------------------------------------------------------------
+    */
+    if ((int) $expense->scholarship_child_id !== (int) $child->id) {
+        abort(404, 'ไม่พบรายการค่าใช้จ่ายของผู้รับทุนรายนี้');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ตรวจสอบข้อมูล
+    |--------------------------------------------------------------------------
+    */
+    $validator = Validator::make(
+        $request->all(),
+        [
+            'edit_expense_id' => [
+                'nullable',
+                'integer',
+            ],
+
+            'record_date' => [
+                'required',
+                'date',
+                'before_or_equal:today',
+            ],
+
+            'semester' => [
+                'required',
+                Rule::in(['1', '2', 1, 2]),
+            ],
+
+            'note' => [
+                'nullable',
+                'string',
+                'max:2000',
+            ],
+
+            'items' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            /*
+             * ห้ามเลือกรายการซ้ำกันภายในฟอร์มเดียวกัน
+             */
+            'items.*.expense_type' => [
+                'required',
+                'distinct',
+                Rule::in(self::EXPENSE_TYPES),
+            ],
+
+            'items.*.amount' => [
+                'required',
+                'numeric',
+                'min:0.01',
+                'max:99999999.99',
+            ],
+
+            /*
+             * ไฟล์ใหม่ที่ต้องการเพิ่ม
+             */
+            'expense_documents' => [
+                'nullable',
+                'array',
+                'max:10',
+            ],
+
+            'expense_documents.*' => [
+                'file',
+                'mimes:pdf',
+                'max:10240',
+            ],
+
+            'grade_reports' => [
+                'nullable',
+                'array',
+                'max:10',
+            ],
+
+            'grade_reports.*' => [
+                'file',
+                'mimes:pdf',
+                'max:10240',
+            ],
+
+            /*
+             * รหัสไฟล์เดิมที่ผู้ใช้เลือกให้ลบ
+             */
+            'remove_attachment_ids' => [
+                'nullable',
+                'array',
+            ],
+
+            'remove_attachment_ids.*' => [
+                'integer',
+                'distinct',
+            ],
+        ],
+        [
+            'record_date.required' =>
+                'กรุณาระบุวันที่บันทึก',
+
+            'record_date.before_or_equal' =>
+                'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน',
+
+            'semester.required' =>
+                'กรุณาเลือกภาคเรียน',
+
+            'semester.in' =>
+                'ภาคเรียนต้องเป็น 1 หรือ 2 เท่านั้น',
+
+            'items.required' =>
+                'กรุณาเพิ่มรายการค่าใช้จ่ายอย่างน้อย 1 รายการ',
+
+            'items.min' =>
+                'กรุณาเพิ่มรายการค่าใช้จ่ายอย่างน้อย 1 รายการ',
+
+            'items.*.expense_type.required' =>
+                'กรุณาเลือกรายการค่าใช้จ่าย',
+
+            'items.*.expense_type.distinct' =>
+                'ไม่สามารถเลือกรายการค่าใช้จ่ายซ้ำกันภายในการแก้ไขครั้งเดียวได้',
+
+            'items.*.expense_type.in' =>
+                'รายการค่าใช้จ่ายไม่ถูกต้อง',
+
+            'items.*.amount.required' =>
+                'กรุณาระบุจำนวนเงิน',
+
+            'items.*.amount.numeric' =>
+                'จำนวนเงินต้องเป็นตัวเลข',
+
+            'items.*.amount.min' =>
+                'จำนวนเงินต้องมากกว่า 0 บาท',
+
+            'expense_documents.*.mimes' =>
+                'เอกสารรายการค่าใช้จ่ายต้องเป็นไฟล์ PDF เท่านั้น',
+
+            'expense_documents.*.max' =>
+                'เอกสารรายการค่าใช้จ่ายแต่ละไฟล์ต้องมีขนาดไม่เกิน 10 MB',
+
+            'grade_reports.*.mimes' =>
+                'ไฟล์ผลการเรียนต้องเป็นไฟล์ PDF เท่านั้น',
+
+            'grade_reports.*.max' =>
+                'ไฟล์ผลการเรียนแต่ละไฟล์ต้องมีขนาดไม่เกิน 10 MB',
+        ]
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | เมื่อ Validation ไม่ผ่าน ให้เปิด Modal แก้ไขรายการเดิมกลับมา
+    |--------------------------------------------------------------------------
+    */
+    if ($validator->fails()) {
+        return back()
+            ->withErrors($validator)
+            ->withInput()
+            ->with('open_edit_expense_modal', $expense->id);
+    }
+
+    $validated = $validator->validated();
+
+    $semester = (int) $validated['semester'];
+
+    $itemTypes = collect($validated['items'])
+        ->pluck('expense_type')
+        ->filter()
+        ->unique()
+        ->values();
+
+    /*
+    |--------------------------------------------------------------------------
+    | ตรวจรายการซ้ำกับรายการอื่น
+    |--------------------------------------------------------------------------
+    | ยกเว้นรายการปัจจุบันที่กำลังแก้ไข
+    */
+    $existingItemTypes = DB::table(
+        'scholarship_expense_items as expense_items'
+    )
+        ->join(
+            'scholarship_expenses as expenses',
+            'expenses.id',
+            '=',
+            'expense_items.scholarship_expense_id'
+        )
+        ->where(
+            'expenses.scholarship_child_id',
+            $child->id
+        )
+        ->where(
+            'expenses.academic_year',
+            $expense->academic_year
+        )
+        ->where(
+            'expenses.semester',
+            $semester
+        )
+        ->where(
+            'expenses.id',
+            '<>',
+            $expense->id
+        )
+        ->whereIn(
+            'expense_items.expense_type',
+            $itemTypes->all()
+        )
+        ->distinct()
+        ->orderBy('expense_items.expense_type')
+        ->pluck('expense_items.expense_type');
+
+    if ($existingItemTypes->isNotEmpty()) {
+        return back()
+            ->withInput()
+            ->withErrors([
+                'edit_expense_items' =>
+                    'ไม่สามารถแก้ไขได้ เนื่องจากรายการ “'
+                    . $existingItemTypes->implode(', ')
+                    . '” ถูกบันทึกแล้วสำหรับปีการศึกษา '
+                    . $expense->academic_year
+                    . ' ภาคเรียนที่ '
+                    . $semester,
+            ])
+            ->with('open_edit_expense_modal', $expense->id);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | คำนวณยอดรวมใหม่
+    |--------------------------------------------------------------------------
+    */
+    $totalAmount = collect($validated['items'])
+        ->sum(function ($item) {
+            return (float) $item['amount'];
+        });
+
+    /*
+    |--------------------------------------------------------------------------
+    | ตรวจไฟล์เดิมที่ผู้ใช้เลือกให้ลบ
+    |--------------------------------------------------------------------------
+    */
+    $removeAttachmentIds = collect(
+        $validated['remove_attachment_ids'] ?? []
+    )
+        ->map(fn ($id) => (int) $id)
+        ->filter()
+        ->unique()
+        ->values();
+
+    /*
+     * ดึงเฉพาะไฟล์ที่อยู่ในรายการค่าใช้จ่ายนี้
+     * ป้องกันการส่ง ID ของไฟล์รายการอื่นเข้ามา
+     */
+    $attachmentsToRemove = $expense->attachments()
+        ->whereIn('id', $removeAttachmentIds->all())
+        ->get();
+
+    $oldFilePathsToDelete = $attachmentsToRemove
+        ->map(function ($attachment) {
+            return public_path($attachment->file_path);
+        })
+        ->values();
+
+    /*
+     * ใช้เก็บเส้นทางไฟล์ใหม่ หากเกิดข้อผิดพลาดจะลบออก
+     */
+    $newStoredPaths = [];
+
+    DB::beginTransaction();
+
+    try {
+        /*
+        |--------------------------------------------------------------------------
+        | แก้ไขหัวรายการค่าใช้จ่าย
+        |--------------------------------------------------------------------------
+        | ปีการศึกษาคงใช้ปีเดิมของรายการ เพื่อรักษาประวัติข้อมูล
+        */
+        $expense->update([
+            'record_date'  => $validated['record_date'],
+            'semester'     => $semester,
+            'total_amount' => round($totalAmount, 2),
+            'note'         => $validated['note'] ?? null,
+            'updated_by'   => auth()->id(),
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | ลบรายการย่อยเดิมแล้วสร้างใหม่
+        |--------------------------------------------------------------------------
+        */
+        $expense->items()->delete();
+
+        foreach ($validated['items'] as $item) {
+            $expense->items()->create([
+                'expense_type' => $item['expense_type'],
+                'amount'       => round(
+                    (float) $item['amount'],
+                    2
+                ),
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | ลบข้อมูลไฟล์ที่ผู้ใช้เลือก
+        |--------------------------------------------------------------------------
+        */
+        if ($removeAttachmentIds->isNotEmpty()) {
+            $expense->attachments()
+                ->whereIn('id', $removeAttachmentIds->all())
+                ->delete();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | เพิ่มเอกสารรายการค่าใช้จ่ายใหม่
+        |--------------------------------------------------------------------------
+        */
+        $this->savePdfFiles(
+            $expense,
+            $request->file('expense_documents', []),
+            'expense_document',
+            $newStoredPaths
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | เพิ่มผลการเรียนใหม่
+        |--------------------------------------------------------------------------
+        */
+        $this->savePdfFiles(
+            $expense,
+            $request->file('grade_reports', []),
+            'grade_report',
+            $newStoredPaths
+        );
+
+        DB::commit();
+
+        /*
+        |--------------------------------------------------------------------------
+        | ลบไฟล์จริงหลังฐานข้อมูลบันทึกสำเร็จ
+        |--------------------------------------------------------------------------
+        */
+        foreach ($oldFilePathsToDelete as $fullPath) {
+            if (File::exists($fullPath)) {
+                File::delete($fullPath);
+            }
+        }
+
+        return back()->with(
+            'success',
+            'แก้ไขรายการค่าใช้จ่ายของ '
+            . $child->first_name
+            . ' '
+            . $child->last_name
+            . ' ปีการศึกษา '
+            . $expense->academic_year
+            . ' ภาคเรียนที่ '
+            . $semester
+            . ' ยอดรวม '
+            . number_format($totalAmount, 2)
+            . ' บาท เรียบร้อยแล้ว'
+        );
+    } catch (Throwable $exception) {
+        DB::rollBack();
+
+        /*
+         * ลบไฟล์ใหม่ที่อัปโหลดแล้ว หากฐานข้อมูลบันทึกไม่สำเร็จ
+         */
+        foreach ($newStoredPaths as $fullPath) {
+            if (File::exists($fullPath)) {
+                File::delete($fullPath);
+            }
+        }
+
+        report($exception);
+
+        return back()
+            ->withInput()
+            ->withErrors([
+                'edit_expense' =>
+                    'ไม่สามารถแก้ไขรายการค่าใช้จ่ายได้ กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง',
+            ])
+            ->with('open_edit_expense_modal', $expense->id);
+    }
+}
+20.3 เพิ่มเมธอด destroyExpense()
+
+วางต่อจากเมธอด updateExpense() และก่อน:
+
+public function destroy(ScholarshipChild $child)
+
+ใช้โค้ดนี้:
+
+/**
+ * ลบรายการค่าใช้จ่ายหนึ่งครั้ง
+ */
+public function destroyExpense(
+    ScholarshipChild $child,
+    ScholarshipExpense $expense
+) {
+    /*
+    |--------------------------------------------------------------------------
+    | ตรวจสอบว่ารายการเป็นของเด็กคนนี้
+    |--------------------------------------------------------------------------
+    */
+    if ((int) $expense->scholarship_child_id !== (int) $child->id) {
+        abort(404, 'ไม่พบรายการค่าใช้จ่ายของผู้รับทุนรายนี้');
+    }
+
+    $expenseDirectory = public_path(
+        'upload/scholarship_expenses/'
+        . $child->id
+        . '/'
+        . $expense->id
+    );
+
+    try {
+        /*
+         * ตารางรายการย่อยและไฟล์แนบจะถูกลบด้วย cascade
+         */
+        DB::transaction(function () use ($expense) {
+            $expense->delete();
+        });
+
+        /*
+         * ลบโฟลเดอร์และไฟล์จริงหลังฐานข้อมูลสำเร็จ
+         */
+        if (File::exists($expenseDirectory)) {
+            File::deleteDirectory($expenseDirectory);
+        }
+
+        return back()->with(
+            'success',
+            'ลบรายการค่าใช้จ่ายของ '
+            . $child->first_name
+            . ' '
+            . $child->last_name
+            . ' เรียบร้อยแล้ว'
+        );
+    } catch (Throwable $exception) {
+        report($exception);
+
+        return back()->withErrors([
+            'delete_expense' =>
+                'ไม่สามารถลบรายการค่าใช้จ่ายได้ กรุณาลองใหม่อีกครั้ง',
+        ]);
+    }
+}
+ขั้นตอนที่ 20.4: ตรวจสอบ Syntax
+
+บันทึก Controller แล้วรัน:
+
+php -l app\Http\Controllers\Landing\ScholarshipChildController.php
+
+ต้องขึ้น:
+
+No syntax errors detected in app\Http\Controllers\Landing\ScholarshipChildController.php
+
+จากนั้นรัน:
+
+php artisan optimize:clear
+
+ตอนนี้ยังไม่ต้องแก้หน้า Blade เพราะขั้นต่อไปเราจะเพิ่มปุ่ม แก้ไข และ ลบ ในประวัติรายการค่าใช้จ่าย พร้อม Modal แก้ไขครับ
+
+Pasted text(691).txt
+Document
+ปรับให้มีปุ่มแก้ไขด้วยครับ 
+Worked for 4m 4s
+
+ผมปรับไฟล์ Blade ทั้งชุดให้แล้วครับ จากไฟล์เดิมที่ตารางประวัติยังไม่มีคอลัมน์จัดการและไม่มี Modal แก้ไขรายการค่าใช้จ่าย
+
+ดาวน์โหลดไฟล์ที่ปรับแล้ว
+
+index.blade.php
+
+README_add_expense_edit_button.txt
+
+นำไฟล์ไปแทนที่ไฟล์เดิมที่:
+
+resources\views\landing\scholarship\children\index.blade.php
+ระบบที่เพิ่มให้
+
+ในตาราง ประวัติรายการค่าใช้จ่าย จะมีคอลัมน์ จัดการ และปุ่มดินสอสำหรับแก้ไขแต่ละรายการ
+
+เมื่อกดแก้ไข จะเปิด Modal ซึ่งสามารถแก้ไข:
+
+วันที่บันทึก
+ภาคเรียนที่ 1 หรือ 2
+รายการค่าใช้จ่าย
+จำนวนเงินแต่ละรายการ
+เพิ่มหรือลบแถวรายการ
+หมายเหตุ
+เพิ่มเอกสารค่าใช้จ่าย PDF ใหม่
+เพิ่มผลการเรียน PDF ใหม่
+เลือกลบไฟล์เดิมที่บันทึกไว้
+
+ยอดรวมใหม่จะคำนวณทันทีใน Modal และเมื่อบันทึก ระบบจะปรับ:
+
+ยอดรายการครั้งนั้น
+ยอดรวมของปีการศึกษา
+ยอดรวมทุกปีการศึกษา
+
+โดยอัตโนมัติ
+
+เมื่อ Validation ไม่ผ่าน ระบบจะแสดง SweetAlert ประมาณ 3 วินาที แล้วเปิด Modal แก้ไขรายการเดิมกลับมา พร้อมข้อมูลที่กรอกไว้
+
+ตรวจสอบ Controller ก่อนใช้งาน
+
+ไฟล์ Controller ต้องมี:
+
+use Illuminate\Support\Facades\Validator;
+
+และมีเมธอด:
+
+public function updateExpense(
+    Request $request,
+    ScholarshipChild $child,
+    ScholarshipExpense $expense
+)
+
+Route ที่คุณสร้างไว้แล้วถูกต้อง:
+
+scholarship.children.expenses.update
+หลังแทนที่ไฟล์
+
+รันคำสั่ง:
+
+php artisan optimize:clear
+
+จากนั้น:
+
+php artisan view:cache
+
+ควรขึ้น:
+
+INFO  Blade templates cached successfully.
+
+เปิดหน้า:
+
+http://127.0.0.1:8000/scholarship/children
+
+แล้วกด:
+
+Ctrl + F5
+
+จากนั้นเปิด บันทึกค่าใช้จ่าย → ประวัติรายการค่าใช้จ่าย จะเห็นปุ่มแก้ไขด้านขวาของแต่ละรายการครับ 
+
+ให้รันคำสั่งนี้ใน **Terminal ของ HostAtom** โดยต้องอยู่ที่โฟลเดอร์หลักของ Laravel ซึ่งมีไฟล์ `artisan` คือ `/httpdocs`: Bash cd /var/www/vhosts/kaduab.com/httpdocs php artisan storage:link คำสั่งนี้จะสร้างลิงก์ดังนี้: httpdocs/public/storage ↓ เชื่อมไปยัง httpdocs/storage/app/public Laravel ใช้ลิงก์นี้เพื่อให้รูปภาพหรือไฟล์ที่บันทึกด้วย `Storage::disk('public')` สามารถเปิดผ่านเว็บไซต์ได้ เช่น `asset('storage/ชื่อไฟล์')` [![](https://www.google.com/s2/favicons?domain=https://laravel.com&sz=128)Laravel](https://laravel.com/docs/11.x/filesystem?utm_source=chatgpt.com) เมื่อสำเร็จควรขึ้นข้อความประมาณนี้: The [public/storage] link has been connected to [storage/app/public]. ### ก่อนรันต้องตรวจสอบ อย่าสร้างโฟลเดอร์ `httpdocs/public/storage` เอง เพราะตำแหน่งนี้ต้องเป็น **Symbolic Link** ไม่ใช่โฟลเดอร์ธรรมดา หากเคยสร้างโฟลเดอร์ `public/storage` ไว้แล้วและไม่มีไฟล์สำคัญ ให้ลบโฟลเดอร์นั้นก่อน แล้วจึงรัน: Bash php artisan storage:link ### Permission ที่ควรใช้ httpdocs/storage 775 httpdocs/storage/app 775 httpdocs/storage/app/public 775 httpdocs/bootstrap/cache 775 ส่วน `public/storage` ที่สร้างจากคำสั่งนี้เป็นลิงก์ จึงไม่ต้องตั้ง Permission แยกครับ ![](https://www.google.com/s2/favicons?domain=https://laravel.com&sz=32) Sources #### You said: Pasted text(684).txt Document ช่วยฉันปรับปรุงระบบ ขอรับทุนการศึกษาเด็ก 1 ในหน้า http://127.0.0.1:8000/scholarship/children ช่วยเพิ่มเติมสถานะการได้รับทุน คือ ได้รับทุน , รอการพิจารณา เมื่อสถานะได้รับทุน ให้นำข้อมูลเด็กในหน้า scholarship-children/public-report ออก 2. เมื่อสถานะได้รับทุน ให้เพิ่มปุ่มบันทึกข้อมูล ให้ปุ่มทำงาน แต่ถ้าอยู่ในสถานะรอการพิจารณา ให้ซ่อนปุ่ม (เพิ่มในส่วนตาราง หัวข้อจัดการ) 3 ปุ่มดังกล่าวจะไปที่หน้าบันทึกข้อมูล รายการค่าใช้จ่าย มีข้อมูล ดังนี้ 3.1 วันที่บันทึก 3.2 ภาคเรียนที่ (ให้เป็นตัวเลข 1 2 ) โดยดึงปีการศึกษาของตารางเข้ามาใส่ไว้เพิ่ม 3.3 รายการ ให้ทำเป็น select ดังนี้ ทุนการศึกษา , ค่าเทอม , ค่าอุปกรณ์การเรียน, ค่าอาหาร, ค่าใช้จ่ายอื่น ๆ 3.4 จำนวนเงิน (บาท) 3.5 คำนวณยอดรวมให้ด้วยครับ 4. ทำเป็น modal 5. ให้ทำเป็นตารางเลือกเช่นเดียวกับ http://127.0.0.1:8000/clients/206/help-sessions/create 6. ช่วยออกแบบให้ผมด้วยนะครับ ทำให้ดีที่สุดระบบสากล 7. ช่วยทำว่าปัจจุบันอยู่ระหว่างรอการพิจารณา อนุมัติทุนการศึกษา ไม่ผ่านการอนุมัติ <?php namespace App\\Http\\Controllers\\Landing; use App\\Http\\Controllers\\Controller; use App\\Models\\ScholarshipChild; use Illuminate\\Http\\Request; use Illuminate\\Support\\Facades\\File; use Illuminate\\Support\\Str; use Intervention\\Image\\ImageManager; use Intervention\\Image\\Drivers\\Gd\\Driver; class ScholarshipChildController extends Controller { protected function saveChildPhoto($file): string { // ===================================================== // PATCH: // path จริงสำหรับ shared hosting // ===================================================== $destinationPath = public\_path('upload/scholarship\_children'); if (!File::exists($destinationPath)) { File::makeDirectory($destinationPath, 0755, true); } $filename = Str::uuid()->toString() . '.jpg'; $relativePath = 'upload/scholarship\_children/' . $filename; $fullPath = public\_path($relativePath); $manager = new ImageManager(new Driver()); $image = $manager->read($file->getRealPath()); // ===================================================== // PATCH: // หมุนภาพอัตโนมัติจากมือถือ // ===================================================== $image = $image->orient(); // ===================================================== // PATCH: // ลดขนาดภาพ // ===================================================== $image->scaleDown(width: 1000); // ===================================================== // PATCH: // Progressive JPEG // โหลดไวขึ้นบนเว็บจริง // ===================================================== $encoded = $image->toJpeg( quality: 70, progressive: true ); $encoded->save($fullPath); return $relativePath; } protected function deleteChildPhoto(?string $path): void { if (!$path) { return; } $fullPath = str\_starts\_with($path, 'upload/') ? public\_path($path) : public\_path('storage/' . $path); if (File::exists($fullPath)) { File::delete($fullPath); } } public function index(Request $request) { $academicYear = $request->academic\_year; $keyword = $request->keyword; $years = ScholarshipChild::select('academic\_year') ->whereNotNull('academic\_year') ->distinct() ->orderByDesc('academic\_year') ->pluck('academic\_year'); $children = ScholarshipChild::query() ->when($keyword, function ($q) use ($keyword) { $q->where(function ($sub) use ($keyword) { $sub->where('first\_name', 'like', '%' . $keyword . '%') ->orWhere('last\_name', 'like', '%' . $keyword . '%'); }); }) ->when($academicYear, function ($query) use ($academicYear) { $query->where('academic\_year', $academicYear); }) ->latest() ->paginate(10) ->withQueryString(); return view('landing.scholarship.children.index', compact( 'children', 'years', 'academicYear', 'keyword' )); } public function store(Request $request) { $request->validate(\[ 'first\_name' => 'required|string|max:255', 'last\_name' => 'required|string|max:255', 'gender' => 'nullable|in:male,female', 'age' => 'nullable|integer|min:1|max:120', 'education\_level' => 'nullable|string|max:255', 'school\_name' => 'nullable|string|max:255', 'academic\_year' => \['required', 'regex:/^\[0-9\]{4}$/'\], 'current\_address' => 'nullable|string', 'guardian\_name' => 'nullable|string|max:255', 'phone' => 'nullable|string|max:30', 'reason' => 'nullable|string', 'help\_needed' => 'nullable|string', 'more\_detail' => 'nullable|string', 'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240', \], \[ 'academic\_year.required' => 'กรุณากรอกปีการศึกษาที่ขอรับทุน', 'academic\_year.regex' => 'ปีการศึกษาต้องเป็นตัวเลข พ.ศ. 4 หลักเท่านั้น เช่น 2568', \]); $data = $request->except(\['photo', '\_token', '\_method'\]); if ($request->hasFile('photo')) { $data\['photo'\] = $this->saveChildPhoto($request->file('photo')); } ScholarshipChild::create($data); return redirect() ->route('scholarship.children.index') ->with('success', 'บันทึกข้อมูลผู้ขอรับทุนเรียบร้อยแล้ว'); } public function update(Request $request, $id) { $child = ScholarshipChild::findOrFail($id); $request->validate(\[ 'first\_name' => 'required|string|max:255', 'last\_name' => 'required|string|max:255', 'gender' => 'nullable|in:male,female', 'age' => 'nullable|integer|min:1|max:120', 'education\_level' => 'nullable|string|max:255', 'school\_name' => 'nullable|string|max:255', 'academic\_year' => \['required', 'regex:/^\[0-9\]{4}$/'\], 'current\_address' => 'nullable|string', 'guardian\_name' => 'nullable|string|max:255', 'phone' => 'nullable|string|max:30', 'reason' => 'nullable|string', 'help\_needed' => 'nullable|string', 'more\_detail' => 'nullable|string', 'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240', \], \[ 'academic\_year.required' => 'กรุณากรอกปีการศึกษาที่ขอรับทุน', 'academic\_year.regex' => 'ปีการศึกษาต้องเป็นตัวเลข พ.ศ. 4 หลักเท่านั้น เช่น 2568', 'gender.in' => 'กรุณาเลือกเพศให้ถูกต้อง', \]); $data = $request->except(\['photo', '\_token', '\_method'\]); if ($request->hasFile('photo')) { $this->deleteChildPhoto($child->photo); $data\['photo'\] = $this->saveChildPhoto($request->file('photo')); } $child->update($data); return redirect() ->route('scholarship.children.index') ->with('success', 'แก้ไขข้อมูลเรียบร้อยแล้ว'); } public function destroy($id) { $child = ScholarshipChild::findOrFail($id); $this->deleteChildPhoto($child->photo); $child->delete(); return redirect() ->route('scholarship.children.index') ->with('success', 'ลบข้อมูลเรียบร้อยแล้ว'); } public function report(Request $request) { $academicYear = $request->academic\_year; $keyword = $request->keyword; $years = ScholarshipChild::select('academic\_year') ->whereNotNull('academic\_year') ->distinct() ->orderByDesc('academic\_year') ->pluck('academic\_year'); $children = ScholarshipChild::query() ->when($keyword, function ($q) use ($keyword) { $q->where(function ($sub) use ($keyword) { $sub->where('first\_name', 'like', '%' . $keyword . '%') ->orWhere('last\_name', 'like', '%' . $keyword . '%'); }); }) ->when($academicYear, function ($query) use ($academicYear) { $query->where('academic\_year', $academicYear); }) ->orderBy('academic\_year', 'desc') ->orderBy('first\_name') ->get(); return view('landing.scholarship.children.report', compact( 'children', 'years', 'academicYear', 'keyword' )); } public function publicReport() { $latestYear = ScholarshipChild::query() ->whereNotNull('academic\_year') ->max('academic\_year'); $children = ScholarshipChild::query() ->when($latestYear, function ($query) use ($latestYear) { $query->where('academic\_year', $latestYear); }) ->orderBy('first\_name') ->orderBy('last\_name') ->get(); return view('landing.scholarship.children.public\_report', \[ 'children' => $children, 'latestYear' => $latestYear, \]); } } คุณช่วยปรับมาให้ผมทั้งไฟล์เลยนะครับ Show moreShow less #### ChatGPT said: Stopped thinking #### You said: ช่วยฉันปรับปรุงระบบ ขอรับทุนการศึกษาเด็ก 1 ในหน้า http://127.0.0.1:8000/scholarship/children ช่วยเพิ่มเติมสถานะการได้รับทุน คือ ได้รับทุน , รอการพิจารณา เมื่อสถานะได้รับทุน ให้นำข้อมูลเด็กในหน้า scholarship-children/public-report ออก 2. เมื่อสถานะได้รับทุน ให้เพิ่มปุ่มบันทึกข้อมูล ให้ปุ่มทำงาน แต่ถ้าอยู่ในสถานะรอการพิจารณา ให้ซ่อนปุ่ม (เพิ่มในส่วนตาราง หัวข้อจัดการ) 3 ปุ่มดังกล่าวจะไปที่หน้าบันทึกข้อมูล รายการค่าใช้จ่าย มีข้อมูล ดังนี้ 3.1 วันที่บันทึก 3.2 ภาคเรียนที่ (ให้เป็นตัวเลข 1 2 ) โดยดึงปีการศึกษาของตารางเข้ามาใส่ไว้เพิ่ม 3.3 รายการ ให้ทำเป็น select ดังนี้ ทุนการศึกษา , ค่าเทอม , ค่าอุปกรณ์การเรียน, ค่าอาหาร, ค่าใช้จ่ายอื่น ๆ 3.4 จำนวนเงิน (บาท) 3.5 คำนวณยอดรวมให้ด้วยครับ 4. ทำเป็น modal 5. ให้ทำเป็นตารางเลือกเช่นเดียวกับ http://127.0.0.1:8000/clients/206/help-sessions/create 6. ช่วยออกแบบให้ผมด้วยนะครับ ทำให้ดีที่สุดระบบสากล 7. ช่วยทำว่าปัจจุบันอยู่ระหว่างรอการพิจารณา อนุมัติทุนการศึกษา ไม่ผ่านการอนุมัติ 8. ช่วยเพิ่มปุ่มอัปไฟล์ pdf ได้ รายการค่าใช้จ่าย (สามารถเพิ่มได้หลายไฟล์ครับ) 9. ปุ่ม ผลการเรียน สามารถเพิ่มได้หลายไฟล์ด้วยเช่นกันครับ ผมเพิ่มเร้าท์มาให้ด้วย Route::get('/', \[LandingController::class, 'index'\]) ->name('landing.index'); Route::get('/scholarship-children/public-report', \[ScholarshipChildController::class, 'publicReport'\]) ->name('scholarship.children.public\_report'); Route::post('/issues', \[IssueController::class, 'store'\]) ->name('issues.store'); Route::get('/news', \[NewsController::class, 'index'\]) ->name('news.index'); Route::get('/news/{id}', \[NewsController::class, 'show'\]) ->whereNumber('id') ->name('news.show'); Route::get('/scholarship/create', \[ScholarshipController::class, 'create'\]) ->name('scholarship.create'); Route::post('/scholarship/store', \[ScholarshipController::class, 'store'\]) ->name('scholarship.store'); Show moreShow less #### You said: Pasted text(685).txt Document #### You said: Pasted text(686).txt Document #### You said: Pasted text(687).txt Document #### You said: Pasted text(688).txt Document #### You said: ![5f1e636f-ce82-4c61-99f4-15a03df6d6c7.png](https://chatgpt.com/backend-api/estuary/content?id=file_00000000a6a481fbb941a184509dd016&ts=495902&p=fs&cid=1&sig=9d0b6418487f36e1bb2d3c39abbc4c3d70412a63e9e9379ddca76f51095a23fd&v=0) เมื่ออนุมัติแล้ว ต้องมีปุ่มให้เลือกไปที่หน้ากรอกข้อมูลตามที่บอกไว้ด้วยนะครับ ช่วยฉันปรับปรุงระบบ ขอรับทุนการศึกษาเด็ก 1 ในหน้า http://127.0.0.1:8000/scholarship/children ช่วยเพิ่มเติมสถานะการได้รับทุน คือ ได้รับทุน , รอการพิจารณา เมื่อสถานะได้รับทุน ให้นำข้อมูลเด็กในหน้า scholarship-children/public-report ออก 2. เมื่อสถานะได้รับทุน ให้เพิ่มปุ่มบันทึกข้อมูล ให้ปุ่มทำงาน แต่ถ้าอยู่ในสถานะรอการพิจารณา ให้ซ่อนปุ่ม (เพิ่มในส่วนตาราง หัวข้อจัดการ) 3 ปุ่มดังกล่าวจะไปที่หน้าบันทึกข้อมูล รายการค่าใช้จ่าย มีข้อมูล ดังนี้ 3.1 วันที่บันทึก 3.2 ภาคเรียนที่ (ให้เป็นตัวเลข 1 2 ) โดยดึงปีการศึกษาของตารางเข้ามาใส่ไว้เพิ่ม 3.3 รายการ ให้ทำเป็น select ดังนี้ ทุนการศึกษา , ค่าเทอม , ค่าอุปกรณ์การเรียน, ค่าอาหาร, ค่าใช้จ่ายอื่น ๆ 3.4 จำนวนเงิน (บาท) 3.5 คำนวณยอดรวมให้ด้วยครับ 4. ทำเป็น modal 5. ให้ทำเป็นตารางเลือกเช่นเดียวกับ http://127.0.0.1:8000/clients/206/help-sessions/create 6. ช่วยออกแบบให้ผมด้วยนะครับ ทำให้ดีที่สุดระบบสากล 7. ช่วยทำว่าปัจจุบันอยู่ระหว่างรอการพิจารณา อนุมัติทุนการศึกษา ไม่ผ่านการอนุมัติ 8. ช่วยเพิ่มปุ่มอัปไฟล์ pdf ได้ รายการค่าใช้จ่าย (สามารถเพิ่มได้หลายไฟล์ครับ) 9. ปุ่ม ผลการเรียน สามารถเพิ่มได้หลายไฟล์ด้วยเช่นกันครับ Show moreShow less #### You said: ![26358699-807a-4a73-bead-919977e0e5ed.png](https://chatgpt.com/backend-api/estuary/content?id=file_00000000c9c881fb92079e80481f8ef4&ts=495902&p=fs&cid=1&sig=6e11020157551a4ec20740b6fe0c2ef09ce730b82b01b37d0cafff6fe0bcf85d&v=0) Pasted code(456).php File เลือกแล้วแต่เปลี่ยนสถานะไม่ได้ ปรับให้ฉันด้วย #### You said: ![2c1ffea0-f007-44da-887b-ffece449bf56.png](https://chatgpt.com/backend-api/estuary/content?id=file_0000000030b881fd9fd0c788412e842a&ts=495902&p=fs&cid=1&sig=88b97bcaed53dbf65c5c1187eabe0fd90e4e436a535652511de199d07440816a&v=0) ข้อความมาแสดงหน้านี้ แต่หน้าฟอร์มยังไม่ถูกปิดเลยครับ #### You said: ![2865cb3a-f031-4635-ad5c-fbaef4366379.png](https://chatgpt.com/backend-api/estuary/content?id=file_000000003df481f5af62ecf6aa4fbd23&ts=495902&p=fs&cid=1&sig=cd2ae60fa1d691bf912a8bd389b0a02e920218c7982468de9f91b4090a0c986c&v=0) ไม่ถูกต้อง modal มันปิดแจ้งเตือนไว้ ผู้้ใช้มองไม่เห็น คุณควรออกแบบใหม่ จะให้ปิด ฟอร์มบันทึกไปก่อน หรือจะใช่ switalert แทน ลองดูที่ดีที่สุดด้วยครับ ถ้าเป็นแจ้งเตือนผมอยากให้หน่วงเวลา ประมาณ 3 วินาท่ี แล้วซ่อนไป #### You said: Pasted text(689).txt Document ผมหาไฟล์ที่คุณบอกไม่พบตรวจสอบให้ผมด้วย #### You said: ![46d3d761-beb8-45ae-8a57-66b50052f0ca.png](https://chatgpt.com/backend-api/estuary/content?id=file_000000006a2881f89157b08f14f1341c&ts=495903&p=fs&cid=1&sig=07eb0184250a9486d6ed97d64ee3a56e0372a9a7fd07394e7d0a0add4b553e0e&v=0) <div class="modal-body"> <div class="row g-3"> <div class="col-md-3 text-center"> @if($modalPhotoUrl) <img src="{{ $modalPhotoUrl }}" class="img-fluid rounded-4 border" style="max-height:260px;object-fit:cover;" alt="{{ $child->first\_name }} {{ $child->last\_name }}"> @else <div class="sc-avatar mx-auto" style="width:180px;height:180px;font-size:54px;"> {{ mb\_substr($child->first\_name, 0, 1) }} </div> @endif </div> <div class="col-md-9"> <div class="row g-3"> <div class="col-md-6"> <div class="detail-box"> <div class="detail-label">ชื่อ - นามสกุล</div> <div class="detail-value"> {{ $child->first\_name }} {{ $child->last\_name }} </div> </div> </div> <div class="col-md-3"> <div class="detail-box"> <div class="detail-label">อายุ</div> <div class="detail-value">{{ $child->age ?? '-' }}</div> </div> </div> <div class="col-md-3"> <div class="detail-box"> <div class="detail-label">ปีการศึกษา</div> <div class="detail-value">{{ $child->academic\_year }}</div> </div> </div> <div class="col-md-6"> <div class="detail-box"> <div class="detail-label">ระดับการศึกษา</div> <div class="detail-value"> {{ $child->education\_level ?? '-' }} </div> </div> </div> <div class="col-md-6"> <div class="detail-box"> <div class="detail-label">ชื่อสถานศึกษา</div> <div class="detail-value"> {{ $child->school\_name ?? '-' }} </div> </div> </div> <div class="col-md-6"> <div class="detail-box"> <div class="detail-label">ชื่อผู้ปกครอง</div> <div class="detail-value"> {{ $child->guardian\_name ?? '-' }} </div> </div> </div> <div class="col-md-6"> <div class="detail-box"> <div class="detail-label">เบอร์โทรศัพท์</div> <div class="detail-value"> {{ $child->phone ?? '-' }} </div> </div> </div> <div class="col-md-12"> <div class="detail-box"> <div class="detail-label">สถานะการพิจารณา</div> <div class="detail-value"> <span class="sc-status-badge {{ $child->status\_badge\_class }} mb-0"> {{ $child->status\_label }} </span> </div> </div> </div> </div> </div> <div class="col-md-12"> <div class="detail-box"> <div class="detail-label">ที่อยู่ปัจจุบัน</div> <div class="detail-value"> {{ $child->current\_address ?? '-' }} </div> </div> </div> <div class="col-md-12"> <div class="detail-box"> <div class="detail-label">สาเหตุที่ขอรับทุน</div> <div class="detail-value">{{ $child->reason ?? '-' }}</div> </div> </div> <div class="col-md-12"> <div class="detail-box"> <div class="detail-label">ความต้องการความช่วยเหลือ</div> <div class="detail-value"> {{ $child->help\_needed ?? '-' }} </div> </div> </div> <div class="col-md-12"> <div class="detail-box"> <div class="detail-label">รายละเอียดเพิ่มเติม</div> <div class="detail-value"> {{ $child->more\_detail ?? '-' }} </div> </div> </div> </div> </div> ช่วยออกแบบให้สวยงามที่สุด เรียบง่าย และมีข้อตามที่ปรับเปลี่ยนใหม่ด้วยครับ Show moreShow less #### You said: ![266fd022-87c5-4658-ad35-36cdd1ce2474.png](https://chatgpt.com/backend-api/estuary/content?id=file_0000000069e481f8b9591b1ff37adb55&ts=495903&p=fs&cid=1&sig=12ff6ef02dafc47262498924b4df8b03302fc5217e68572013ee00fde0f8b375&v=0) @if($children->count() > 0) <div class="sc-table-wrap"> <table class="table table-hover align-middle sc-table"> <thead> <tr> <th width="70">ภาพ</th> <th>ชื่อ - นามสกุล</th> <th>อายุ</th> <th>ระดับการศึกษา</th> <th>สถานศึกษา</th> <th>ปีการศึกษา</th> <th>ผู้ปกครอง</th> <th>โทรศัพท์</th> <th>สถานะการพิจารณา</th> <th width="260" class="text-center">จัดการ</th> </tr> </thead> <tbody> @foreach($children as $child) @php $photoUrl = null; if ($child->photo) { $photoUrl = str\_starts\_with($child->photo, 'upload/') ? asset($child->photo) : asset('storage/' . $child->photo); } @endphp <tr> <td> @if($photoUrl) <img src="{{ $photoUrl }}" loading="lazy" decoding="async" class="sc-photo" alt="{{ $child->first\_name }} {{ $child->last\_name }}"> @else <div class="sc-avatar"> {{ mb\_substr($child->first\_name, 0, 1) }} </div> @endif </td> <td> <div class="sc-name"> {{ $child->first\_name }} {{ $child->last\_name }} </div> <div class="sc-subtext"> {{ \\Illuminate\\Support\\Str::limit($child->reason, 45) }} </div> </td> <td>{{ $child->age ?? '-' }}</td> <td>{{ $child->education\_level ?? '-' }}</td> <td>{{ $child->school\_name ?? '-' }}</td> <td> <span class="sc-year-badge"> {{ $child->academic\_year }} </span> </td> <td>{{ $child->guardian\_name ?? '-' }}</td> <td>{{ $child->phone ?? '-' }}</td> <td> <span class="sc-status-badge {{ $child->status\_badge\_class }}"> @if($child->scholarship\_status === \\App\\Models\\ScholarshipChild::STATUS\_APPROVED) <i class="bi bi-check-circle-fill"></i> @elseif($child->scholarship\_status === \\App\\Models\\ScholarshipChild::STATUS\_REJECTED) <i class="bi bi-x-circle-fill"></i> @else <i class="bi bi-clock-fill"></i> @endif {{ $child->status\_label }} </span> <form action="{{ route('scholarship.children.status', $child->id) }}" method="POST" class="status-update-form"> @csrf @method('PATCH') <select name="scholarship\_status" class="form-select form-select-sm sc-status-select status-select" data-current="{{ $child->scholarship\_status }}" data-name="{{ $child->first\_name }} {{ $child->last\_name }}"> @foreach(\\App\\Models\\ScholarshipChild::statusOptions() as $statusValue => $statusLabel) <option value="{{ $statusValue }}" {{ $child->scholarship\_status === $statusValue ? 'selected' : '' }}> {{ $statusLabel }} </option> @endforeach </select> </form> </td> <td class="text-center"> <div class="sc-action-buttons"> @if($child->isApproved()) <button type="button" class="btn btn-success btn-sm px-3" data-bs-toggle="modal" data-bs-target="#expenseModal{{ $child->id }}" title="บันทึกรายการค่าใช้จ่าย"> <i class="bi bi-cash-coin me-1"></i> บันทึกค่าใช้จ่าย </button> @endif <button type="button" class="btn btn-info btn-sm text-white" data-bs-toggle="modal" data-bs-target="#showChildModal{{ $child->id }}" title="ดูรายละเอียด"> <i class="bi bi-eye"></i> </button> <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editChildModal{{ $child->id }}" title="แก้ไขข้อมูล"> <i class="bi bi-pencil-square"></i> </button> <form action="{{ route('scholarship.children.delete', $child->id) }}" method="POST" class="d-inline delete-child-form" data-name="{{ $child->first\_name }} {{ $child->last\_name }}"> @csrf @method('DELETE') <button type="submit" class="btn btn-danger btn-sm" title="ลบข้อมูล"> <i class="bi bi-trash"></i> </button> </form> </div> </td> </tr> @endforeach </tbody> </table> </div> <div class="mt-3"> {{ $children->links() }} </div> @else <div class="sc-empty"> <i class="bi bi-inbox fs-1 d-block mb-2"></i> ไม่พบข้อมูลผู้ขอรับทุนตามเงื่อนไขที่เลือก </div> @endif ปุ่มช่อง จัดการไม่สวย ปรับให้สวยงามด้วย และให้ปรับขนาดได้ตามหน้าจอด้วยนะครับ Show moreShow less #### You said: Pasted text(690).txt Document ช่วยปรับให้ผมทั้งชุดด้วยครับ #### You said: Pasted code(457).php File Pasted text (2)(100).txt Document การคำนวนยอดเงินให้คำนวนแต่ละปีการศึกษา และคำนวนยอดรวมทั้งหมดด้วยครับ ช่วยออกแบบให้ผมด้วยตามที่คุณเห็นควรทำให้ดีที่สุดนะครับ #### You said: ![58e987d0-4edb-46be-a98d-5b68bae8f297.png](https://chatgpt.com/backend-api/estuary/content?id=file_000000001e7081fbb747b5564a4a3305&ts=495903&p=fs&cid=1&sig=99403b2a219d9919282bfbd06bfb13d8e6fdf7601288bf57887064d055a66dc5&v=0) ส่วนที่บันทึกไปแล้วถ้าผิดพลาดจะแก้ไขอย่างไร ควรแก้ไขได้ #### ChatGPT said: Worked for 35s เราจะเพิ่มระบบ **แก้ไขรายการค่าใช้จ่ายเดิม** โดยให้แก้วันที่ ภาคเรียน รายการ จำนวนเงิน หมายเหตุ เพิ่มไฟล์ใหม่ และเลือกลบไฟล์เดิมได้ พร้อมคำนวณยอดใหม่อัตโนมัติ ขั้นตอนที่ 19: เพิ่ม Route สำหรับแก้ไขและลบรายการค่าใช้จ่าย ----------------------------------------------------------- เปิดไฟล์: routes\backend\scholarshipChild.php ค้นหา Route เดิมส่วนนี้: PHP Route::post( '/{child}/expenses', [ScholarshipChildController::class, 'storeExpense'] )->name('expenses.store'); จากนั้นวาง Route ใหม่ **ต่อท้ายส่วนดังกล่าว**: PHP /* |-------------------------------------------------------------------------- | แก้ไขรายการค่าใช้จ่ายเดิม |-------------------------------------------------------------------------- */ Route::put( '/{child}/expenses/{expense}', [ScholarshipChildController::class, 'updateExpense'] )->name('expenses.update'); /* |-------------------------------------------------------------------------- | ลบรายการค่าใช้จ่ายเดิม |-------------------------------------------------------------------------- */ Route::delete( '/{child}/expenses/{expense}', [ScholarshipChildController::class, 'destroyExpense'] )->name('expenses.destroy'); ตำแหน่งรวมควรเป็นแบบนี้: PHP Route::post( '/{child}/expenses', [ScholarshipChildController::class, 'storeExpense'] )->name('expenses.store'); Route::put( '/{child}/expenses/{expense}', [ScholarshipChildController::class, 'updateExpense'] )->name('expenses.update'); Route::delete( '/{child}/expenses/{expense}', [ScholarshipChildController::class, 'destroyExpense'] )->name('expenses.destroy'); Route::delete( '/delete/{child}', [ScholarshipChildController::class, 'destroy'] )->name('delete'); > Route `expenses.destroy` ใช้ลบเฉพาะรายการค่าใช้จ่ายหนึ่งครั้ง ไม่ได้ลบข้อมูลเด็ก ตรวจสอบ Route ------------- บันทึกไฟล์แล้วรัน: bat php -l routes\backend\scholarshipChild.php จากนั้นล้าง Route Cache: bat php artisan optimize:clear ตรวจสอบ Route: bat php artisan route:list --name=scholarship.children.expenses ควรพบ 3 Route: scholarship.children.expenses.store scholarship.children.expenses.update scholarship.children.expenses.destroy ทำขั้นตอนนี้ก่อน แล้วส่งผลลัพธ์คำสั่งต่อไปนี้มา: bat php artisan route:list --name=scholarship.children.expenses #### You said: C:\\xampp\\htdocs\\kaduab\_clientsdatabase>php artisan route:list --name=scholarship.children.expenses POST scholarship/children/{child}/expenses ...................................................... scholarship.children.expenses.store › Landing\\ScholarshipChildController@storeExpense PUT scholarship/children/{child}/expenses/{expense} .......................................... scholarship.children.expenses.update › Landing\\ScholarshipChildController@updateExpense DELETE scholarship/children/{child}/expenses/{expense} ........................................ scholarship.children.expenses.destroy › Landing\\ScholarshipChildController@destroyExpense Showing \[3\] routes C:\\xampp\\htdocs\\kaduab\_clientsdatabase> Show moreShow less #### ChatGPT said: Worked for 1m 12s Route ครบและถูกต้องทั้ง 3 รายการแล้วครับ ต่อไปเพิ่มเมธอด **แก้ไข** และ **ลบรายการค่าใช้จ่าย** ใน Controller โดยไม่กระทบเมธอดบันทึกเดิม Pasted code ขั้นตอนที่ 20: เพิ่มเมธอดแก้ไขและลบค่าใช้จ่าย --------------------------------------------- เปิดไฟล์: app\Http\Controllers\Landing\ScholarshipChildController.php ### 20.1 เพิ่ม `Validator` บริเวณด้านบนของไฟล์ ค้นหา: PHP use Illuminate\Support\Facades\File; เพิ่มบรรทัดนี้ต่อท้าย: PHP use Illuminate\Support\Facades\Validator; ส่วน `use` จะมีลักษณะดังนี้: PHP use Illuminate\Support\Facades\DB; use Illuminate\Support\Facades\File; use Illuminate\Support\Facades\Validator; use Illuminate\Support\Str; * * * ### 20.2 เพิ่มเมธอด `updateExpense()` ค้นหาเมธอดนี้: PHP public function destroy(ScholarshipChild $child) วางโค้ดต่อไปนี้ **ก่อน** เมธอด `destroy()`: PHP /** * แก้ไขรายการค่าใช้จ่ายที่เคยบันทึก */ public function updateExpense( Request $request, ScholarshipChild $child, ScholarshipExpense $expense ) { /* |-------------------------------------------------------------------------- | ตรวจสอบว่ารายการค่าใช้จ่ายเป็นของเด็กคนนี้จริง |-------------------------------------------------------------------------- */ if ((int) $expense->scholarship_child_id !== (int) $child->id) { abort(404, 'ไม่พบรายการค่าใช้จ่ายของผู้รับทุนรายนี้'); } /* |-------------------------------------------------------------------------- | ตรวจสอบข้อมูล |-------------------------------------------------------------------------- */ $validator = Validator::make( $request->all(), [ 'edit_expense_id' => [ 'nullable', 'integer', ], 'record_date' => [ 'required', 'date', 'before_or_equal:today', ], 'semester' => [ 'required', Rule::in(['1', '2', 1, 2]), ], 'note' => [ 'nullable', 'string', 'max:2000', ], 'items' => [ 'required', 'array', 'min:1', ], /* * ห้ามเลือกรายการซ้ำกันภายในฟอร์มเดียวกัน */ 'items.*.expense_type' => [ 'required', 'distinct', Rule::in(self::EXPENSE_TYPES), ], 'items.*.amount' => [ 'required', 'numeric', 'min:0.01', 'max:99999999.99', ], /* * ไฟล์ใหม่ที่ต้องการเพิ่ม */ 'expense_documents' => [ 'nullable', 'array', 'max:10', ], 'expense_documents.*' => [ 'file', 'mimes:pdf', 'max:10240', ], 'grade_reports' => [ 'nullable', 'array', 'max:10', ], 'grade_reports.*' => [ 'file', 'mimes:pdf', 'max:10240', ], /* * รหัสไฟล์เดิมที่ผู้ใช้เลือกให้ลบ */ 'remove_attachment_ids' => [ 'nullable', 'array', ], 'remove_attachment_ids.*' => [ 'integer', 'distinct', ], ], [ 'record_date.required' => 'กรุณาระบุวันที่บันทึก', 'record_date.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน', 'semester.required' => 'กรุณาเลือกภาคเรียน', 'semester.in' => 'ภาคเรียนต้องเป็น 1 หรือ 2 เท่านั้น', 'items.required' => 'กรุณาเพิ่มรายการค่าใช้จ่ายอย่างน้อย 1 รายการ', 'items.min' => 'กรุณาเพิ่มรายการค่าใช้จ่ายอย่างน้อย 1 รายการ', 'items.*.expense_type.required' => 'กรุณาเลือกรายการค่าใช้จ่าย', 'items.*.expense_type.distinct' => 'ไม่สามารถเลือกรายการค่าใช้จ่ายซ้ำกันภายในการแก้ไขครั้งเดียวได้', 'items.*.expense_type.in' => 'รายการค่าใช้จ่ายไม่ถูกต้อง', 'items.*.amount.required' => 'กรุณาระบุจำนวนเงิน', 'items.*.amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลข', 'items.*.amount.min' => 'จำนวนเงินต้องมากกว่า 0 บาท', 'expense_documents.*.mimes' => 'เอกสารรายการค่าใช้จ่ายต้องเป็นไฟล์ PDF เท่านั้น', 'expense_documents.*.max' => 'เอกสารรายการค่าใช้จ่ายแต่ละไฟล์ต้องมีขนาดไม่เกิน 10 MB', 'grade_reports.*.mimes' => 'ไฟล์ผลการเรียนต้องเป็นไฟล์ PDF เท่านั้น', 'grade_reports.*.max' => 'ไฟล์ผลการเรียนแต่ละไฟล์ต้องมีขนาดไม่เกิน 10 MB', ] ); /* |-------------------------------------------------------------------------- | เมื่อ Validation ไม่ผ่าน ให้เปิด Modal แก้ไขรายการเดิมกลับมา |-------------------------------------------------------------------------- */ if ($validator->fails()) { return back() ->withErrors($validator) ->withInput() ->with('open_edit_expense_modal', $expense->id); } $validated = $validator->validated(); $semester = (int) $validated['semester']; $itemTypes = collect($validated['items']) ->pluck('expense_type') ->filter() ->unique() ->values(); /* |-------------------------------------------------------------------------- | ตรวจรายการซ้ำกับรายการอื่น |-------------------------------------------------------------------------- | ยกเว้นรายการปัจจุบันที่กำลังแก้ไข */ $existingItemTypes = DB::table( 'scholarship_expense_items as expense_items' ) ->join( 'scholarship_expenses as expenses', 'expenses.id', '=', 'expense_items.scholarship_expense_id' ) ->where( 'expenses.scholarship_child_id', $child->id ) ->where( 'expenses.academic_year', $expense->academic_year ) ->where( 'expenses.semester', $semester ) ->where( 'expenses.id', '<>', $expense->id ) ->whereIn( 'expense_items.expense_type', $itemTypes->all() ) ->distinct() ->orderBy('expense_items.expense_type') ->pluck('expense_items.expense_type'); if ($existingItemTypes->isNotEmpty()) { return back() ->withInput() ->withErrors([ 'edit_expense_items' => 'ไม่สามารถแก้ไขได้ เนื่องจากรายการ “' . $existingItemTypes->implode(', ') . '” ถูกบันทึกแล้วสำหรับปีการศึกษา ' . $expense->academic_year . ' ภาคเรียนที่ ' . $semester, ]) ->with('open_edit_expense_modal', $expense->id); } /* |-------------------------------------------------------------------------- | คำนวณยอดรวมใหม่ |-------------------------------------------------------------------------- */ $totalAmount = collect($validated['items']) ->sum(function ($item) { return (float) $item['amount']; }); /* |-------------------------------------------------------------------------- | ตรวจไฟล์เดิมที่ผู้ใช้เลือกให้ลบ |-------------------------------------------------------------------------- */ $removeAttachmentIds = collect( $validated['remove_attachment_ids'] ?? [] ) ->map(fn ($id) => (int) $id) ->filter() ->unique() ->values(); /* * ดึงเฉพาะไฟล์ที่อยู่ในรายการค่าใช้จ่ายนี้ * ป้องกันการส่ง ID ของไฟล์รายการอื่นเข้ามา */ $attachmentsToRemove = $expense->attachments() ->whereIn('id', $removeAttachmentIds->all()) ->get(); $oldFilePathsToDelete = $attachmentsToRemove ->map(function ($attachment) { return public_path($attachment->file_path); }) ->values(); /* * ใช้เก็บเส้นทางไฟล์ใหม่ หากเกิดข้อผิดพลาดจะลบออก */ $newStoredPaths = []; DB::beginTransaction(); try { /* |-------------------------------------------------------------------------- | แก้ไขหัวรายการค่าใช้จ่าย |-------------------------------------------------------------------------- | ปีการศึกษาคงใช้ปีเดิมของรายการ เพื่อรักษาประวัติข้อมูล */ $expense->update([ 'record_date' => $validated['record_date'], 'semester' => $semester, 'total_amount' => round($totalAmount, 2), 'note' => $validated['note'] ?? null, 'updated_by' => auth()->id(), ]); /* |-------------------------------------------------------------------------- | ลบรายการย่อยเดิมแล้วสร้างใหม่ |-------------------------------------------------------------------------- */ $expense->items()->delete(); foreach ($validated['items'] as $item) { $expense->items()->create([ 'expense_type' => $item['expense_type'], 'amount' => round( (float) $item['amount'], 2 ), ]); } /* |-------------------------------------------------------------------------- | ลบข้อมูลไฟล์ที่ผู้ใช้เลือก |-------------------------------------------------------------------------- */ if ($removeAttachmentIds->isNotEmpty()) { $expense->attachments() ->whereIn('id', $removeAttachmentIds->all()) ->delete(); } /* |-------------------------------------------------------------------------- | เพิ่มเอกสารรายการค่าใช้จ่ายใหม่ |-------------------------------------------------------------------------- */ $this->savePdfFiles( $expense, $request->file('expense_documents', []), 'expense_document', $newStoredPaths ); /* |-------------------------------------------------------------------------- | เพิ่มผลการเรียนใหม่ |-------------------------------------------------------------------------- */ $this->savePdfFiles( $expense, $request->file('grade_reports', []), 'grade_report', $newStoredPaths ); DB::commit(); /* |-------------------------------------------------------------------------- | ลบไฟล์จริงหลังฐานข้อมูลบันทึกสำเร็จ |-------------------------------------------------------------------------- */ foreach ($oldFilePathsToDelete as $fullPath) { if (File::exists($fullPath)) { File::delete($fullPath); } } return back()->with( 'success', 'แก้ไขรายการค่าใช้จ่ายของ ' . $child->first_name . ' ' . $child->last_name . ' ปีการศึกษา ' . $expense->academic_year . ' ภาคเรียนที่ ' . $semester . ' ยอดรวม ' . number_format($totalAmount, 2) . ' บาท เรียบร้อยแล้ว' ); } catch (Throwable $exception) { DB::rollBack(); /* * ลบไฟล์ใหม่ที่อัปโหลดแล้ว หากฐานข้อมูลบันทึกไม่สำเร็จ */ foreach ($newStoredPaths as $fullPath) { if (File::exists($fullPath)) { File::delete($fullPath); } } report($exception); return back() ->withInput() ->withErrors([ 'edit_expense' => 'ไม่สามารถแก้ไขรายการค่าใช้จ่ายได้ กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง', ]) ->with('open_edit_expense_modal', $expense->id); } } * * * ### 20.3 เพิ่มเมธอด `destroyExpense()` วางต่อจากเมธอด `updateExpense()` และก่อน: PHP public function destroy(ScholarshipChild $child) ใช้โค้ดนี้: PHP /** * ลบรายการค่าใช้จ่ายหนึ่งครั้ง */ public function destroyExpense( ScholarshipChild $child, ScholarshipExpense $expense ) { /* |-------------------------------------------------------------------------- | ตรวจสอบว่ารายการเป็นของเด็กคนนี้ |-------------------------------------------------------------------------- */ if ((int) $expense->scholarship_child_id !== (int) $child->id) { abort(404, 'ไม่พบรายการค่าใช้จ่ายของผู้รับทุนรายนี้'); } $expenseDirectory = public_path( 'upload/scholarship_expenses/' . $child->id . '/' . $expense->id ); try { /* * ตารางรายการย่อยและไฟล์แนบจะถูกลบด้วย cascade */ DB::transaction(function () use ($expense) { $expense->delete(); }); /* * ลบโฟลเดอร์และไฟล์จริงหลังฐานข้อมูลสำเร็จ */ if (File::exists($expenseDirectory)) { File::deleteDirectory($expenseDirectory); } return back()->with( 'success', 'ลบรายการค่าใช้จ่ายของ ' . $child->first_name . ' ' . $child->last_name . ' เรียบร้อยแล้ว' ); } catch (Throwable $exception) { report($exception); return back()->withErrors([ 'delete_expense' => 'ไม่สามารถลบรายการค่าใช้จ่ายได้ กรุณาลองใหม่อีกครั้ง', ]); } } ขั้นตอนที่ 20.4: ตรวจสอบ Syntax ------------------------------- บันทึก Controller แล้วรัน: bat php -l app\Http\Controllers\Landing\ScholarshipChildController.php ต้องขึ้น: No syntax errors detected in app\Http\Controllers\Landing\ScholarshipChildController.php จากนั้นรัน: bat php artisan optimize:clear ตอนนี้ยังไม่ต้องแก้หน้า Blade เพราะขั้นต่อไปเราจะเพิ่มปุ่ม **แก้ไข** และ **ลบ** ในประวัติรายการค่าใช้จ่าย พร้อม Modal แก้ไขครับ Sources #### You said: Pasted text(691).txt Document ปรับให้มีปุ่มแก้ไขด้วยครับ #### ChatGPT said: Worked for 4m 4s ผมปรับไฟล์ Blade ทั้งชุดให้แล้วครับ จากไฟล์เดิมที่ตารางประวัติยังไม่มีคอลัมน์จัดการและไม่มี Modal แก้ไขรายการค่าใช้จ่าย Pasted text ดาวน์โหลดไฟล์ที่ปรับแล้ว ------------------------ index.blade.php README\_add\_expense\_edit\_button.txt นำไฟล์ไปแทนที่ไฟล์เดิมที่: resources\views\landing\scholarship\children\index.blade.php ระบบที่เพิ่มให้ --------------- ในตาราง **ประวัติรายการค่าใช้จ่าย** จะมีคอลัมน์ **จัดการ** และปุ่มดินสอสำหรับแก้ไขแต่ละรายการ เมื่อกดแก้ไข จะเปิด Modal ซึ่งสามารถแก้ไข: * วันที่บันทึก * ภาคเรียนที่ 1 หรือ 2 * รายการค่าใช้จ่าย * จำนวนเงินแต่ละรายการ * เพิ่มหรือลบแถวรายการ * หมายเหตุ * เพิ่มเอกสารค่าใช้จ่าย PDF ใหม่ * เพิ่มผลการเรียน PDF ใหม่ * เลือกลบไฟล์เดิมที่บันทึกไว้ ยอดรวมใหม่จะคำนวณทันทีใน Modal และเมื่อบันทึก ระบบจะปรับ: ยอดรายการครั้งนั้น ยอดรวมของปีการศึกษา ยอดรวมทุกปีการศึกษา โดยอัตโนมัติ เมื่อ Validation ไม่ผ่าน ระบบจะแสดง SweetAlert ประมาณ 3 วินาที แล้วเปิด Modal แก้ไขรายการเดิมกลับมา พร้อมข้อมูลที่กรอกไว้ ตรวจสอบ Controller ก่อนใช้งาน ----------------------------- ไฟล์ Controller ต้องมี: PHP use Illuminate\Support\Facades\Validator; และมีเมธอด: PHP public function updateExpense( Request $request, ScholarshipChild $child, ScholarshipExpense $expense ) Route ที่คุณสร้างไว้แล้วถูกต้อง: scholarship.children.expenses.update หลังแทนที่ไฟล์ -------------- รันคำสั่ง: bat php artisan optimize:clear จากนั้น: bat php artisan view:cache ควรขึ้น: INFO Blade templates cached successfully. เปิดหน้า: http://127.0.0.1:8000/scholarship/children แล้วกด: Ctrl + F5 จากนั้นเปิด **บันทึกค่าใช้จ่าย → ประวัติรายการค่าใช้จ่าย** จะเห็นปุ่มแก้ไขด้านขวาของแต่ละรายการครับ Sources ChatGPT can make mistakes. Check important info. (function \_we(e,t){e?.addEventListener(\`input\`,()=>{performance.mark(t)},{once:!0})})(document.currentScript?.parentElement,"composer.first-prompt-input");window.\_\_oai\_logHTML?window.\_\_oai\_logHTML():window.\_\_oai\_SSR\_HTML=window.\_\_oai\_SSR\_HTML||Date.now();requestAnimationFrame((function(){window.\_\_oai\_logTTI?window.\_\_oai\_logTTI():window.\_\_oai\_SSR\_TTI=window.\_\_oai\_SSR\_TTI||Date.now()}))
+
+Start writing
+
+ให้รันคำสั่งนี้ใน Terminal ของ HostAtom โดยต้องอยู่ที่โฟลเดอร์หลักของ Laravel ซึ่งมีไฟล์ artisan คือ /httpdocs
+
+cd /var/www/vhosts/kaduab.com/httpdocs
+php artisan storage:link
+
+คำสั่งนี้จะสร้างลิงก์ดังนี้:
+
+httpdocs/public/storage
+        ↓ เชื่อมไปยัง
+httpdocs/storage/app/public
+
+Laravel ใช้ลิงก์นี้เพื่อให้รูปภาพหรือไฟล์ที่บันทึกด้วย Storage::disk('public') สามารถเปิดผ่านเว็บไซต์ได้ เช่น:
+
+asset('storage/ชื่อไฟล์')
+
+เมื่อสำเร็จควรแสดงข้อความประมาณนี้:
+
+The [public/storage] link has been connected to [storage/app/public].
+ก่อนรันต้องตรวจสอบ
+
+อย่าสร้างโฟลเดอร์ httpdocs/public/storage เอง เพราะตำแหน่งนี้ต้องเป็น Symbolic Link ไม่ใช่โฟลเดอร์ธรรมดา
+
+หากเคยสร้างโฟลเดอร์ public/storage ไว้แล้วและไม่มีไฟล์สำคัญ ให้ลบโฟลเดอร์นั้นก่อน แล้วจึงรัน:
+
+php artisan storage:link
+Permission ที่ควรใช้
+httpdocs/storage                 775
+httpdocs/storage/app             775
+httpdocs/storage/app/public      775
+httpdocs/bootstrap/cache         775
+
+ส่วน public/storage ที่สร้างจากคำสั่งนี้เป็นลิงก์ จึงไม่ต้องตั้ง Permission แยกครับ
