@@ -26,6 +26,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
+*, *::before, *::after{
+    box-sizing:border-box;
+}
+
 body{
     font-family:"TH Sarabun New","Sarabun",sans-serif;
     font-size:14px;
@@ -182,6 +186,19 @@ body{
     padding:6px 0;
 }
 
+.text-block{
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+}
+
+.estimate-report-section,
+.estimate-report-meta,
+.estimate-report-picture-item{
+    break-inside:avoid;
+    page-break-inside:avoid;
+}
+
 /* ===== IMAGE: แก้เฉพาะส่วนนี้ ไม่ให้รูปจอใหญ่เต็มแถว ===== */
 .estimate-report-pictures{
     display:grid;
@@ -203,8 +220,9 @@ body{
 .estimate-report-picture-frame img{
     width:100%;
     height:180px;
-    object-fit:cover;
+    object-fit:contain;
     object-position:center;
+    background:#f8fafc;
     border-radius:10px;
     border:1px solid #dbe3ec;
     display:block;
@@ -257,7 +275,18 @@ body{
 }
 
 /* ===== PRINT ===== */
+@page{
+    size:A4 portrait;
+    margin:12mm;
+}
+
 @media print{
+    html,
+    body{
+        width:auto;
+        min-height:auto;
+    }
+
     body{
         background:#fff;
         padding:0;
@@ -276,6 +305,15 @@ body{
         padding:0;
     }
 
+    .estimate-report-head{
+        margin-top:0;
+    }
+
+    .estimate-report-section-title{
+        break-after:avoid;
+        page-break-after:avoid;
+    }
+
     .estimate-report-pictures{
         grid-template-columns:repeat(2, 1fr);
         gap:10px;
@@ -287,6 +325,7 @@ body{
 
     .estimate-report-picture-frame img{
         height:180px;
+        object-fit:contain;
         border-radius:6px;
     }
 }
@@ -429,16 +468,17 @@ body{
                             @foreach($estimate->pictures as $index => $picture)
 
                                 @php
-                                    $imageUrl = str_starts_with($picture->path, 'upload/')
+                                    $imageUrl = str_starts_with($picture->path, 'upload/') || str_starts_with($picture->path, 'storage/')
                                         ? asset($picture->path)
-                                        : asset('storage/' . $picture->path);
+                                        : asset('storage/' . ltrim($picture->path, '/'));
                                 @endphp
 
                                 <div class="estimate-report-picture-item">
                                     <div class="estimate-report-picture-frame">
 
                                         <img src="{{ $imageUrl }}"
-                                            alt="รูปภาพประกอบ {{ $index + 1 }}">
+                                            alt="รูปภาพประกอบ {{ $index + 1 }}"
+                                            decoding="async">
 
                                         <div class="estimate-report-picture-caption">
                                             รูปภาพประกอบ {{ $index + 1 }}

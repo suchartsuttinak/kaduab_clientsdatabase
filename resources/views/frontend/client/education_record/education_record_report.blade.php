@@ -450,10 +450,64 @@
             display:none !important;
         }
     }
+
+
+    .record-meta-strip{
+        display:grid;
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+        gap:8px 14px;
+        padding:10px 12px;
+        background:#f8fafc;
+        border-bottom:1px solid #dde5ef;
+        font-size:.9rem;
+    }
+
+    .record-meta-strip-item{
+        min-width:0;
+        color:#334155;
+        word-break:break-word;
+    }
+
+    .record-meta-strip-label{
+        font-weight:800;
+        color:#0f172a;
+    }
+
+    @media (max-width: 767.98px){
+        .record-meta-strip{
+            grid-template-columns:1fr 1fr;
+        }
+    }
+
+    @media print{
+        .record-block{
+            break-inside:avoid;
+            page-break-inside:avoid;
+        }
+
+        .record-meta-strip{
+            grid-template-columns:repeat(4, minmax(0, 1fr));
+            padding:7px 9px;
+            font-size:12px;
+        }
+    }
+
 </style>
 
 @php
-    $latestRecord = $educationRecords->sortByDesc('record_date')->first();
+    /*
+     * Controller จัดเรียงตามปีการศึกษาและภาคเรียนแล้ว
+     * จึงใช้รายการแรกเป็นภาคเรียนล่าสุดเหมือนหน้าติดตามผลการเรียน
+     */
+    $latestRecord = $latestEducationRecord ?? $educationRecords->first();
+
+    $latestSemesterName = data_get($latestRecord, 'semester_label')
+        ?: data_get($latestRecord, 'semester.semester_name')
+        ?: '-';
+
+    $hasGpa = static fn ($record): bool => $record
+        && $record->grade_average !== null
+        && $record->grade_average !== '';
 @endphp
 
 <div class="container-fluid education-report-page py-3 py-md-4">
@@ -491,31 +545,31 @@
 
                     <div class="report-meta-item">
                         <div class="report-meta-label">วันที่ออกรายงาน</div>
-                        <div class="report-meta-value">: {{ now()->format('d/m') }}/{{ now()->year + 543 }}</div>
+                        <div class="report-meta-value">: {{ now('Asia/Bangkok')->format('d/m') }}/{{ now('Asia/Bangkok')->year + 543 }}</div>
                     </div>
 
                     <div class="report-meta-item">
                         <div class="report-meta-label">ระดับการศึกษาล่าสุด</div>
-                        <div class="report-meta-value">: {{ $latestRecord->education->education_name ?? '-' }}</div>
+                        <div class="report-meta-value">: {{ data_get($latestRecord, 'education.education_name', '-') }}</div>
                     </div>
 
                   <div class="report-meta-item">
     <div class="report-meta-label">ภาคเรียนล่าสุด</div>
     <div class="report-meta-value">
-        : {{ $latestRecord->semester_label ?? data_get($latestRecord, 'semester.semester_name', '-') }}
+        : {{ $latestSemesterName }}
     </div>
 </div>
 
                     <div class="report-meta-item">
                         <div class="report-meta-label">สถานศึกษาล่าสุด</div>
-                        <div class="report-meta-value">: {{ $latestRecord->school_name ?? '-' }}</div>
+                        <div class="report-meta-value">: {{ data_get($latestRecord, 'school_name', '-') }}</div>
                     </div>
 
                     <div class="report-meta-item">
                         <div class="report-meta-label">เกรดเฉลี่ย</div>
                         <div class="report-meta-value">
                             :
-                            @if(!empty($latestRecord->grade_average) && $latestRecord->grade_average != 0)
+                            @if($hasGpa($latestRecord))
                                 {{ number_format($latestRecord->grade_average, 2) }}
                             @else
                                 รอผล
@@ -531,6 +585,24 @@
                 @foreach($educationRecords as $record)
                     <div class="record-block">
                         <div class="record-body">
+                            <div class="record-meta-strip">
+                                <div class="record-meta-strip-item">
+                                    <span class="record-meta-strip-label">วันที่บันทึก:</span>
+                                    {{ $record->record_date ? \Carbon\Carbon::parse($record->record_date)->format('d/m') . '/' . (\Carbon\Carbon::parse($record->record_date)->year + 543) : '-' }}
+                                </div>
+                                <div class="record-meta-strip-item">
+                                    <span class="record-meta-strip-label">ระดับการศึกษา:</span>
+                                    {{ data_get($record, 'education.education_name', '-') }}
+                                </div>
+                                <div class="record-meta-strip-item">
+                                    <span class="record-meta-strip-label">ภาคเรียน:</span>
+                                    {{ $record->semester_label ?? data_get($record, 'semester.semester_name', '-') }}
+                                </div>
+                                <div class="record-meta-strip-item">
+                                    <span class="record-meta-strip-label">สถานศึกษา:</span>
+                                    {{ $record->school_name ?: '-' }}
+                                </div>
+                            </div>
                             @if($record->subjects && $record->subjects->count())
 
                                 {{-- Desktop / Print --}}
@@ -554,7 +626,7 @@
                                             <tr class="subject-summary-row">
                                                 <td colspan="2" class="summary-label">เกรดเฉลี่ย (GPA)</td>
                                                 <td class="subject-col-center">
-                                                    @if(!empty($record->grade_average) && $record->grade_average != 0)
+                                                    @if($hasGpa($record))
                                                         {{ number_format($record->grade_average, 2) }}
                                                     @else
                                                         -
@@ -585,7 +657,7 @@
                                         <div class="subject-mobile-summary-label">เกรดเฉลี่ย (GPA)</div>
                                         <div></div>
                                         <div class="subject-mobile-summary-value">
-                                            @if(!empty($record->grade_average) && $record->grade_average != 0)
+                                            @if($hasGpa($record))
                                                 {{ number_format($record->grade_average, 2) }}
                                             @else
                                                 -

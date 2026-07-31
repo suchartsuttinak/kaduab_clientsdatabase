@@ -1,12 +1,114 @@
 @extends('admin.admin_master')
 @section('admin')
 
+    @php
+        $districts = $districts ?? collect();
+        $sub_districts = $sub_districts ?? collect();
+        $origin_districts = $origin_districts ?? collect();
+        $origin_sub_districts = $origin_sub_districts ?? collect();
+    @endphp
+
 
     <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    {{-- <style>
+    <style>
+        .client-form-action {
+            min-width: 148px;
+            min-height: 46px;
+            padding: .65rem 1.15rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            font-size: .92rem;
+            font-weight: 750;
+            line-height: 1.2;
+            white-space: nowrap;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform .16s ease, box-shadow .16s ease, background .16s ease,
+                border-color .16s ease, color .16s ease;
+        }
+
+        .client-form-submit,
+        .client-form-submit:visited {
+            border-color: #1d4ed8 !important;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, .20) !important;
+        }
+
+        .client-form-submit:hover,
+        .client-form-submit:focus,
+        .client-form-submit:focus-visible {
+            border-color: #1e40af !important;
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 10px 22px rgba(37, 99, 235, .25),
+                0 0 0 4px rgba(37, 99, 235, .12) !important;
+        }
+
+        .client-form-submit:active,
+        .client-form-submit.active {
+            transform: translateY(1px) scale(.995) !important;
+            border-color: #1e3a8a !important;
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
+            box-shadow: 0 4px 10px rgba(30, 64, 175, .23),
+                inset 0 2px 4px rgba(15, 23, 42, .16) !important;
+        }
+
+        .client-form-cancel,
+        .client-form-cancel:visited {
+            border-color: #cbd5e1 !important;
+            background: #fff !important;
+            color: #475569 !important;
+            box-shadow: none !important;
+        }
+
+        .client-form-cancel:hover,
+        .client-form-cancel:focus,
+        .client-form-cancel:focus-visible {
+            border-color: #94a3b8 !important;
+            background: #f1f5f9 !important;
+            color: #1e293b !important;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, .08),
+                0 0 0 4px rgba(100, 116, 139, .10) !important;
+        }
+
+        .client-form-submit.is-submitting,
+        .client-form-submit.is-submitting:hover,
+        .client-form-submit:disabled {
+            transform: none !important;
+            border-color: #1d4ed8 !important;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+            color: #fff !important;
+            opacity: 1 !important;
+            cursor: progress;
+            box-shadow: 0 7px 16px rgba(37, 99, 235, .18) !important;
+        }
+
+        .client-form-submit .spinner-border {
+            width: 1rem;
+            height: 1rem;
+            border-width: .14em;
+        }
+
+        @media (max-width: 575.98px) {
+            .action-bar {
+                display: grid !important;
+                grid-template-columns: 1fr;
+            }
+
+            .client-form-action {
+                width: 100%;
+                min-width: 0;
+            }
+        }
+    </style>
+
+{{-- <style>
     .registry-page {
         background: #f5f6f8;
         padding: 12px;
@@ -414,7 +516,7 @@
             </div>
 
             <div class="registry-body">
-                <form action="{{ route('client.store') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('client.store') }}" method="POST" enctype="multipart/form-data" id="client-create-form">
                     @csrf
 
                     {{-- ข้อมูลผู้รับ --}}
@@ -448,32 +550,7 @@
                                         @enderror
                                     </div>
 
-                                    <script>
-                                        document.addEventListener('DOMContentLoaded', function() {
-                                            const idCard = document.getElementById('id_card');
 
-                                            if (idCard) {
-                                                idCard.addEventListener('input', function() {
-                                                    let value = this.value.replace(/\D/g, '').substring(0, 13);
-
-                                                    if (value.length > 1) {
-                                                        value = value.substring(0, 1) + '-' + value.substring(1);
-                                                    }
-                                                    if (value.length > 6) {
-                                                        value = value.substring(0, 6) + '-' + value.substring(6);
-                                                    }
-                                                    if (value.length > 12) {
-                                                        value = value.substring(0, 12) + '-' + value.substring(12);
-                                                    }
-                                                    if (value.length > 15) {
-                                                        value = value.substring(0, 15) + '-' + value.substring(15);
-                                                    }
-
-                                                    this.value = value;
-                                                });
-                                            }
-                                        });
-                                    </script>
 
                                     <div class="col-md-2">
                                         <label for="title_id" class="form-label">คำนำหน้า</label>
@@ -793,12 +870,8 @@
                                             <option value="">--เลือก--</option>
 
                                             @php
-                                                $authUser = auth()->user();
-
-                                                $availableHouses =
-                                                    $authUser->isAdmin() || $authUser->isExecutive()
-                                                        ? $houses
-                                                        : $houses->whereIn('id', $authUser->accessibleHouseIds());
+                                                // Controller กรองบ้านตามสิทธิ์เรียบร้อยแล้ว
+                                                $availableHouses = $houses;
                                             @endphp
 
                                             @foreach ($availableHouses as $item)
@@ -1019,7 +1092,7 @@
                                         @foreach ($sub_districts as $subdistrict)
                                             <option value="{{ $subdistrict->id }}"
                                                 {{ old('sub_district_id', $recipient->sub_district_id ?? '') == $subdistrict->id ? 'selected' : '' }}>
-                                                {{ $subdistrict->subdist_name }}
+                                                {{ $subdistrict->subd_name ?? $subdistrict->subdist_name ?? '-' }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -1132,7 +1205,7 @@
                                         @foreach ($origin_sub_districts as $subdistrict)
                                             <option value="{{ $subdistrict->id }}"
                                                 {{ old('origin_sub_district_id', $client->origin_sub_district_id ?? '') == $subdistrict->id ? 'selected' : '' }}>
-                                                {{ $subdistrict->subdist_name }}
+                                                {{ $subdistrict->subd_name ?? $subdistrict->subdist_name ?? '-' }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -1165,11 +1238,12 @@
                     </div>
 
                     <div class="action-bar">
-                        <button type="submit" class="btn btn-success btn-registry">
-                            <i class="bi bi-check-circle me-1"></i> บันทึกข้อมูล
+                        <button type="submit" class="btn client-form-action client-form-submit" id="client-create-submit">
+                            <i class="bi bi-floppy-fill" aria-hidden="true"></i>
+                            <span>บันทึกข้อมูล</span>
                         </button>
 
-                        <a href="{{ route('client.show') }}" class="btn btn-danger btn-registry">
+                        <a href="{{ route('client.show') }}" class="btn client-form-action client-form-cancel">
                             <i class="bi bi-x-circle me-1"></i> ยกเลิก
                         </a>
                     </div>
@@ -1178,247 +1252,364 @@
         </div>
     </div>
 
-    <script>
-        $(document).ready(function() {
-
-            $('#district').empty().append('<option value="">--เลือกอำเภอ--</option>');
-            $('#subdistrict').empty().append('<option value="">--เลือกตำบล--</option>');
-            $('#zipcode').val('');
-
-            $('#province').on('change', function() {
-                let province_id = $(this).val();
-
-                if (province_id) {
-                    $.get('/get-districts/' + province_id, function(data) {
-                        $('#district').empty().append('<option value="">--เลือกอำเภอ--</option>');
-                        $.each(data, function(key, value) {
-                            $('#district').append('<option value="' + value.id + '">' +
-                                value.dist_name + '</option>');
-                        });
-
-                        $('#subdistrict').empty().append('<option value="">--เลือกตำบล--</option>');
-                        $('#zipcode').val('');
-                    });
-                } else {
-                    $('#district').empty().append('<option value="">--เลือกอำเภอ--</option>');
-                    $('#subdistrict').empty().append('<option value="">--เลือกตำบล--</option>');
-                    $('#zipcode').val('');
-                }
-            });
-
-            $('#district').on('change', function() {
-                let district_id = $(this).val();
-
-                if (district_id) {
-                    $.get('/get-subdistricts/' + district_id, function(data) {
-                        $('#subdistrict').empty().append('<option value="">--เลือกตำบล--</option>');
-                        $.each(data, function(key, value) {
-                            $('#subdistrict').append('<option value="' + value.id + '">' +
-                                value.subd_name + '</option>');
-                        });
-                        $('#zipcode').val('');
-                    });
-                } else {
-                    $('#subdistrict').empty().append('<option value="">--เลือกตำบล--</option>');
-                    $('#zipcode').val('');
-                }
-            });
-
-            $('#subdistrict').on('change', function() {
-                let subdistrict_id = $(this).val();
-
-                if (subdistrict_id) {
-                    $.get('/get-zipcode/' + subdistrict_id, function(data) {
-                        $('#zipcode').val(data.zipcode);
-                    });
-                } else {
-                    $('#zipcode').val('');
-                }
-            });
-
-            $('#origin_district').empty().append('<option value="">--เลือกอำเภอ--</option>');
-            $('#origin_subdistrict').empty().append('<option value="">--เลือกตำบล--</option>');
-            $('#origin_zipcode').val('');
-
-            $('#origin_province').on('change', function() {
-                let province_id = $(this).val();
-                if (province_id) {
-                    $.get('/get-origin-districts/' + province_id, function(data) {
-                        $('#origin_district').empty().append(
-                            '<option value="">--เลือกอำเภอ--</option>');
-                        $.each(data, function(key, value) {
-                            $('#origin_district').append('<option value="' + value.id +
-                                '">' + value.dist_name + '</option>');
-                        });
-                        $('#origin_subdistrict').empty().append(
-                            '<option value="">--เลือกตำบล--</option>');
-                        $('#origin_zipcode').val('');
-                    });
-                } else {
-                    $('#origin_district').empty().append('<option value="">--เลือกอำเภอ--</option>');
-                    $('#origin_subdistrict').empty().append('<option value="">--เลือกตำบล--</option>');
-                    $('#origin_zipcode').val('');
-                }
-            });
-
-            $('#origin_district').on('change', function() {
-                let district_id = $(this).val();
-                if (district_id) {
-                    $.get('/get-origin-subdistricts/' + district_id, function(data) {
-                        $('#origin_subdistrict').empty().append(
-                            '<option value="">--เลือกตำบล--</option>');
-                        $.each(data, function(key, value) {
-                            $('#origin_subdistrict').append('<option value="' + value.id +
-                                '">' + value.subd_name + '</option>');
-                        });
-                        $('#origin_zipcode').val('');
-                    });
-                } else {
-                    $('#origin_subdistrict').empty().append('<option value="">--เลือกตำบล--</option>');
-                    $('#origin_zipcode').val('');
-                }
-            });
-
-            $('#origin_subdistrict').on('change', function() {
-                let subdistrict_id = $(this).val();
-                if (subdistrict_id) {
-                    $.get('/get-origin-zipcode/' + subdistrict_id, function(data) {
-                        $('#origin_zipcode').val(data.origin_zipcode);
-                    });
-                } else {
-                    $('#origin_zipcode').val('');
-                }
-            });
-        });
-    </script>
 
     <script>
-        $(document).ready(function() {
-            $('#image').change(function(e) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    $('#showImage').attr('src', e.target.result);
+        document.addEventListener('DOMContentLoaded', function () {
+            'use strict';
+
+            const form = document.getElementById('client-create-form');
+            if (!form) return;
+
+            const endpoints = {
+                districts: @json(url('/get-districts')),
+                subdistricts: @json(url('/get-subdistricts')),
+                zipcode: @json(url('/get-zipcode')),
+                originDistricts: @json(url('/get-origin-districts')),
+                originSubdistricts: @json(url('/get-origin-subdistricts')),
+                originZipcode: @json(url('/get-origin-zipcode'))
+            };
+
+            const initialValues = {
+                district: String(@json(old('district_id', $client->district_id ?? '')) ?? ''),
+                subdistrict: String(@json(old('sub_district_id', $client->sub_district_id ?? '')) ?? ''),
+                originDistrict: String(@json(old('origin_district_id', $client->origin_district_id ?? '')) ?? ''),
+                originSubdistrict: String(@json(old('origin_sub_district_id', $client->origin_sub_district_id ?? '')) ?? '')
+            };
+
+            const cache = new Map();
+            const requestVersions = new WeakMap();
+
+            const current = {
+                province: document.getElementById('province'),
+                district: document.getElementById('district'),
+                subdistrict: document.getElementById('subdistrict'),
+                zipcode: document.getElementById('zipcode')
+            };
+
+            const origin = {
+                province: document.getElementById('origin_province'),
+                district: document.getElementById('origin_district'),
+                subdistrict: document.getElementById('origin_subdistrict'),
+                zipcode: document.getElementById('origin_zipcode')
+            };
+
+            async function fetchCached(baseUrl, id) {
+                const key = `${baseUrl}:${id}`;
+
+                if (!cache.has(key)) {
+                    const request = fetch(`${baseUrl}/${encodeURIComponent(id)}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }).then(function (response) {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        return response.json();
+                    }).catch(function (error) {
+                        cache.delete(key);
+                        throw error;
+                    });
+
+                    cache.set(key, request);
                 }
-                reader.readAsDataURL(e.target.files['0']);
-            });
-        });
-    </script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const inputs = document.querySelectorAll('input, select, textarea');
+                return cache.get(key);
+            }
 
-            inputs.forEach(input => {
-                input.addEventListener('input', function() {
-                    const errorElement = document.getElementById('error-' + input.name);
-                    if (errorElement) {
-                        errorElement.remove();
-                    }
+            function resetSelect(select, placeholder) {
+                if (!select) return;
+                select.replaceChildren(new Option(placeholder, ''));
+                select.value = '';
+            }
 
-                    if (input.type === 'radio') {
-                        document.querySelectorAll('input[name="' + input.name + '"]').forEach(
-                            radio => {
-                                radio.classList.remove('is-invalid');
-                            });
-                    } else {
-                        input.classList.remove('is-invalid');
-                    }
+            function hasOption(select, value) {
+                if (!select || !value) return false;
+                return Array.from(select.options).some(function (option) {
+                    return String(option.value) === String(value);
+                });
+            }
+
+            function fillSelect(select, items, labelKey, placeholder, selectedValue) {
+                if (!select) return;
+
+                const fragment = document.createDocumentFragment();
+                fragment.appendChild(new Option(placeholder, ''));
+
+                (Array.isArray(items) ? items : []).forEach(function (item) {
+                    const option = new Option(item[labelKey] ?? '-', item.id);
+                    fragment.appendChild(option);
                 });
 
-                input.addEventListener('change', function() {
-                    const errorElement = document.getElementById('error-' + input.name);
-                    if (errorElement) {
-                        errorElement.remove();
+                select.replaceChildren(fragment);
+                select.value = selectedValue ? String(selectedValue) : '';
+            }
+
+            async function loadDistricts(group, endpoint, selectedValue = '') {
+                if (!group.province || !group.district) return;
+
+                const provinceId = group.province.value;
+                const version = (requestVersions.get(group.district) ?? 0) + 1;
+                requestVersions.set(group.district, version);
+
+                resetSelect(group.district, '--เลือกอำเภอ--');
+                resetSelect(group.subdistrict, '--เลือกตำบล--');
+                if (group.zipcode) group.zipcode.value = '';
+
+                if (!provinceId) return;
+
+                group.district.disabled = true;
+                group.district.options[0].textContent = 'กำลังโหลดอำเภอ...';
+
+                try {
+                    const items = await fetchCached(endpoint, provinceId);
+                    if (requestVersions.get(group.district) !== version) return;
+                    fillSelect(group.district, items, 'dist_name', '--เลือกอำเภอ--', selectedValue);
+                } catch (error) {
+                    if (requestVersions.get(group.district) === version) {
+                        resetSelect(group.district, '--โหลดอำเภอไม่สำเร็จ--');
+                    }
+                    console.error('Load districts failed:', error);
+                } finally {
+                    if (requestVersions.get(group.district) === version) {
+                        group.district.disabled = false;
+                    }
+                }
+            }
+
+            async function loadSubdistricts(group, endpoint, selectedValue = '') {
+                if (!group.district || !group.subdistrict) return;
+
+                const districtId = group.district.value;
+                const version = (requestVersions.get(group.subdistrict) ?? 0) + 1;
+                requestVersions.set(group.subdistrict, version);
+
+                resetSelect(group.subdistrict, '--เลือกตำบล--');
+                if (group.zipcode) group.zipcode.value = '';
+
+                if (!districtId) return;
+
+                group.subdistrict.disabled = true;
+                group.subdistrict.options[0].textContent = 'กำลังโหลดตำบล...';
+
+                try {
+                    const items = await fetchCached(endpoint, districtId);
+                    if (requestVersions.get(group.subdistrict) !== version) return;
+                    fillSelect(group.subdistrict, items, 'subd_name', '--เลือกตำบล--', selectedValue);
+                } catch (error) {
+                    if (requestVersions.get(group.subdistrict) === version) {
+                        resetSelect(group.subdistrict, '--โหลดตำบลไม่สำเร็จ--');
+                    }
+                    console.error('Load subdistricts failed:', error);
+                } finally {
+                    if (requestVersions.get(group.subdistrict) === version) {
+                        group.subdistrict.disabled = false;
+                    }
+                }
+            }
+
+            async function loadZipcode(group, endpoint, responseKey) {
+                if (!group.subdistrict || !group.zipcode) return;
+
+                const subdistrictId = group.subdistrict.value;
+                group.zipcode.value = '';
+
+                if (!subdistrictId) return;
+
+                try {
+                    const data = await fetchCached(endpoint, subdistrictId);
+                    group.zipcode.value = data[responseKey] ?? data.zipcode ?? '';
+                } catch (error) {
+                    console.error('Load zipcode failed:', error);
+                }
+            }
+
+            if (current.province) {
+                current.province.addEventListener('change', function () {
+                    loadDistricts(current, endpoints.districts);
+                });
+            }
+
+            if (current.district) {
+                current.district.addEventListener('change', function () {
+                    loadSubdistricts(current, endpoints.subdistricts);
+                });
+            }
+
+            if (current.subdistrict) {
+                current.subdistrict.addEventListener('change', function () {
+                    loadZipcode(current, endpoints.zipcode, 'zipcode');
+                });
+            }
+
+            if (origin.province) {
+                origin.province.addEventListener('change', function () {
+                    loadDistricts(origin, endpoints.originDistricts);
+                });
+            }
+
+            if (origin.district) {
+                origin.district.addEventListener('change', function () {
+                    loadSubdistricts(origin, endpoints.originSubdistricts);
+                });
+            }
+
+            if (origin.subdistrict) {
+                origin.subdistrict.addEventListener('change', function () {
+                    loadZipcode(origin, endpoints.originZipcode, 'origin_zipcode');
+                });
+            }
+
+            // รองรับ Controller รุ่นเดิม: โหลดเฉพาะเมื่อมีค่าที่เลือกไว้แต่ option ยังไม่ถูกส่งมา
+            (async function restoreLocationOptions() {
+                if (current.province?.value && initialValues.district && !hasOption(current.district, initialValues.district)) {
+                    await loadDistricts(current, endpoints.districts, initialValues.district);
+                }
+                if (current.district?.value && initialValues.subdistrict && !hasOption(current.subdistrict, initialValues.subdistrict)) {
+                    await loadSubdistricts(current, endpoints.subdistricts, initialValues.subdistrict);
+                }
+                if (origin.province?.value && initialValues.originDistrict && !hasOption(origin.district, initialValues.originDistrict)) {
+                    await loadDistricts(origin, endpoints.originDistricts, initialValues.originDistrict);
+                }
+                if (origin.district?.value && initialValues.originSubdistrict && !hasOption(origin.subdistrict, initialValues.originSubdistrict)) {
+                    await loadSubdistricts(origin, endpoints.originSubdistricts, initialValues.originSubdistrict);
+                }
+            })();
+
+            const sameAddress = document.getElementById('sameAsCurrentAddress');
+            if (sameAddress) {
+                sameAddress.addEventListener('change', async function () {
+                    const pairs = [
+                        ['address', 'origin_address'],
+                        ['moo', 'origin_moo'],
+                        ['soi', 'origin_soi'],
+                        ['road', 'origin_road'],
+                        ['village', 'origin_village'],
+                        ['phone', 'origin_phone']
+                    ];
+
+                    if (!this.checked) {
+                        pairs.forEach(function (pair) {
+                            const target = document.getElementById(pair[1]);
+                            if (target) target.value = '';
+                        });
+                        if (origin.province) origin.province.value = '';
+                        resetSelect(origin.district, '--เลือกอำเภอ--');
+                        resetSelect(origin.subdistrict, '--เลือกตำบล--');
+                        if (origin.zipcode) origin.zipcode.value = '';
+                        return;
                     }
 
-                    if (input.type === 'radio') {
-                        document.querySelectorAll('input[name="' + input.name + '"]').forEach(
-                            radio => {
-                                radio.classList.remove('is-invalid');
-                            });
-                    } else {
-                        input.classList.remove('is-invalid');
+                    pairs.forEach(function (pair) {
+                        const source = document.getElementById(pair[0]);
+                        const target = document.getElementById(pair[1]);
+                        if (source && target) target.value = source.value;
+                    });
+
+                    if (origin.province && current.province) {
+                        origin.province.value = current.province.value;
+                        await loadDistricts(origin, endpoints.originDistricts, current.district?.value ?? '');
+                        await loadSubdistricts(origin, endpoints.originSubdistricts, current.subdistrict?.value ?? '');
+                    }
+
+                    if (origin.zipcode && current.zipcode) {
+                        origin.zipcode.value = current.zipcode.value;
                     }
                 });
-            });
-        });
-    </script>
+            }
 
-    <script>
-        $(function() {
-            $('#sameAsCurrentAddress').on('change', function() {
-                if ($(this).is(':checked')) {
-                    $('#origin_address').val($('#address').val());
-                    $('#origin_moo').val($('#moo').val());
-                    $('#origin_soi').val($('#soi').val());
-                    $('#origin_road').val($('#road').val());
-                    $('#origin_village').val($('#village').val());
-                    $('#origin_zipcode').val($('#zipcode').val());
-                    $('#origin_phone').val($('#phone').val());
+            // ใช้ event delegation เพียงชุดเดียว ลด listener จำนวนมาก
+            function clearValidation(event) {
+                const input = event.target.closest('input, select, textarea');
+                if (!input || !form.contains(input)) return;
 
-                    let province_id = $('#province').val();
-                    $('#origin_province').val(province_id).trigger('change');
-
-                    setTimeout(function() {
-                        let district_id = $('#district').val();
-                        $('#origin_district').val(district_id).trigger('change');
-                    }, 500);
-
-                    setTimeout(function() {
-                        let subdistrict_id = $('#subdistrict').val();
-                        $('#origin_subdistrict').val(subdistrict_id).trigger('change');
-                    }, 1000);
+                if (input.type === 'radio' && input.name) {
+                    form.querySelectorAll(`input[name="${CSS.escape(input.name)}"]`).forEach(function (radio) {
+                        radio.classList.remove('is-invalid');
+                    });
                 } else {
-                    $('#origin_address').val('');
-                    $('#origin_moo').val('');
-                    $('#origin_soi').val('');
-                    $('#origin_road').val('');
-                    $('#origin_village').val('');
-                    $('#origin_zipcode').val('');
-                    $('#origin_phone').val('');
-                    $('#origin_province').val('').trigger('change');
-                    $('#origin_district').val('').trigger('change');
-                    $('#origin_subdistrict').val('').trigger('change');
+                    input.classList.remove('is-invalid');
                 }
-            });
-        });
-    </script>
 
-    @if (session('success'))
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'สำเร็จ!',
-                text: '{{ session('success') }}',
-                showConfirmButton: true,
-                timer: 2000
-            });
-        </script>
-    @endif
+                if (input.name) {
+                    const errorById = document.getElementById('error-' + input.name);
+                    if (errorById) errorById.remove();
+                }
 
-    <!-- สคริปต์สำหรับฟอร์แมตเลขบัตรประชาชน -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+                const wrapper = input.closest('.col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-12, [class*="col-"]');
+                wrapper?.querySelectorAll('.invalid-feedback, .error-message').forEach(function (feedback) {
+                    feedback.style.display = 'none';
+                });
+            }
+
+            form.addEventListener('input', clearValidation);
+            form.addEventListener('change', clearValidation);
+
             const idCard = document.getElementById('id_card');
+            function formatThaiId(value) {
+                const digits = String(value ?? '').replace(/\D/g, '').slice(0, 13);
+                return [
+                    digits.slice(0, 1),
+                    digits.slice(1, 5),
+                    digits.slice(5, 10),
+                    digits.slice(10, 12),
+                    digits.slice(12, 13)
+                ].filter(Boolean).join('-');
+            }
 
             if (idCard) {
-                idCard.addEventListener('input', function() {
-                    let value = this.value.replace(/\D/g, '').substring(0, 13);
+                idCard.value = formatThaiId(idCard.value);
+                idCard.addEventListener('input', function () {
+                    this.value = formatThaiId(this.value);
+                });
+            }
 
-                    if (value.length > 1) {
-                        value = value.substring(0, 1) + '-' + value.substring(1);
-                    }
-                    if (value.length > 6) {
-                        value = value.substring(0, 6) + '-' + value.substring(6);
-                    }
-                    if (value.length > 12) {
-                        value = value.substring(0, 12) + '-' + value.substring(12);
-                    }
-                    if (value.length > 15) {
-                        value = value.substring(0, 15) + '-' + value.substring(15);
-                    }
+            const imageInput = document.getElementById('image');
+            const imagePreview = document.getElementById('showImage');
+            let previewUrl = null;
 
-                    this.value = value;
+            if (imageInput && imagePreview) {
+                imageInput.addEventListener('change', function () {
+                    const file = this.files?.[0];
+                    if (!file || !file.type.startsWith('image/')) return;
+
+                    if (previewUrl) URL.revokeObjectURL(previewUrl);
+                    previewUrl = URL.createObjectURL(file);
+                    imagePreview.src = previewUrl;
+                });
+            }
+
+            const submitButton = document.getElementById('client-create-submit');
+            form.addEventListener('submit', function () {
+                if (!submitButton) return;
+
+                submitButton.classList.add('is-submitting');
+                submitButton.disabled = true;
+                submitButton.setAttribute('aria-busy', 'true');
+                submitButton.innerHTML = `
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    <span>กำลังบันทึก...</span>
+                `;
+            });
+
+            const successMessage = @json(session('success'));
+            const errorMessage = @json(session('error'));
+
+            if (successMessage && window.Swal) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'สำเร็จ',
+                    text: successMessage,
+                    timer: 1800,
+                    showConfirmButton: false
+                });
+            } else if (errorMessage && window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: errorMessage,
+                    confirmButtonText: 'ตกลง'
                 });
             }
         });

@@ -4,443 +4,555 @@
 <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
 
 <style>
-    .ff-page{
-        --ff-primary:#0f766e;
-        --ff-primary-2:#14b8a6;
-        --ff-primary-soft:rgba(15,118,110,.10);
-        --ff-border:#d9e5e7;
-        --ff-border-strong:#c9d8da;
-        --ff-bg:#f4f8f9;
-        --ff-card:#ffffff;
-        --ff-card-soft:#f9fcfc;
-        --ff-text:#1f2937;
-        --ff-muted:#6b7280;
-        --ff-danger:#dc2626;
-        --ff-shadow:0 10px 24px rgba(15,23,42,.05);
-        --ff-shadow-lg:0 18px 40px rgba(15,23,42,.08);
-        --ff-radius-xl:22px;
-        --ff-radius-lg:18px;
-        --ff-radius-md:14px;
-        --ff-radius-sm:12px;
+    .ff-page {
+        --ff-primary: #0f766e;
+        --ff-primary-2: #14b8a6;
+        --ff-border: #d9e5e7;
+        --ff-border-strong: #c9d8da;
+        --ff-card: #ffffff;
+        --ff-text: #1f2937;
+        --ff-muted: #64748b;
+        --ff-danger: #dc2626;
+        --ff-radius-xl: 20px;
+        --ff-radius-lg: 17px;
+        --ff-radius-md: 14px;
+        --ff-radius-sm: 12px;
+
+        padding: 1rem;
+        color: var(--ff-text);
+        background: #f5f8f9;
     }
 
-    .ff-page{
-        background:linear-gradient(180deg,#f8fbfb 0%,#f3f7f8 100%);
-        padding:1rem;
-        color:var(--ff-text);
+    .ff-shell {
+        overflow: hidden;
+        border: 1px solid var(--ff-border);
+        border-radius: var(--ff-radius-xl);
+        background: #ffffff;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .045);
     }
 
-    .ff-shell{
-        background:rgba(255,255,255,.72);
-        border:1px solid var(--ff-border);
-        border-radius:var(--ff-radius-xl);
-        box-shadow:var(--ff-shadow);
-        overflow:hidden;
-        backdrop-filter:blur(8px);
+    .ff-alert-wrap {
+        padding: 1rem 1rem 0;
     }
 
-    .ff-alert-wrap{
-        padding:1rem 1rem 0;
+    .ff-alert {
+        margin-bottom: .75rem;
+        border: 1px solid transparent;
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .035);
     }
 
-    .ff-alert{
-        border-radius:14px;
-        border:1px solid transparent;
-        box-shadow:0 6px 16px rgba(15,23,42,.04);
-        margin-bottom:.75rem;
+    .ff-body {
+        padding: 1rem;
     }
 
-    .ff-body{
-        padding:1rem;
+    .ff-hero {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: .25rem .1rem 1rem;
     }
 
-    .ff-hero{
-        display:flex;
-        align-items:flex-start;
-        justify-content:space-between;
-        gap:1rem;
-        padding:.25rem .1rem 1rem;
+    .ff-hero-title {
+        margin: 0;
+        color: var(--ff-text);
+        font-size: 1.2rem;
+        font-weight: 800;
+        line-height: 1.25;
     }
 
-    .ff-hero-title{
-        margin:0;
-        font-size:1.2rem;
-        font-weight:800;
-        line-height:1.2;
-        color:var(--ff-text);
+    .ff-hero-subtitle {
+        margin: .35rem 0 0;
+        color: var(--ff-muted);
+        font-size: .92rem;
+        line-height: 1.55;
     }
 
-    .ff-hero-subtitle{
-        margin:.35rem 0 0;
-        font-size:.92rem;
-        line-height:1.55;
-        color:var(--ff-muted);
+    .ff-hero-link {
+        color: inherit;
+        text-decoration: none;
     }
 
-    .ff-hero-badge{
-        flex:0 0 auto;
-        display:inline-flex;
-        align-items:center;
-        gap:.55rem;
-        padding:.68rem .9rem;
-        border-radius:999px;
-        background:#fff;
-        border:1px solid var(--ff-border);
-        color:var(--ff-primary);
-        font-weight:700;
-        box-shadow:0 8px 18px rgba(15,23,42,.04);
-        white-space:nowrap;
+    .ff-hero-link:hover,
+    .ff-hero-link:focus {
+        color: inherit;
+        text-decoration: none;
     }
 
-    .ff-grid{
-        display:grid;
-        grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:1rem;
+    .ff-hero-badge {
+        min-height: 42px;
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .5rem;
+        padding: .58rem .85rem;
+        border: 1px solid #dbe4e7;
+        border-radius: 12px;
+        background: #ffffff;
+        color: var(--ff-primary);
+        font-size: .88rem;
+        font-weight: 700;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .035);
+        transition:
+            transform .16s ease,
+            border-color .16s ease,
+            background-color .16s ease;
     }
 
-    .ff-card{
-        background:var(--ff-card);
-        border:1px solid var(--ff-border);
-        border-radius:var(--ff-radius-lg);
-        box-shadow:0 8px 20px rgba(15,23,42,.04);
-        overflow:hidden;
-        height:100%;
+    .ff-hero-link .ff-hero-badge:hover {
+        transform: translateY(-1px);
+        border-color: #b9c9cc;
+        background: #f8fbfb;
     }
 
-    .ff-card-header{
-        display:flex;
-        align-items:center;
-        gap:.7rem;
-        padding:1rem;
-        background:linear-gradient(180deg,#ffffff 0%,#f9fcfc 100%);
-        border-bottom:1px solid var(--ff-border);
+    .ff-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        align-items: start;
     }
 
-    .ff-card-icon{
-        width:42px;
-        height:42px;
-        min-width:42px;
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        border-radius:12px;
-        background:linear-gradient(135deg,rgba(15,118,110,.12),rgba(20,184,166,.10));
-        color:var(--ff-primary);
-        border:1px solid rgba(15,118,110,.10);
+    .ff-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--ff-border);
+        border-radius: var(--ff-radius-lg);
+        background: var(--ff-card);
+        box-shadow: 0 5px 16px rgba(15, 23, 42, .035);
     }
 
-    .ff-card-title{
-        margin:0;
-        font-size:1rem;
-        font-weight:800;
-        line-height:1.25;
-        color:var(--ff-text);
+    .ff-card-header {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: 1rem;
+        border-bottom: 1px solid var(--ff-border);
+        background: #fbfdfd;
     }
 
-    .ff-card-subtitle{
-        margin:.22rem 0 0;
-        font-size:.86rem;
-        color:var(--ff-muted);
+    .ff-card-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(15, 118, 110, .1);
+        border-radius: 12px;
+        background: #edf8f6;
+        color: var(--ff-primary);
     }
 
-    .ff-card-body{
-        padding:1rem;
+    .ff-card-title {
+        margin: 0;
+        color: var(--ff-text);
+        font-size: 1rem;
+        font-weight: 800;
+        line-height: 1.3;
     }
 
-    .ff-form-grid{
-        display:grid;
-        grid-template-columns:repeat(12,minmax(0,1fr));
-        gap:.95rem .9rem;
+    .ff-card-subtitle {
+        margin: .22rem 0 0;
+        color: var(--ff-muted);
+        font-size: .86rem;
+        line-height: 1.45;
     }
 
-    .ff-span-12{grid-column:span 12;}
-    .ff-span-8{grid-column:span 8;}
-    .ff-span-6{grid-column:span 6;}
-    .ff-span-4{grid-column:span 4;}
-
-    .ff-field{
-        min-width:0;
+    .ff-card-body {
+        padding: 1rem;
     }
 
-    .ff-label{
-        display:inline-flex;
-        align-items:center;
-        gap:.35rem;
-        margin-bottom:.45rem;
-        font-size:.93rem;
-        font-weight:700;
-        color:#334155;
-        line-height:1.35;
+    .ff-form-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: .95rem .9rem;
     }
 
-    .ff-required{
-        color:var(--ff-danger);
-        font-weight:800;
+    .ff-span-12 { grid-column: span 12; }
+    .ff-span-8 { grid-column: span 8; }
+    .ff-span-6 { grid-column: span 6; }
+    .ff-span-4 { grid-column: span 4; }
+
+    .ff-field {
+        min-width: 0;
+        scroll-margin-top: 90px;
+    }
+
+    .ff-label {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        margin-bottom: .45rem;
+        color: #334155;
+        font-size: .93rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .ff-required {
+        color: var(--ff-danger);
+        font-weight: 800;
+    }
+
+    .ff-label-note {
+        color: var(--ff-muted);
+        font-size: .8rem;
+        font-weight: 500;
     }
 
     .ff-input,
     .ff-select,
-    .ff-textarea,
-    .ff-unit .input-group-text{
-        min-height:46px;
-        border-radius:var(--ff-radius-sm);
-        border:1px solid #d7e3e5;
-        font-size:.95rem;
-        box-shadow:none;
-    }
-
-    .ff-input,
-    .ff-select,
-    .ff-textarea{
-        background:#fff;
+    .ff-textarea {
+        min-height: 46px;
+        border: 1px solid #d7e3e5;
+        border-radius: var(--ff-radius-sm);
+        background: #ffffff;
+        font-size: .95rem;
+        box-shadow: none;
+        transition:
+            border-color .15s ease,
+            box-shadow .15s ease,
+            background-color .15s ease;
     }
 
     .ff-input:focus,
     .ff-select:focus,
-    .ff-textarea:focus{
-        border-color:rgba(15,118,110,.35);
-        box-shadow:0 0 0 .22rem rgba(15,118,110,.10);
+    .ff-textarea:focus {
+        border-color: rgba(15, 118, 110, .42);
+        box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .09);
     }
 
-    .ff-textarea{
-        min-height:110px;
-        resize:vertical;
+    .ff-input[readonly] {
+        background: #f8fafc;
+        color: #475569;
+        cursor: default;
     }
 
-    .ff-textarea.ff-textarea-sm{min-height:96px;}
-    .ff-textarea.ff-textarea-md{min-height:124px;}
-    .ff-textarea.ff-textarea-lg{min-height:146px;}
-
-    .ff-inline-radio{
-        display:flex;
-        flex-wrap:wrap;
-        gap:.75rem 1rem;
-        align-items:center;
-        min-height:46px;
-        padding:.65rem .9rem;
-        border:1px solid #d7e3e5;
-        border-radius:var(--ff-radius-sm);
-        background:#fff;
+    .ff-textarea {
+        min-height: 110px;
+        resize: vertical;
     }
 
-    .ff-inline-radio.is-invalid{
-        border-color:rgba(220,38,38,.45);
+    .ff-textarea.ff-textarea-sm { min-height: 96px; }
+    .ff-textarea.ff-textarea-md { min-height: 124px; }
+    .ff-textarea.ff-textarea-lg { min-height: 146px; }
+
+    .ff-inline-radio {
+        min-height: 46px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .75rem 1rem;
+        padding: .65rem .9rem;
+        border: 1px solid #d7e3e5;
+        border-radius: var(--ff-radius-sm);
+        background: #ffffff;
     }
 
-    .ff-inline-radio .form-check{
-        margin:0;
+    .ff-inline-radio.is-invalid {
+        border-color: rgba(220, 38, 38, .5);
     }
 
-    .ff-inline-radio .form-check-label{
-        font-size:.93rem;
-        color:var(--ff-text);
+    .ff-inline-radio .form-check {
+        margin: 0;
     }
 
-    .ff-detail-box{
-        padding:.9rem;
-        border-radius:var(--ff-radius-md);
-        background:linear-gradient(180deg,#fbfefe 0%,#f6fbfb 100%);
-        border:1px dashed var(--ff-border-strong);
+    .ff-inline-radio .form-check-label {
+        color: var(--ff-text);
+        font-size: .93rem;
     }
 
-    .ff-unit{
-        display:flex;
-        align-items:center;
-        gap:.6rem;
+    .ff-detail-box {
+        padding: .9rem;
+        border: 1px dashed var(--ff-border-strong);
+        border-radius: var(--ff-radius-md);
+        background: #f8fbfb;
     }
 
-    .ff-unit .unit-text{
-        white-space:nowrap;
-        font-size:.9rem;
-        color:#4b5563;
-        font-weight:600;
+    .ff-unit {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
     }
 
-    .ff-checklist{
-        padding:.95rem;
-        background:linear-gradient(180deg,#fcfefe 0%,#f8fbfb 100%);
-        border:1px solid var(--ff-border);
-        border-radius:var(--ff-radius-md);
+    .ff-unit .ff-input {
+        min-width: 0;
     }
 
-    .ff-checklist-grid{
-        display:grid;
-        grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:.7rem;
+    .ff-unit .unit-text {
+        flex: 0 0 auto;
+        color: #4b5563;
+        font-size: .88rem;
+        font-weight: 600;
+        white-space: nowrap;
     }
 
-    .ff-check-item{
-        display:flex;
-        align-items:flex-start;
-        gap:.7rem;
-        padding:.85rem .85rem;
-        border:1px solid #e4ecee;
-        border-radius:12px;
-        background:#fff;
-        cursor:pointer;
-        transition:.18s ease;
-        margin:0;
-        min-height:54px;
+    .ff-checklist {
+        max-height: 360px;
+        overflow: auto;
+        padding: .9rem;
+        border: 1px solid var(--ff-border);
+        border-radius: var(--ff-radius-md);
+        background: #fafcfc;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
     }
 
-    .ff-check-item:hover{
-        border-color:rgba(15,118,110,.18);
-        background:#fbfefe;
-        box-shadow:0 6px 14px rgba(15,23,42,.04);
+    .ff-checklist-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .65rem;
     }
 
-    .ff-check-item input{
-        margin-top:.2rem;
-        flex:0 0 auto;
+    .ff-check-item {
+        min-height: 52px;
+        display: flex;
+        align-items: flex-start;
+        gap: .7rem;
+        margin: 0;
+        padding: .78rem .82rem;
+        border: 1px solid #e4ecee;
+        border-radius: 11px;
+        background: #ffffff;
+        cursor: pointer;
+        transition:
+            border-color .15s ease,
+            background-color .15s ease,
+            box-shadow .15s ease;
     }
 
-    .ff-check-item span{
-        font-size:.93rem;
-        line-height:1.45;
-        color:var(--ff-text);
-        word-break:break-word;
+    .ff-check-item:hover {
+        border-color: rgba(15, 118, 110, .22);
+        background: #fbfefe;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, .035);
     }
 
-    .ff-error{
-        display:block;
-        margin-top:.38rem;
-        font-size:.82rem;
-        line-height:1.35;
-        color:var(--ff-danger);
+    .ff-check-item:has(input:checked) {
+        border-color: rgba(15, 118, 110, .38);
+        background: #f0fdfa;
+    }
+
+    .ff-check-item input {
+        margin-top: .2rem;
+        flex: 0 0 auto;
+    }
+
+    .ff-check-item span {
+        color: var(--ff-text);
+        font-size: .92rem;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+
+    .ff-error {
+        display: block;
+        margin-top: .38rem;
+        color: var(--ff-danger);
+        font-size: .82rem;
+        line-height: 1.35;
     }
 
     .ff-input.is-invalid,
     .ff-select.is-invalid,
-    .ff-textarea.is-invalid{
-        border-color:rgba(220,38,38,.45);
-        background-image:none;
+    .ff-textarea.is-invalid {
+        border-color: rgba(220, 38, 38, .5);
+        background-image: none;
     }
 
-    .ff-actions{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:1rem;
-        margin-top:1rem;
-        padding-top:1rem;
-        border-top:1px solid var(--ff-border);
+    .ff-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--ff-border);
+        border-radius: 15px;
+        background: #f8fafc;
     }
 
-    .ff-actions-note{
-        color:var(--ff-muted);
-        font-size:.88rem;
+    .ff-actions-note {
+        color: var(--ff-muted);
+        font-size: .88rem;
+        line-height: 1.45;
     }
 
-    .ff-submit{
-        min-height:48px;
-        min-width:170px;
-        padding:.82rem 1.25rem;
-        border-radius:14px;
-        font-size:.95rem;
-        font-weight:800;
-        border:0;
-        background:linear-gradient(135deg,var(--ff-primary),var(--ff-primary-2));
-        box-shadow:0 10px 22px rgba(15,118,110,.18);
+    /* ปุ่มมาตรฐานเดียวกับหน้าอื่นของระบบ */
+    .ff-submit {
+        min-width: 174px;
+        min-height: 46px;
+        position: relative;
+        overflow: hidden;
+        padding: .68rem 1.2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .5rem;
+        border: 1px solid #1d4ed8 !important;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        color: #ffffff !important;
+        font-size: .92rem;
+        font-weight: 750;
+        line-height: 1.2;
+        white-space: nowrap;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, .2) !important;
+        transition:
+            transform .16s ease,
+            box-shadow .16s ease,
+            background .16s ease;
+        -webkit-tap-highlight-color: transparent;
     }
 
-    .ff-submit:hover{
-        filter:brightness(.98);
-        transform:translateY(-1px);
+    .ff-submit:hover,
+    .ff-submit:focus,
+    .ff-submit:focus-visible {
+        transform: translateY(-1px);
+        border-color: #1e40af !important;
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+        color: #ffffff !important;
+        outline: 0;
+        box-shadow:
+            0 10px 22px rgba(37, 99, 235, .24),
+            0 0 0 4px rgba(37, 99, 235, .11) !important;
     }
 
-    .ff-submit:disabled{
-        opacity:.82;
-        transform:none;
+    .ff-submit:active,
+    .ff-submit.active {
+        transform: translateY(1px) scale(.995) !important;
+        border-color: #1e3a8a !important;
+        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
+        box-shadow:
+            0 4px 10px rgba(30, 64, 175, .2),
+            inset 0 2px 4px rgba(15, 23, 42, .14) !important;
     }
 
-        .ff-hero-badge {
-            background: linear-gradient(135deg, #f8fafc, #eef2f7);
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 10px 14px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-            cursor: pointer;
+    .ff-submit.is-submitting,
+    .ff-submit.is-submitting:hover,
+    .ff-submit.is-submitting:focus,
+    .ff-submit:disabled {
+        transform: none !important;
+        border-color: #1d4ed8 !important;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        color: #ffffff !important;
+        opacity: 1 !important;
+        cursor: progress;
+        box-shadow: 0 7px 16px rgba(37, 99, 235, .18) !important;
+    }
+
+    .ff-submit.is-submitting::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(
+            105deg,
+            transparent 28%,
+            rgba(255, 255, 255, .14) 48%,
+            transparent 68%
+        );
+        transform: translateX(-110%);
+        animation: ffButtonShine 1.15s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    .ff-submit .spinner-border {
+        width: 1rem;
+        height: 1rem;
+        flex: 0 0 1rem;
+        border-width: .14em;
+    }
+
+    @keyframes ffButtonShine {
+        to { transform: translateX(110%); }
+    }
+
+    @media (max-width: 1199.98px) {
+        .ff-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 991.98px) {
+        .ff-page {
+            padding: .8rem;
         }
 
-        .ff-hero-badge:hover {
-            background: #f1f5f9;
-            border-color: #cbd5e1;
-            transform: translateY(-1px);
+        .ff-body {
+            padding: .9rem;
         }
 
-
-
-    @media (max-width: 1199.98px){
-        .ff-grid{
-            grid-template-columns:1fr;
+        .ff-hero {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
 
-    @media (max-width: 991.98px){
-        .ff-page{
-            padding:.8rem;
+    @media (max-width: 767.98px) {
+        .ff-page {
+            padding: .55rem;
         }
 
-        .ff-body{
-            padding:.9rem;
-        }
-
-        .ff-hero{
-            flex-direction:column;
-            align-items:flex-start;
-        }
-    }
-
-    @media (max-width: 767.98px){
-        .ff-page{
-            padding:.55rem;
-        }
-
-        .ff-shell{
-            border-radius:16px;
+        .ff-shell,
+        .ff-card {
+            border-radius: 16px;
         }
 
         .ff-body,
-        .ff-alert-wrap{
-            padding:.75rem;
-        }
-
-        .ff-card{
-            border-radius:16px;
-        }
-
+        .ff-alert-wrap,
         .ff-card-header,
-        .ff-card-body{
-            padding:.9rem;
+        .ff-card-body {
+            padding: .8rem;
         }
 
-        .ff-form-grid{
-            grid-template-columns:1fr;
-            gap:.85rem;
+        .ff-form-grid {
+            grid-template-columns: 1fr;
+            gap: .85rem;
         }
 
         .ff-span-12,
         .ff-span-8,
         .ff-span-6,
-        .ff-span-4{
-            grid-column:span 1;
+        .ff-span-4 {
+            grid-column: span 1;
         }
 
-        .ff-checklist-grid{
-            grid-template-columns:1fr;
+        .ff-checklist {
+            max-height: 300px;
+            padding: .75rem;
         }
 
-        .ff-actions{
-            flex-direction:column;
-            align-items:stretch;
+        .ff-checklist-grid {
+            grid-template-columns: 1fr;
         }
 
-        .ff-submit{
-            width:100%;
+        .ff-actions {
+            align-items: stretch;
+            flex-direction: column;
+            padding: .8rem;
+        }
+
+        .ff-submit {
+            width: 100%;
+            min-width: 0;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ff-hero-badge,
+        .ff-check-item,
+        .ff-input,
+        .ff-select,
+        .ff-textarea,
+        .ff-submit {
+            transition: none;
+        }
+
+        .ff-submit.is-submitting::after {
+            animation: none;
         }
     }
 </style>
@@ -480,7 +592,7 @@
 </a>
             </div>
 
-            <form action="{{ route('factfinding.update', $factFinding->id) }}" method="POST" id="factfindingEditForm" novalidate>
+            <form action="{{ route('factfinding.update', $factFinding->id) }}" method="POST" id="factfindingEditForm">
                 @csrf
                 <input type="hidden" name="client_id" value="{{ $client->id }}">
 
@@ -508,7 +620,8 @@
                                         id="date"
                                         class="form-control ff-input @error('date') is-invalid @enderror"
                                         value="{{ old('date', $factFinding->date ?? '') }}"
-                                        max="{{ now('Asia/Bangkok')->toDateString() }}">
+                                        max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                        required>
 
                                     @error('date')
                                         <span class="ff-error" id="date-error">
@@ -519,7 +632,7 @@
 
                                 <div class="ff-field ff-span-8">
                                     <label for="fact_name" class="ff-label">ผู้นำส่ง <span class="ff-required">*</span></label>
-                                    <input type="text" name="fact_name" id="fact_name" class="form-control ff-input @error('fact_name') is-invalid @enderror" value="{{ old('fact_name', $factFinding->fact_name ?? '') }}">
+                                    <input type="text" name="fact_name" id="fact_name" class="form-control ff-input @error('fact_name') is-invalid @enderror" value="{{ old('fact_name', $factFinding->fact_name ?? '') }}" required>
                                     @error('fact_name')
                                         <span class="ff-error" id="fact_name-error">{{ $message }}</span>
                                     @enderror
@@ -561,7 +674,7 @@
                                     <label class="ff-label d-block">ประวัติการเจ็บป่วย <span class="ff-required">*</span></label>
                                     <div class="ff-inline-radio @error('sick') is-invalid @enderror">
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="sick" id="sickYes" value="1" {{ old('sick', $factFinding->sick ?? '') == 1 ? 'checked' : '' }}>
+                                            <input class="form-check-input" type="radio" name="sick" id="sickYes" value="1" {{ old('sick', $factFinding->sick ?? '') == 1 ? 'checked' : '' }} required>
                                             <label class="form-check-label" for="sickYes">มี</label>
                                         </div>
 
@@ -619,7 +732,7 @@
                                 <div class="ff-field ff-span-4">
                                     <label for="weight" class="ff-label">น้ำหนัก</label>
                                     <div class="ff-unit">
-                                        <input type="text" name="weight" id="weight" class="form-control ff-input @error('weight') is-invalid @enderror" value="{{ old('weight', $factFinding->weight ?? '') }}">
+                                        <input type="number" name="weight" id="weight" min="0" max="500" step="0.1" inputmode="decimal" class="form-control ff-input @error('weight') is-invalid @enderror" value="{{ old('weight', $factFinding->weight ?? '') }}">
                                         <span class="unit-text">กิโลกรัม</span>
                                     </div>
                                     @error('weight')
@@ -630,7 +743,7 @@
                                 <div class="ff-field ff-span-4">
                                     <label for="height" class="ff-label">ส่วนสูง</label>
                                     <div class="ff-unit">
-                                        <input type="text" name="height" id="height" class="form-control ff-input @error('height') is-invalid @enderror" value="{{ old('height', $factFinding->height ?? '') }}">
+                                        <input type="number" name="height" id="height" min="0" max="300" step="0.1" inputmode="decimal" class="form-control ff-input @error('height') is-invalid @enderror" value="{{ old('height', $factFinding->height ?? '') }}">
                                         <span class="unit-text">เซนติเมตร</span>
                                     </div>
                                     @error('height')
@@ -664,7 +777,7 @@
 
                                 <div class="ff-field ff-span-6">
                                     <label for="marital_id" class="ff-label">สถานะการสมรส <span class="ff-required">*</span></label>
-                                    <select name="marital_id" id="marital_id" class="form-select ff-select @error('marital_id') is-invalid @enderror">
+                                    <select name="marital_id" id="marital_id" class="form-select ff-select @error('marital_id') is-invalid @enderror" required>
                                         <option value="">--สถานะการสมรส--</option>
                                         @foreach ($maritals as $item)
                                             <option value="{{ $item->id }}" {{ old('marital_id', $factFinding->marital_id ?? '') == $item->id ? 'selected' : '' }}>
@@ -712,7 +825,7 @@
                                 <div class="ff-field ff-span-12">
                                     <label class="ff-label d-block">
                                         เอกสารที่เกี่ยวข้อง
-                                        <span class="ff-required">* (เลือกได้มากกว่า 1 รายการ)</span>
+                                        <span class="ff-label-note">(เลือกได้มากกว่า 1 รายการ)</span>
                                     </label>
 
                                     <div class="ff-checklist">
@@ -723,7 +836,7 @@
                                                         name="documents[]"
                                                         value="{{ $document->id }}"
                                                         id="document{{ $document->id }}"
-                                                        {{ in_array($document->id, old('documents', $selectedDocs ?? [])) ? 'checked' : '' }}>
+                                                        {{ in_array((int) $document->id, array_map('intval', (array) old('documents', $selectedDocs ?? [])), true) ? 'checked' : '' }}>
                                                     <span>{{ $document->document_name }}</span>
                                                 </label>
                                             @endforeach
@@ -821,7 +934,8 @@
                                             id="receive_date"
                                             class="form-control ff-input @error('receive_date') is-invalid @enderror"
                                             value="{{ old('receive_date', $factFinding->receive_date ?? '') }}"
-                                            max="{{ now('Asia/Bangkok')->toDateString() }}">
+                                            max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                            required>
 
                                         @error('receive_date')
                                             <span class="ff-error" id="receive_date-error">
@@ -831,11 +945,16 @@
                                     </div>
 
                                 <div class="ff-field ff-span-8">
-                                    <label for="recorder" class="ff-label">ชื่อผู้บันทึก <span class="ff-required">*</span></label>
-                                    <input type="text" name="recorder" id="recorder" class="form-control ff-input @error('recorder') is-invalid @enderror" value="{{ old('recorder', $factFinding->recorder ?? '') }}">
-                                    @error('recorder')
-                                        <span class="ff-error" id="recorder-error">{{ $message }}</span>
-                                    @enderror
+                                    <label for="recorder_display" class="ff-label">ผู้แก้ไขข้อมูลครั้งนี้</label>
+                                    <input type="text"
+                                        id="recorder_display"
+                                        class="form-control ff-input"
+                                        value="{{ auth()->user()->name ?? 'ไม่ระบุผู้บันทึก' }}"
+                                        readonly
+                                        aria-readonly="true">
+                                    <span class="ff-label-note d-block mt-1">
+                                        ระบบจะบันทึกชื่อผู้ใช้งานปัจจุบันโดยอัตโนมัติ
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -847,8 +966,9 @@
                         หลังแก้ไขแล้วควรตรวจสอบข้อมูลสำคัญอีกครั้งก่อนบันทึก
                     </div>
 
-                    <button type="submit" class="btn btn-success ff-submit" id="ffEditSubmitBtn">
-                        <i class="bi bi-check-circle me-1"></i> แก้ไขข้อมูล
+                    <button type="submit" class="btn ff-submit" id="ffEditSubmitBtn">
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                        <span>บันทึกการแก้ไข</span>
                     </button>
                 </div>
             </form>
@@ -858,61 +978,116 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const yes = document.getElementById('sickYes');
-    const no = document.getElementById('sickNo');
-    const detail = document.getElementById('sickDetailGroup');
-    const detailField = document.getElementById('sick_detail');
     const form = document.getElementById('factfindingEditForm');
     const submitBtn = document.getElementById('ffEditSubmitBtn');
 
-    function toggleDetail() {
-        if (!yes || !no || !detail || !detailField) return;
+    if (!form || form.dataset.ffBound === '1') return;
+    form.dataset.ffBound = '1';
 
-        if (yes.checked) {
-            detail.style.display = '';
-            detailField.setAttribute('required', 'required');
-        } else {
-            detail.style.display = 'none';
-            detailField.removeAttribute('required');
-            if (!detailField.dataset.keepValue) {
-                detailField.value = '';
-            }
+    const sickYes = form.querySelector('#sickYes');
+    const sickNo = form.querySelector('#sickNo');
+    const sickWrap = form.querySelector('.ff-inline-radio');
+    const detailGroup = form.querySelector('#sickDetailGroup');
+    const detailField = form.querySelector('#sick_detail');
+    const originalButtonHtml = submitBtn ? submitBtn.innerHTML : '';
+
+    function clearFieldError(field) {
+        field.classList.remove('is-invalid');
+
+        const fieldWrap = field.closest('.ff-field');
+        if (!fieldWrap) return;
+
+        fieldWrap.querySelectorAll('.ff-error').forEach(function (error) {
+            error.remove();
+        });
+    }
+
+    function toggleSickDetail() {
+        if (!sickYes || !detailGroup || !detailField) return;
+
+        const isSick = sickYes.checked;
+        detailGroup.hidden = !isSick;
+        detailGroup.style.display = isSick ? '' : 'none';
+        detailField.disabled = !isSick;
+        detailField.required = isSick;
+
+        if (!isSick) {
+            detailField.value = '';
+            clearFieldError(detailField);
         }
     }
 
-    if (yes && no) {
-        yes.addEventListener('change', toggleDetail);
-        no.addEventListener('change', toggleDetail);
-        toggleDetail();
+    function resetSubmitButton() {
+        if (!submitBtn) return;
+
+        form.dataset.submitting = '0';
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('is-submitting');
+        submitBtn.removeAttribute('aria-busy');
+
+        if (originalButtonHtml) {
+            submitBtn.innerHTML = originalButtonHtml;
+        }
     }
 
-    document.addEventListener('input', function (e) {
-        const target = e.target;
-        if (!target.matches('input, textarea, select')) return;
+    [sickYes, sickNo].forEach(function (radio) {
+        radio?.addEventListener('change', function () {
+            sickWrap?.classList.remove('is-invalid');
+            sickWrap?.closest('.ff-field')
+                ?.querySelectorAll('.ff-error')
+                .forEach(function (error) { error.remove(); });
 
-        const errorId = target.id ? `${target.id}-error` : null;
-        if (errorId) {
-            const errorEl = document.getElementById(errorId);
-            if (errorEl) errorEl.remove();
-        }
-
-        target.classList.remove('is-invalid');
-    });
-
-    document.querySelectorAll('input[name="sick"]').forEach(function(radio) {
-        radio.addEventListener('change', function() {
-            const errorMsg = document.getElementById('sick-error');
-            if (errorMsg) errorMsg.remove();
-            document.querySelector('.ff-inline-radio')?.classList.remove('is-invalid');
+            toggleSickDetail();
         });
     });
 
-    if (form && submitBtn) {
-        form.addEventListener('submit', function () {
+    form.addEventListener('input', function (event) {
+        const field = event.target;
+        if (!field.matches('input, textarea, select')) return;
+        clearFieldError(field);
+    });
+
+    form.addEventListener('change', function (event) {
+        const field = event.target;
+        if (!field.matches('input, textarea, select')) return;
+        clearFieldError(field);
+    });
+
+    form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            form.classList.add('was-validated');
+
+            const firstInvalid = form.querySelector(':invalid');
+            firstInvalid?.focus({ preventScroll: true });
+            firstInvalid?.closest('.ff-field')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            return;
+        }
+
+        if (form.dataset.submitting === '1') {
+            event.preventDefault();
+            return;
+        }
+
+        form.dataset.submitting = '1';
+
+        if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>กำลังบันทึก...';
-        });
-    }
+            submitBtn.classList.add('is-submitting');
+            submitBtn.setAttribute('aria-busy', 'true');
+            submitBtn.innerHTML = `
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>กำลังบันทึก...</span>
+            `;
+        }
+    });
+
+    window.addEventListener('pageshow', resetSubmitButton);
+    toggleSickDetail();
 });
 </script>
 

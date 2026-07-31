@@ -2,403 +2,467 @@
 
 namespace App\Http\Controllers\Frontend;
 
+use App\Http\Controllers\Controller;
+use App\Models\CaseActivity;
 use App\Models\Client;
 use App\Models\Document;
 use App\Models\Factfinding;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Models\FactFindingDocument;
 use App\Models\Marital;
-use App\Models\CaseActivity;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class FactfindingController extends Controller
 {
+    /**
+     * แสดงฟอร์มเพิ่มข้อมูลสอบข้อเท็จจริง
+     */
     public function FactfindingAdd($client_id)
     {
-        // ✅ ตรวจสิทธิ์ client ผ่าน Client::forUser(auth()->user())
-        $client = Client::forUser(auth()->user())->findOrFail($client_id);
+        $client = Client::forUser(auth()->user())
+            ->select('clients.id')
+            ->findOrFail($client_id);
 
-        // ✅ ตรวจ factfinding โดยอิง client ที่ user มีสิทธิ์เท่านั้น
-        $factFinding = Factfinding::where('client_id', $client->id)->first();
+        $factFinding = Factfinding::query()
+            ->select(['id', 'client_id'])
+            ->where('client_id', $client->id)
+            ->first();
 
         if ($factFinding) {
-            return redirect()->route('factfinding.edit', $factFinding->id)
-                             ->with('info', 'มีข้อมูลสอบข้อเท็จจริงอยู่แล้ว จึงเข้าสู่หน้าแก้ไข');
+            return redirect()
+                ->route('factfinding.edit', $factFinding->id)
+                ->with('info', 'มีข้อมูลสอบข้อเท็จจริงอยู่แล้ว จึงเข้าสู่หน้าแก้ไข');
         }
 
-        $maritals = Marital::all();
-        $documents = Document::all();
+        [$documents, $maritals] = $this->loadFormOptions();
 
-        return view('frontend.client.factfinding.factfinding_add', compact('client', 'documents', 'maritals'))
-            ->with('info', 'เพิ่มข้อมูลสอบข้อเท็จจริง');
+        return view('frontend.client.factfinding.factfinding_add', [
+            'client' => $client,
+            'documents' => $documents,
+            'maritals' => $maritals,
+            'info' => 'เพิ่มข้อมูลสอบข้อเท็จจริง',
+        ]);
     }
 
+    /**
+     * บันทึกข้อมูลสอบข้อเท็จจริง
+     */
     public function FactfindingStore(Request $request)
-        {
-            $validated = $request->validate([
-                'client_id'   => 'required|integer',
+    {
+        $validated = $request->validate(
+            $this->validationRules(),
+            $this->validationMessages()
+        );
 
-               'date' => [
-                'required',
-                'date',
-                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
-            ],
+        $documentIds = $this->normalizeDocumentIds($validated['documents'] ?? []);
+        unset($validated['documents']);
 
-                'receive_date' => [
-                'required',
-                'date',
-                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
-            ],
+        try {
+            $result = DB::transaction(function () use ($validated, $documentIds) {
+                /*
+                 * ล็อกแถวผู้รับบริการระหว่างตรวจและสร้างข้อมูล
+                 * ป้องกันการกดบันทึกซ้ำหรือการส่งคำขอพร้อมกันจนเกิดข้อมูลซ้ำ
+                 */
+                $client = Client::forUser(auth()->user())
+                    ->whereKey($validated['client_id'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-                'fact_name'   => 'required|string|max:255',
+                $existing = Factfinding::query()
+                    ->select(['id', 'client_id'])
+                    ->where('client_id', $client->id)
+                    ->first();
 
-                'appearance'  => 'nullable|string',
-                'skin'        => 'nullable|string',
-                'scar'        => 'nullable|string',
-                'disability'  => 'nullable|string',
-                'evidence'    => 'nullable|string',
-                'sick'        => 'required|in:0,1',
-                'sick_detail' => 'required_if:sick,1|nullable|string',
-                'treatment'   => 'nullable|string',
-                'hospital'    => 'nullable|string',
-                'weight'      => 'nullable|numeric|max:500',
-                'height'      => 'nullable|numeric|max:300',
-                'blood_group' => 'nullable|string',
-                'hygiene'     => 'nullable|string',
-                'oral_health' => 'nullable|string',
-                'injury'      => 'nullable|string',
-                'marital_id'  => 'required|integer',
-                'relation_parent' => 'nullable|string',
-                'relation_family' => 'nullable|string',
-                'relation_child'  => 'nullable|string',
-                'ex_conditions'   => 'nullable|string',
-                'in_conditions'   => 'nullable|string',
-                'environment'     => 'nullable|string',
-                'cause_problem'   => 'nullable|string',
-                'need'            => 'nullable|string',
-                'information'     => 'nullable|string',
-                'diagnosis'       => 'nullable|string',
-
-                'case_history'    => 'nullable|string',
-                'active'          => 'nullable|boolean',
-
-                'documents'   => 'nullable|array',
-                'documents.*' => 'integer',
-            ], [
-                'client_id.required' => 'กรุณาเลือกผู้รับบริการ',
-                'client_id.integer'  => 'รหัสผู้รับบริการต้องเป็นตัวเลข',
-
-                'date.required'      => 'กรุณากรอกวันที่นำส่ง',
-                'date.date'          => 'รูปแบบวันที่ไม่ถูกต้อง',
-
-                'receive_date.required' => 'กรุณากรอกวันที่บันทึก',
-                'receive_date.date' => 'รูปแบบวันที่บันทึกไม่ถูกต้อง',
-                'receive_date.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน',
-
-                'fact_name.required' => 'กรุณากรอกชื่อผู้นำส่ง',
-                'fact_name.string'   => 'ชื่อข้อเท็จจริงต้องเป็นข้อความ',
-                'fact_name.max'      => 'ชื่อข้อเท็จจริงต้องไม่เกิน 255 ตัวอักษร',
-
-                'sick.required'      => 'กรุณาระบุสถานะการเจ็บป่วย',
-                'sick.in'            => 'ค่าที่ระบุไม่ถูกต้อง (ต้องเป็น 0 หรือ 1)',
-                'sick_detail.required_if' => 'กรุณากรอกรายละเอียดการเจ็บป่วย',
-                'sick_detail.string'      => 'รายละเอียดการเจ็บป่วยต้องเป็นข้อความ',
-
-                'marital_id.required' => 'กรุณาเลือกสถานภาพสมรส',
-                'marital_id.integer'  => 'สถานภาพสมรสต้องเป็นตัวเลข',
-
-                'weight.numeric' => 'น้ำหนักต้องเป็นตัวเลขเท่านั้น',
-                'weight.min'     => 'น้ำหนักต้องไม่น้อยกว่า 1 กิโลกรัม',
-                'weight.max'     => 'น้ำหนักต้องไม่เกิน 500 กิโลกรัม',
-
-                'height.numeric' => 'ส่วนสูงต้องเป็นตัวเลขเท่านั้น',
-                'height.min'     => 'ส่วนสูงต้องไม่น้อยกว่า 30 เซนติเมตร',
-                'height.max'     => 'ส่วนสูงต้องไม่เกิน 300 เซนติเมตร',
-
-                'documents.array'    => 'เอกสารต้องอยู่ในรูปแบบรายการ',
-                'documents.*.integer'=> 'รหัสเอกสารต้องเป็นตัวเลข',
-            ]);
-
-            $documents = $validated['documents'] ?? [];
-            unset($validated['documents']);
-
-            $client = Client::forUser(auth()->user())->findOrFail($validated['client_id']);
-
-            $existing = Factfinding::where('client_id', $client->id)->first();
-            if ($existing) {
-                return redirect()
-                    ->route('factfinding.edit', $existing->id)
-                    ->with('error', 'มีข้อมูลของผู้รับรายนี้อยู่แล้ว ท่านสามารถแก้ไขแทนการบันทึกใหม่ได้');
-            }
-
-            $validated['client_id'] = $client->id;
-
-            if (($validated['sick'] ?? null) == 0) {
-                $validated['sick_detail'] = null;
-            }
-
-            $validated['recorder'] = auth()->user()->name ?? 'ไม่ระบุผู้บันทึก';
-
-            $factFinding = Factfinding::create($validated);
-
-           CaseActivity::where('client_id', $client->id)
-                ->where('module', 'factfinding')
-                ->delete();
-
-            CaseActivity::record([
-                'client_id'   => $client->id,
-                'module'      => 'factfinding',
-                'type'        => 'success',
-                'title'       => 'บันทึกสอบข้อเท็จจริงแรกเข้า',
-                'description' => 'บันทึกข้อมูลสอบข้อเท็จจริงเบื้องต้น โดยผู้นำส่ง: ' . ($validated['fact_name'] ?? '-'),
-                'occurred_at' => now(),
-                'icon'        => 'bi-clipboard-check',
-                'url'         => route('factfinding.edit', $factFinding->id),
-            ]);
-
-            if (!empty($documents)) {
-                foreach ($documents as $docId) {
-                    FactFindingDocument::create([
-                        'factfinding_id' => $factFinding->id,
-                        'document_id'    => (int) $docId,
-                    ]);
+                if ($existing) {
+                    return [
+                        'created' => false,
+                        'factfinding_id' => $existing->id,
+                    ];
                 }
-            }
 
-            return redirect()->route('factfinding.edit', $factFinding->id)
-                            ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+                $payload = $this->preparePayload($validated, $client->id);
+                $factFinding = Factfinding::create($payload);
+
+                /*
+                 * ใช้ sync เพียงครั้งเดียวแทนการ insert เอกสารทีละรายการ
+                 * ลดจำนวน Query และทำให้การบันทึกเอกสารเป็นชุดเดียวกัน
+                 */
+                $factFinding->documents()->sync($documentIds);
+
+                $this->recordActivity(
+                    $client->id,
+                    $factFinding->id,
+                    'บันทึกสอบข้อเท็จจริงแรกเข้า',
+                    'บันทึกข้อมูลสอบข้อเท็จจริงเบื้องต้น โดยผู้นำส่ง: ' . ($payload['fact_name'] ?? '-'),
+                    'bi-clipboard-check'
+                );
+
+                return [
+                    'created' => true,
+                    'factfinding_id' => $factFinding->id,
+                ];
+            }, 3);
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'ไม่สามารถบันทึกข้อมูลได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง');
         }
 
+        if (!$result['created']) {
+            return redirect()
+                ->route('factfinding.edit', $result['factfinding_id'])
+                ->with('error', 'มีข้อมูลของผู้รับรายนี้อยู่แล้ว ท่านสามารถแก้ไขแทนการบันทึกใหม่ได้');
+        }
+
+        return redirect()
+            ->route('factfinding.edit', $result['factfinding_id'])
+            ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+    }
+
+    /**
+     * แสดงฟอร์มแก้ไขข้อมูลสอบข้อเท็จจริง
+     */
     public function FactfindingEdit($factfinding_id)
     {
-        // ✅ แก้จาก whereHas('client') เป็น whereIn(client_id, subquery)
-        // เพราะ Factfinding model ของคุณยังไม่มี relation client()
-        $factFinding = Factfinding::where('id', $factfinding_id)
-            ->whereIn('client_id', Client::forUser(auth()->user())->select('id'))
-            ->firstOrFail();
+        $factFinding = $this->findAuthorizedFactFinding($factfinding_id);
 
-        $client = Client::forUser(auth()->user())->findOrFail($factFinding->client_id);
+        $client = Client::forUser(auth()->user())
+            ->select('clients.id')
+            ->findOrFail($factFinding->client_id);
 
-        $documents = Document::all();
-        $maritals = Marital::all();
-        $selectedDocs = $factFinding->documents()->pluck('documents.id')->toArray();
+        [$documents, $maritals] = $this->loadFormOptions();
+
+        $selectedDocs = $factFinding->documents()
+            ->pluck('documents.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
 
         return view('frontend.client.factfinding.factfinding_edit', compact(
-            'client', 'factFinding', 'documents', 'selectedDocs', 'maritals'
+            'client',
+            'factFinding',
+            'documents',
+            'selectedDocs',
+            'maritals'
         ));
     }
 
+    /**
+     * อัปเดตข้อมูลสอบข้อเท็จจริง
+     */
     public function FactfindingUpdate(Request $request, $factfinding_id)
     {
-        $validated = $request->validate([
-            'client_id'   => 'required|integer',
+        $validated = $request->validate(
+            $this->validationRules(),
+            $this->validationMessages()
+        );
+
+        $documentIds = $this->normalizeDocumentIds($validated['documents'] ?? []);
+        unset($validated['documents']);
+
+        /*
+         * ตรวจสิทธิ์ก่อนเริ่ม Transaction
+         * client_id จาก hidden field จะไม่ถูกนำมาใช้เปลี่ยนเจ้าของข้อมูล
+         */
+        $authorizedFactFinding = $this->findAuthorizedFactFinding($factfinding_id);
+
+        try {
+            DB::transaction(function () use (
+                $authorizedFactFinding,
+                $validated,
+                $documentIds
+            ) {
+                $factFinding = Factfinding::query()
+                    ->whereKey($authorizedFactFinding->id)
+                    ->where('client_id', $authorizedFactFinding->client_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $client = Client::forUser(auth()->user())
+                    ->whereKey($factFinding->client_id)
+                    ->firstOrFail();
+
+                $payload = $this->preparePayload(
+                    $validated,
+                    $client->id,
+                    $factFinding
+                );
+
+                $factFinding->update($payload);
+                $factFinding->documents()->sync($documentIds);
+
+                $this->recordActivity(
+                    $client->id,
+                    $factFinding->id,
+                    'แก้ไขข้อมูลสอบข้อเท็จจริง',
+                    'แก้ไขข้อมูลสอบข้อเท็จจริง โดยผู้นำส่ง: ' . ($payload['fact_name'] ?? '-'),
+                    'bi-pencil-square'
+                );
+            }, 3);
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'ไม่สามารถอัปเดตข้อมูลได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง');
+        }
+
+        return redirect()
+            ->route('factfinding.edit', $authorizedFactFinding->id)
+            ->with([
+                'message' => 'อัปเดตข้อมูลเรียบร้อยแล้ว',
+                'alert-type' => 'success',
+            ]);
+    }
+
+    /**
+     * ลบข้อมูลสอบข้อเท็จจริง
+     */
+    public function FactfindingDelete($id)
+    {
+        $authorizedFactFinding = $this->findAuthorizedFactFinding($id);
+
+        try {
+            DB::transaction(function () use ($authorizedFactFinding) {
+                $factFinding = Factfinding::query()
+                    ->whereKey($authorizedFactFinding->id)
+                    ->where('client_id', $authorizedFactFinding->client_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                CaseActivity::query()
+                    ->where('client_id', $factFinding->client_id)
+                    ->where('module', 'factfinding')
+                    ->delete();
+
+                $factFinding->documents()->detach();
+                $factFinding->delete();
+            }, 3);
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->with(
+                'error',
+                'ไม่สามารถลบข้อมูลได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง'
+            );
+        }
+
+        return back()->with('success', 'ลบข้อมูลเรียบร้อยแล้ว');
+    }
+
+    /**
+     * ค้นหาข้อมูลสอบข้อเท็จจริงที่ผู้ใช้งานมีสิทธิ์เข้าถึง
+     */
+    private function findAuthorizedFactFinding($factfindingId): Factfinding
+    {
+        return Factfinding::query()
+            ->whereKey($factfindingId)
+            ->whereIn(
+                'client_id',
+                Client::forUser(auth()->user())->select('clients.id')
+            )
+            ->firstOrFail();
+    }
+
+    /**
+     * โหลดข้อมูลตัวเลือกเฉพาะคอลัมน์ที่หน้าแบบฟอร์มใช้งาน
+     */
+    private function loadFormOptions(): array
+    {
+        $documents = Document::query()
+            ->select(['id', 'document_name'])
+            ->orderBy('document_name')
+            ->get();
+
+        $maritals = Marital::query()
+            ->select(['id', 'marital_name'])
+            ->orderBy('marital_name')
+            ->get();
+
+        return [$documents, $maritals];
+    }
+
+    /**
+     * กฎ Validation ใช้ร่วมกันระหว่างเพิ่มและแก้ไข
+     */
+    private function validationRules(): array
+    {
+        $today = now('Asia/Bangkok')->toDateString();
+
+        return [
+            'client_id' => ['required', 'integer', 'exists:clients,id'],
 
             'date' => [
                 'required',
                 'date',
-                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+                'before_or_equal:' . $today,
             ],
 
-                'receive_date' => [
+            'receive_date' => [
                 'required',
                 'date',
-                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+                'before_or_equal:' . $today,
             ],
 
+            'fact_name' => ['required', 'string', 'max:255'],
 
-            'fact_name'   => 'required|string|max:255',
+            'appearance' => ['nullable', 'string', 'max:255'],
+            'skin' => ['nullable', 'string', 'max:255'],
+            'scar' => ['nullable', 'string', 'max:255'],
+            'disability' => ['nullable', 'string', 'max:255'],
+            'evidence' => ['nullable', 'string', 'max:2000'],
 
-            'appearance'  => 'nullable|string',
-            'skin'        => 'nullable|string',
-            'scar'        => 'nullable|string',
-            'disability'  => 'nullable|string',
-            'evidence'    => 'nullable|string',
-            'sick'        => 'required|in:0,1',
-            'sick_detail' => 'required_if:sick,1|nullable|string',
-            'treatment'   => 'nullable|string',
-            'hospital'    => 'nullable|string',
-            'weight'      => 'nullable|numeric|max:500',
-            'height'      => 'nullable|numeric|max:300',
-            'blood_group' => 'nullable|string',
-            'hygiene'     => 'nullable|string',
-            'oral_health' => 'nullable|string',
-            'injury'      => 'nullable|string',
-            'marital_id'  => 'required|integer',
-            'relation_parent' => 'nullable|string',
-            'relation_family' => 'nullable|string',
-            'relation_child'  => 'nullable|string',
-            'ex_conditions'   => 'nullable|string',
-            'in_conditions'   => 'nullable|string',
-            'environment'     => 'nullable|string',
-            'cause_problem'   => 'nullable|string',
-            'need'            => 'nullable|string',
-            'information'     => 'nullable|string',
-            'diagnosis'       => 'nullable|string',
+            'sick' => ['required', 'in:0,1'],
+            'sick_detail' => ['nullable', 'required_if:sick,1', 'string', 'max:5000'],
+            'treatment' => ['nullable', 'string', 'max:255'],
+            'hospital' => ['nullable', 'string', 'max:255'],
 
-            'case_history'    => 'nullable|string',
-            // [AUTO RECORDER] ไม่รับชื่อผู้บันทึกจากฟอร์ม ให้ระบบบันทึกจากผู้ใช้งานที่ login
-            'active'          => 'nullable|boolean',
+            'weight' => ['nullable', 'numeric', 'min:0', 'max:500'],
+            'height' => ['nullable', 'numeric', 'min:0', 'max:300'],
+            'blood_group' => ['nullable', 'string', 'max:20'],
 
-            'documents'   => 'nullable|array',
-            'documents.*' => 'integer',
-        ], [
+            'hygiene' => ['nullable', 'string', 'max:255'],
+            'oral_health' => ['nullable', 'string', 'max:255'],
+            'injury' => ['nullable', 'string', 'max:1000'],
+
+            'marital_id' => ['required', 'integer', 'exists:maritals,id'],
+
+            'relation_parent' => ['nullable', 'string', 'max:10000'],
+            'relation_family' => ['nullable', 'string', 'max:10000'],
+            'relation_child' => ['nullable', 'string', 'max:10000'],
+            'ex_conditions' => ['nullable', 'string', 'max:10000'],
+            'in_conditions' => ['nullable', 'string', 'max:10000'],
+            'environment' => ['nullable', 'string', 'max:10000'],
+            'cause_problem' => ['nullable', 'string', 'max:10000'],
+            'need' => ['nullable', 'string', 'max:10000'],
+            'information' => ['nullable', 'string', 'max:10000'],
+            'diagnosis' => ['nullable', 'string', 'max:10000'],
+            'case_history' => ['nullable', 'string', 'max:10000'],
+
+            'active' => ['nullable', 'boolean'],
+
+            'documents' => ['nullable', 'array'],
+            'documents.*' => [
+                'integer',
+                'distinct',
+                'exists:documents,id',
+            ],
+        ];
+    }
+
+    /**
+     * ข้อความ Validation ภาษาไทย
+     */
+    private function validationMessages(): array
+    {
+        return [
             'client_id.required' => 'กรุณาเลือกผู้รับบริการ',
-            'client_id.integer'  => 'รหัสผู้รับบริการต้องเป็นตัวเลข',
+            'client_id.integer' => 'รหัสผู้รับบริการต้องเป็นตัวเลข',
+            'client_id.exists' => 'ไม่พบข้อมูลผู้รับบริการ',
 
-            'date.required'      => 'กรุณากรอกวันที่นำส่ง',
-            'date.date'          => 'รูปแบบวันที่ไม่ถูกต้อง',
+            'date.required' => 'กรุณากรอกวันที่นำส่ง',
+            'date.date' => 'รูปแบบวันที่นำส่งไม่ถูกต้อง',
+            'date.before_or_equal' => 'วันที่นำส่งต้องไม่เกินวันที่ปัจจุบัน',
 
             'receive_date.required' => 'กรุณากรอกวันที่บันทึก',
             'receive_date.date' => 'รูปแบบวันที่บันทึกไม่ถูกต้อง',
             'receive_date.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน',
 
-
             'fact_name.required' => 'กรุณากรอกชื่อผู้นำส่ง',
-            'fact_name.string'   => 'ชื่อข้อเท็จจริงต้องเป็นข้อความ',
-            'fact_name.max'      => 'ชื่อข้อเท็จจริงต้องไม่เกิน 255 ตัวอักษร',
+            'fact_name.string' => 'ชื่อผู้นำส่งต้องเป็นข้อความ',
+            'fact_name.max' => 'ชื่อผู้นำส่งต้องไม่เกิน 255 ตัวอักษร',
 
-            'sick.required'      => 'กรุณาระบุสถานะการเจ็บป่วย',
-            'sick.in'            => 'ค่าที่ระบุไม่ถูกต้อง (ต้องเป็น 0 หรือ 1)',
+            '*.string' => 'ข้อมูลต้องเป็นข้อความ',
+            '*.max' => 'ข้อมูลมีความยาวเกินกว่าที่ระบบกำหนด',
+
+            'sick.required' => 'กรุณาระบุสถานะการเจ็บป่วย',
+            'sick.in' => 'สถานะการเจ็บป่วยไม่ถูกต้อง',
             'sick_detail.required_if' => 'กรุณากรอกรายละเอียดการเจ็บป่วย',
-            'sick_detail.string'      => 'รายละเอียดการเจ็บป่วยต้องเป็นข้อความ',
-
-            'marital_id.required' => 'กรุณาเลือกสถานภาพสมรส',
-            'marital_id.integer'  => 'สถานภาพสมรสต้องเป็นตัวเลข',
 
             'weight.numeric' => 'น้ำหนักต้องเป็นตัวเลขเท่านั้น',
-            'weight.min'     => 'น้ำหนักต้องไม่น้อยกว่า 1 กิโลกรัม',
-            'weight.max'     => 'น้ำหนักต้องไม่เกิน 500 กิโลกรัม',
+            'weight.min' => 'น้ำหนักต้องไม่น้อยกว่า 0 กิโลกรัม',
+            'weight.max' => 'น้ำหนักต้องไม่เกิน 500 กิโลกรัม',
 
             'height.numeric' => 'ส่วนสูงต้องเป็นตัวเลขเท่านั้น',
-            'height.min'     => 'ส่วนสูงต้องไม่น้อยกว่า 30 เซนติเมตร',
-            'height.max'     => 'ส่วนสูงต้องไม่เกิน 300 เซนติเมตร',
+            'height.min' => 'ส่วนสูงต้องไม่น้อยกว่า 0 เซนติเมตร',
+            'height.max' => 'ส่วนสูงต้องไม่เกิน 300 เซนติเมตร',
 
-            // 'recorder.required'  => 'กรุณากรอกชื่อผู้บันทึก',
-            // 'recorder.string'    => 'ชื่อผู้บันทึกต้องเป็นข้อความ',
 
-            'documents.array'    => 'เอกสารต้องอยู่ในรูปแบบรายการ',
-            'documents.*.integer'=> 'รหัสเอกสารต้องเป็นตัวเลข',
-        ]);
+            'marital_id.required' => 'กรุณาเลือกสถานภาพสมรส',
+            'marital_id.integer' => 'สถานภาพสมรสไม่ถูกต้อง',
+            'marital_id.exists' => 'ไม่พบสถานภาพสมรสที่เลือก',
 
-        // ✅ แก้จาก whereHas('client') เป็น whereIn(client_id, subquery)
-            $factFinding = Factfinding::where('id', $factfinding_id)
-                ->whereIn('client_id', Client::forUser(auth()->user())->select('id'))
-                ->firstOrFail();
-
-            // =========================
-            // PATCH: กันเปลี่ยน client_id จาก form (hidden field)
-            // ใช้ client_id จาก record เดิมเท่านั้น
-            // =========================
-            $validated['client_id'] = $factFinding->client_id;
-
-            $client = Client::forUser(auth()->user())->findOrFail($validated['client_id']);
-
-            $existing = Factfinding::where('client_id', $client->id)
-                ->where('id', '!=', $factFinding->id)
-                ->first();
-
-            if ($existing) {
-                return redirect()
-                    ->route('factfinding.edit', $existing->id)
-                    ->with('error', 'มีข้อมูลของผู้รับรายนี้อยู่แล้ว ท่านสามารถแก้ไขแทนการบันทึกใหม่ได้');
-            }
-
-            if ($validated['sick'] == 0) {
-                $validated['sick_detail'] = null;
-            }
-
-            $payload = [
-            'client_id'   => (int) $client->id,
-            'date'        => $validated['date'],
-            'receive_date'=> $validated['receive_date'],
-            'fact_name'   => $validated['fact_name'],
-            'appearance'  => $validated['appearance'] ?? 'ไม่ระบุ',
-            'skin'        => $validated['skin'] ?? 'ไม่ระบุ',
-            'scar'        => $validated['scar'] ?? 'ไม่ระบุ',
-            'disability'  => $validated['disability'] ?? 'ไม่ระบุ',
-            'evidence'    => $validated['evidence'] ?? '',
-            'sick'        => $validated['sick'] ?? 0,
-            'sick_detail' => $validated['sick_detail'] ?? 'ไม่ระบุ',
-            'treatment'   => $validated['treatment'] ?? '',
-            'hospital'    => $validated['hospital'] ?? '',
-            'weight'      => isset($validated['weight']) ? (float) $validated['weight'] : 0,
-            'height'      => isset($validated['height']) ? (float) $validated['height'] : 0,
-            'blood_group' => $validated['blood_group'] ?? 'ไม่ระบุ',
-            'hygiene'     => $validated['hygiene'] ?? 'ไม่ระบุ',
-            'oral_health' => $validated['oral_health'] ?? 'ไม่ระบุ',
-            'injury'      => $validated['injury'] ?? 'ไม่ระบุ',
-            'marital_id'  => $validated['marital_id'] ?? 0,
-            'relation_parent' => $validated['relation_parent'] ?? '',
-            'relation_family' => $validated['relation_family'] ?? '',
-            'relation_child'  => $validated['relation_child'] ?? '',
-            'ex_conditions'   => $validated['ex_conditions'] ?? '',
-            'in_conditions'   => $validated['in_conditions'] ?? '',
-            'environment'     => $validated['environment'] ?? '',
-            'cause_problem'   => $validated['cause_problem'] ?? '',
-            'need'            => $validated['need'] ?? '',
-            'information'     => $validated['information'] ?? '',
-            'diagnosis'       => $validated['diagnosis'] ?? '',
-            'case_history'    => $validated['case_history'] ?? '',
-
-            // [AUTO RECORDER] บันทึกชื่อผู้แก้ไขล่าสุดจากผู้ใช้งานที่ login
-            'recorder'        => auth()->user()->name ?? 'ไม่ระบุผู้บันทึก',
-
-            'active'          => $validated['active'] ?? 1,
+            'documents.array' => 'เอกสารต้องอยู่ในรูปแบบรายการ',
+            'documents.*.integer' => 'รหัสเอกสารต้องเป็นตัวเลข',
+            'documents.*.distinct' => 'พบรายการเอกสารซ้ำ',
+            'documents.*.exists' => 'ไม่พบเอกสารที่เลือก',
         ];
-
-        // ✅ อัปเดตข้อมูลโดยใช้ $payload ที่เตรียมไว้
-        $factFinding->update($payload);
-
-                CaseActivity::where('client_id', $client->id)
-                ->where('module', 'factfinding')
-                ->delete();
-
-            CaseActivity::record([
-                'client_id'   => $client->id,
-                'module'      => 'factfinding',
-                'type'        => 'success',
-                'title'       => 'แก้ไขข้อมูลสอบข้อเท็จจริง',
-                'description' => 'แก้ไขข้อมูลสอบข้อเท็จจริง โดยผู้นำส่ง: ' . ($validated['fact_name'] ?? '-'),
-                'occurred_at' => now(),
-                'icon'        => 'bi-pencil-square',
-                'url'         => route('factfinding.edit', $factFinding->id),
-            ]);
-
-        FactFindingDocument::where('factfinding_id', $factFinding->id)->delete();
-
-        if (!empty($validated['documents'])) {
-            foreach ($validated['documents'] as $docId) {
-                FactFindingDocument::create([
-                    'factfinding_id' => $factFinding->id,
-                    'document_id'    => (int) $docId,
-                ]);
-            }
-        }
-
-        $notification = [
-            'message'    => 'อัปเดตข้อมูลเรียบร้อยแล้ว',
-            'alert-type' => 'success'
-        ];
-
-        return redirect()->route('factfinding.edit', $factFinding->id)
-                         ->with($notification);
     }
 
-    public function FactfindingDelete($id)
-    {
-        $factFinding = Factfinding::where('id', $id)
-            ->whereIn('client_id', Client::forUser(auth()->user())->select('id'))
-            ->firstOrFail();
+    /**
+     * เตรียมข้อมูลก่อนสร้างหรืออัปเดต
+     */
+    private function preparePayload(
+        array $validated,
+        int $clientId,
+        ?Factfinding $current = null
+    ): array {
+        unset($validated['client_id'], $validated['documents']);
 
-        // ลบ activity ของ module นี้
-            CaseActivity::where('client_id', $factFinding->client_id)
+        $validated['client_id'] = $clientId;
+        $validated['sick'] = (int) $validated['sick'];
+
+        if ($validated['sick'] === 0) {
+            $validated['sick_detail'] = null;
+        }
+
+        $validated['recorder'] = auth()->user()->name ?? 'ไม่ระบุผู้บันทึก';
+
+        if (!array_key_exists('active', $validated)) {
+            $validated['active'] = $current?->active ?? true;
+        }
+
+        return $validated;
+    }
+
+    /**
+     * ทำความสะอาดรหัสเอกสารก่อน sync
+     */
+    private function normalizeDocumentIds(array $documentIds): array
+    {
+        return collect($documentIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * บันทึกกิจกรรมล่าสุดของโมดูลสอบข้อเท็จจริง
+     */
+    private function recordActivity(
+        int $clientId,
+        int $factFindingId,
+        string $title,
+        string $description,
+        string $icon
+    ): void {
+        CaseActivity::query()
+            ->where('client_id', $clientId)
             ->where('module', 'factfinding')
             ->delete();
 
-        FactFindingDocument::where('factfinding_id', $factFinding->id)->delete();
-
-        $factFinding->delete();
-
-        return back()->with('success', 'ลบข้อมูลเรียบร้อยแล้ว');
+        CaseActivity::record([
+            'client_id' => $clientId,
+            'module' => 'factfinding',
+            'type' => 'success',
+            'title' => $title,
+            'description' => $description,
+            'occurred_at' => now('Asia/Bangkok'),
+            'icon' => $icon,
+            'url' => route('factfinding.edit', $factFindingId),
+        ]);
     }
 }

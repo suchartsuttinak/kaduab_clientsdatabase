@@ -3,6 +3,125 @@
 
 <link rel="stylesheet" href="{{ asset('backend/assets/css/education-record-edit.css') }}">
 
+<style>
+    /* มาตรฐานปุ่มของระบบและคงสีเดิมขณะประมวลผล */
+    .edurec-create-page .btn-edurec-add,
+    .edurec-create-page .btn-edurec-home,
+    .edurec-create-page .btn-edurec-save,
+    .edurec-edit-page .btn-edurec-add,
+    .edurec-edit-page .btn-edurec-home,
+    .edurec-edit-page .btn-edurec-save {
+        min-height: 44px;
+        padding: 9px 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 12px;
+        font-size: .92rem;
+        font-weight: 750;
+        line-height: 1.2;
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    .edurec-create-page .btn-edurec-add,
+    .edurec-edit-page .btn-edurec-add,
+    .edurec-create-page .btn-edurec-save,
+    .edurec-edit-page .btn-edurec-save {
+        border: 1px solid #1d4ed8;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #fff;
+        box-shadow: 0 7px 16px rgba(37, 99, 235, .18);
+    }
+
+    .edurec-create-page .btn-edurec-add:hover,
+    .edurec-edit-page .btn-edurec-add:hover,
+    .edurec-create-page .btn-edurec-save:hover,
+    .edurec-edit-page .btn-edurec-save:hover {
+        transform: translateY(-1px);
+        border-color: #1e40af;
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        color: #fff;
+        box-shadow: 0 9px 20px rgba(37, 99, 235, .24);
+    }
+
+    .edurec-create-page .btn-edurec-home,
+    .edurec-edit-page .btn-edurec-home {
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #475569;
+    }
+
+    .edurec-create-page .btn-edurec-home:hover,
+    .edurec-edit-page .btn-edurec-home:hover {
+        transform: translateY(-1px);
+        border-color: #94a3b8;
+        background: #f1f5f9;
+        color: #1e293b;
+    }
+
+    .edurec-create-page .btn-edurec-remove,
+    .edurec-edit-page .btn-edurec-remove {
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dc2626;
+        background: #dc2626;
+        color: #fff;
+    }
+
+    .edurec-create-page .btn-edurec-remove:hover,
+    .edurec-edit-page .btn-edurec-remove:hover {
+        background: #b91c1c;
+        border-color: #b91c1c;
+        color: #fff;
+    }
+
+    .edurec-create-page button:disabled,
+    .edurec-edit-page button:disabled {
+        opacity: 1 !important;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .edurec-create-page .is-processing,
+    .edurec-edit-page .is-processing {
+        pointer-events: none;
+    }
+
+    .edurec-subject-item .invalid-feedback.subject-duplicate-error {
+        display: block;
+    }
+
+    @media (max-width: 575.98px) {
+        .edurec-footer-actions,
+        .edurec-footer-actions-left,
+        .edurec-footer-actions-right {
+            width: 100%;
+        }
+
+        .edurec-footer-actions-left,
+        .edurec-footer-actions-right {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .edurec-create-page .btn-edurec-add,
+        .edurec-create-page .btn-edurec-home,
+        .edurec-create-page .btn-edurec-save,
+        .edurec-edit-page .btn-edurec-add,
+        .edurec-edit-page .btn-edurec-home,
+        .edurec-edit-page .btn-edurec-save {
+            width: 100%;
+        }
+    }
+</style>
+
+
 <div class="container-fluid edurec-edit-page">
 
     <div class="edurec-wrap">
@@ -49,7 +168,7 @@
             </div>
 
             <div class="edurec-body">
-                <form action="{{ route('education_record_update', $record->id) }}" method="POST" novalidate id="educationRecordEditForm">
+                <form action="{{ route('education_record_update', $record->id) }}" method="POST" id="educationRecordEditForm">
                     @csrf
 
                     <input type="hidden" name="client_id" value="{{ $client->id }}">
@@ -175,8 +294,24 @@
                             </button>
                         </div>
 
+                        @php
+                            $formSubjects = old('subjects');
+                            if (!is_array($formSubjects)) {
+                                $formSubjects = $record->subjects->map(function ($subject) {
+                                    return [
+                                        'subject_id' => $subject->id,
+                                        'score' => $subject->pivot->score,
+                                        'grade' => $subject->pivot->grade,
+                                    ];
+                                })->values()->all();
+                            }
+                            if (count($formSubjects) === 0) {
+                                $formSubjects = [['subject_id' => '', 'score' => '', 'grade' => '']];
+                            }
+                        @endphp
+
                         <div id="subject-container" class="edurec-subject-list">
-                            @forelse($record->subjects as $index => $subject)
+                            @foreach($formSubjects as $index => $formSubject)
                                 <div class="edurec-subject-item subject-item">
                                     <div class="edurec-subject-head">
                                         <div class="edurec-subject-badge">
@@ -188,39 +323,46 @@
                                     <div class="edurec-subject-grid">
                                         <div class="edurec-field">
                                             <label class="edurec-label">วิชา</label>
-                                            <select name="subjects[{{ $index }}][subject_id]" class="form-select" required>
+                                            <select name="subjects[{{ $index }}][subject_id]"
+                                                    class="form-select @error('subjects.' . $index . '.subject_id') is-invalid @enderror">
                                                 <option value="">-- เลือกวิชา --</option>
-                                                @foreach($subjects as $s)
-                                                    <option value="{{ $s->id }}"
-                                                        {{ $subject->id == $s->id ? 'selected' : '' }}>
-                                                        {{ $s->subject_name }}
+                                                @foreach($subjects as $subject)
+                                                    <option value="{{ $subject->id }}"
+                                                        {{ (string)($formSubject['subject_id'] ?? '') === (string)$subject->id ? 'selected' : '' }}>
+                                                        {{ $subject->subject_name }}
                                                     </option>
                                                 @endforeach
                                             </select>
+                                            @error('subjects.' . $index . '.subject_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
                                         </div>
 
                                         <div class="edurec-field">
                                             <label class="edurec-label">คะแนน</label>
                                             <input type="number"
                                                    name="subjects[{{ $index }}][score]"
-                                                   class="form-control subject-score"
+                                                   class="form-control subject-score @error('subjects.' . $index . '.score') is-invalid @enderror"
                                                    min="0"
                                                    max="100"
-                                                   inputmode="numeric"
-                                                   value="{{ $subject->pivot->score }}"
-                                                   placeholder="0 - 100"
-                                                   required>
+                                                   step="0.01"
+                                                   inputmode="decimal"
+                                                   value="{{ $formSubject['score'] ?? '' }}"
+                                                   placeholder="0 - 100">
                                             <div class="edurec-helper">คะแนนเต็ม 100</div>
+                                            @error('subjects.' . $index . '.score')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
                                         </div>
 
-                                      <div class="edurec-field">
+                                        <div class="edurec-field">
                                             <label class="edurec-label">เกรด</label>
                                             <input type="text"
-                                                name="subjects[{{ $index }}][grade]"
-                                                class="form-control subject-grade"
-                                                value="{{ $subject->pivot->grade !== null ? number_format((float)$subject->pivot->grade, 2) : '' }}"
-                                                placeholder="คำนวณอัตโนมัติ"
-                                                readonly>
+                                                   name="subjects[{{ $index }}][grade]"
+                                                   class="form-control subject-grade"
+                                                   value="{{ $formSubject['grade'] ?? '' }}"
+                                                   placeholder="คำนวณอัตโนมัติ"
+                                                   readonly>
                                         </div>
 
                                         <div class="edurec-field">
@@ -233,61 +375,9 @@
                                         </div>
                                     </div>
                                 </div>
-                            @empty
-                                <div class="edurec-subject-item subject-item">
-                                    <div class="edurec-subject-head">
-                                        <div class="edurec-subject-badge">
-                                            <i class="bi bi-book-half"></i>
-                                            <span>วิชาที่ 1</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="edurec-subject-grid">
-                                        <div class="edurec-field">
-                                            <label class="edurec-label">วิชา</label>
-                                            <select name="subjects[0][subject_id]" class="form-select" required>
-                                                <option value="">-- เลือกวิชา --</option>
-                                                @foreach($subjects as $s)
-                                                    <option value="{{ $s->id }}">{{ $s->subject_name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-
-                                        <div class="edurec-field">
-                                            <label class="edurec-label">คะแนน</label>
-                                            <input type="number"
-                                                   name="subjects[0][score]"
-                                                   class="form-control subject-score"
-                                                   min="0"
-                                                   max="100"
-                                                   inputmode="numeric"
-                                                   placeholder="0 - 100"
-                                                   required>
-                                            <div class="edurec-helper">คะแนนเต็ม 100</div>
-                                        </div>
-
-                                        <div class="edurec-field">
-                                            <label class="edurec-label">เกรด</label>
-                                            <input type="text"
-                                                name="subjects[0][grade]"
-                                                class="form-control subject-grade"
-                                                value=""
-                                                placeholder="คำนวณอัตโนมัติ"
-                                                readonly>
-                                        </div>
-
-                                        <div class="edurec-field">
-                                            <label class="edurec-label d-none d-md-block">&nbsp;</label>
-                                            <button type="button"
-                                                    class="btn btn-edurec-remove remove-subject"
-                                                    aria-label="ลบวิชา">
-                                                <i class="bi bi-trash3"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforelse
+                            @endforeach
                         </div>
+
 
                         <div id="subject-empty-state" class="edurec-empty-state">
                             <i class="bi bi-journal-x"></i>
@@ -314,6 +404,9 @@
                                     <label for="grade_average" class="edurec-label">เกรดเฉลี่ย</label>
                                     <input type="number"
                                            step="0.01"
+                                           min="0"
+                                           max="4"
+                                           inputmode="decimal"
                                            name="grade_average"
                                            id="grade_average"
                                            class="form-control @error('grade_average') is-invalid @enderror"
@@ -357,19 +450,25 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+
+    const form = document.getElementById('educationRecordEditForm');
     const container = document.getElementById('subject-container');
     const emptyState = document.getElementById('subject-empty-state');
-    const addBtnTop = document.getElementById('add-subject');
-    const addBtnBottom = document.getElementById('add-subject-bottom');
+    const addButtons = [
+        document.getElementById('add-subject'),
+        document.getElementById('add-subject-bottom')
+    ].filter(Boolean);
     const subjectCountEl = document.getElementById('subject-count');
+    const maxSubjects = 30;
+
+    if (!form || !container) return;
 
     function calculateGrade(score) {
-        const numericScore = parseFloat(score);
+        if (score === '' || score === null || typeof score === 'undefined') return '';
 
-        if (isNaN(numericScore)) {
-            return '';
-        }
-
+        const numericScore = Number(score);
+        if (!Number.isFinite(numericScore)) return '';
         if (numericScore >= 80) return '4.00';
         if (numericScore >= 75) return '3.50';
         if (numericScore >= 70) return '3.00';
@@ -377,169 +476,184 @@ document.addEventListener('DOMContentLoaded', function () {
         if (numericScore >= 60) return '2.00';
         if (numericScore >= 55) return '1.50';
         if (numericScore >= 50) return '1.00';
-
         return '0.00';
     }
 
-    function refreshSubjectLabels() {
-        const items = container.querySelectorAll('.subject-item');
-
-        items.forEach((item, index) => {
-            const badgeText = item.querySelector('.edurec-subject-badge span');
-            if (badgeText) {
-                badgeText.textContent = `วิชาที่ ${index + 1}`;
-            }
-        });
-
-        if (subjectCountEl) {
-            subjectCountEl.textContent = items.length;
-        }
-
-        if (emptyState) {
-            emptyState.style.display = items.length ? 'none' : 'block';
-        }
+    function updateGrade(scoreInput) {
+        const item = scoreInput.closest('.subject-item');
+        const gradeInput = item?.querySelector('.subject-grade');
+        if (gradeInput) gradeInput.value = calculateGrade(scoreInput.value);
     }
 
-    function renumberFieldNames() {
-        const items = container.querySelectorAll('.subject-item');
+    function clearRowErrors(item) {
+        item.querySelectorAll('.is-invalid').forEach(element => element.classList.remove('is-invalid'));
+        item.querySelectorAll('.invalid-feedback, .subject-duplicate-error').forEach(element => element.remove());
+    }
+
+    function renumberRows() {
+        const items = Array.from(container.querySelectorAll('.subject-item'));
 
         items.forEach((item, index) => {
+            const badge = item.querySelector('.edurec-subject-badge span');
             const subjectSelect = item.querySelector('select[name*="[subject_id]"]');
             const scoreInput = item.querySelector('input[name*="[score]"]');
-            const gradeSelect = item.querySelector('input[name*="[grade]"]');
+            const gradeInput = item.querySelector('input[name*="[grade]"]');
 
+            if (badge) badge.textContent = `วิชาที่ ${index + 1}`;
             if (subjectSelect) subjectSelect.name = `subjects[${index}][subject_id]`;
             if (scoreInput) scoreInput.name = `subjects[${index}][score]`;
-            if (gradeSelect) gradeSelect.name = `subjects[${index}][grade]`;
+            if (gradeInput) gradeInput.name = `subjects[${index}][grade]`;
         });
+
+        const selectedCount = items.filter(item => {
+            return Boolean(item.querySelector('select[name*="[subject_id]"]')?.value);
+        }).length;
+
+        if (subjectCountEl) subjectCountEl.textContent = selectedCount;
+        if (emptyState) emptyState.style.display = items.length ? 'none' : 'block';
     }
 
-    function updateGrade(input) {
-        const row = input.closest('.subject-item');
-        if (!row) return;
-
-        const gradeSelect = row.querySelector('.subject-grade');
-        if (!gradeSelect) return;
-
-        const grade = calculateGrade(input.value);
-        if (grade !== '') {
-            gradeSelect.value = grade;
+    function showMaxSubjectAlert() {
+        const message = `เพิ่มรายวิชาได้ไม่เกิน ${maxSubjects} รายการ`;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'เพิ่มรายวิชาไม่ได้',
+                text: message,
+                confirmButtonText: 'ตกลง'
+            });
+        } else {
+            window.alert(message);
         }
-    }
-
-    function createSubjectItem(index) {
-        return `
-            <div class="edurec-subject-item subject-item">
-                <div class="edurec-subject-head">
-                    <div class="edurec-subject-badge">
-                        <i class="bi bi-book-half"></i>
-                        <span>วิชาที่ ${index + 1}</span>
-                    </div>
-                </div>
-
-                <div class="edurec-subject-grid">
-                    <div class="edurec-field">
-                        <label class="edurec-label">วิชา</label>
-                        <select name="subjects[${index}][subject_id]" class="form-select" required>
-                            <option value="">-- เลือกวิชา --</option>
-                            @foreach($subjects as $subject)
-                                <option value="{{ $subject->id }}">{{ $subject->subject_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="edurec-field">
-                        <label class="edurec-label">คะแนน</label>
-                        <input type="number"
-                               name="subjects[${index}][score]"
-                               class="form-control subject-score"
-                               min="0"
-                               max="100"
-                               inputmode="numeric"
-                               placeholder="0 - 100"
-                               required>
-                        <div class="edurec-helper">คะแนนเต็ม 100</div>
-                    </div>
-                        <div class="edurec-field">
-                            <label class="edurec-label">เกรด</label>
-                            <input type="text"
-                                name="subjects[${index}][grade]"
-                                class="form-control subject-grade"
-                                value=""
-                                placeholder="คำนวณอัตโนมัติ"
-                                readonly>
-                        </div>
-
-                    <div class="edurec-field">
-                        <label class="edurec-label d-none d-md-block">&nbsp;</label>
-                        <button type="button"
-                                class="btn btn-edurec-remove remove-subject"
-                                aria-label="ลบวิชา">
-                            <i class="bi bi-trash3"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
     }
 
     function addSubject() {
-        const index = container.querySelectorAll('.subject-item').length;
-        container.insertAdjacentHTML('beforeend', createSubjectItem(index));
-        refreshSubjectLabels();
-    }
-
-    function handleAddSubjectClick() {
-        addSubject();
-    }
-
-    if (addBtnTop) addBtnTop.addEventListener('click', handleAddSubjectClick);
-    if (addBtnBottom) addBtnBottom.addEventListener('click', handleAddSubjectClick);
-
-    container.addEventListener('click', function (e) {
-        const removeBtn = e.target.closest('.remove-subject');
-        if (!removeBtn) return;
-
         const items = container.querySelectorAll('.subject-item');
-
-        if (items.length <= 1) {
-            const item = removeBtn.closest('.subject-item');
-            if (!item) return;
-
-            const selects = item.querySelectorAll('select');
-            const inputs = item.querySelectorAll('input');
-
-            selects.forEach(el => el.value = '');
-           inputs.forEach(el => {
-                el.value = '';
-            });
-
-            refreshSubjectLabels();
+        if (items.length >= maxSubjects) {
+            showMaxSubjectAlert();
             return;
         }
 
-        const subjectItem = removeBtn.closest('.subject-item');
-        if (subjectItem) {
-            subjectItem.remove();
-            renumberFieldNames();
-            refreshSubjectLabels();
-        }
-    });
+        const template = items[0];
+        if (!template) return;
 
-    container.addEventListener('input', function (e) {
-        if (e.target.matches('input[name*="[score]"]')) {
-            let value = parseFloat(e.target.value);
+        const item = template.cloneNode(true);
+        clearRowErrors(item);
 
-            if (!isNaN(value)) {
-                if (value < 0) e.target.value = 0;
-                if (value > 100) e.target.value = 100;
+        item.querySelectorAll('select').forEach(select => select.value = '');
+        item.querySelectorAll('input').forEach(input => input.value = '');
+
+        container.appendChild(item);
+        renumberRows();
+        item.querySelector('select')?.focus();
+    }
+
+    function clearSingleItem(item) {
+        clearRowErrors(item);
+        item.querySelectorAll('select').forEach(select => select.value = '');
+        item.querySelectorAll('input').forEach(input => input.value = '');
+        renumberRows();
+    }
+
+    function validateDuplicateSubjects() {
+        const seen = new Map();
+        let valid = true;
+
+        container.querySelectorAll('.subject-duplicate-error').forEach(error => error.remove());
+        container.querySelectorAll('select[name*="[subject_id]"]').forEach(select => {
+            if (select.classList.contains('subject-duplicate-invalid')) {
+                select.classList.remove('subject-duplicate-invalid');
+                const hasServerError = Boolean(
+                    select.parentElement.querySelector('.invalid-feedback:not(.subject-duplicate-error)')
+                );
+                if (!hasServerError) select.classList.remove('is-invalid');
             }
 
-            updateGrade(e.target);
+            if (!select.value) return;
+
+            if (seen.has(select.value)) {
+                valid = false;
+                select.classList.add('is-invalid', 'subject-duplicate-invalid');
+                seen.get(select.value).classList.add('is-invalid', 'subject-duplicate-invalid');
+
+                if (!select.parentElement.querySelector('.subject-duplicate-error')) {
+                    const error = document.createElement('div');
+                    error.className = 'invalid-feedback subject-duplicate-error';
+                    error.textContent = 'ไม่สามารถเลือกรายวิชาเดิมซ้ำกันได้';
+                    select.parentElement.appendChild(error);
+                }
+            } else {
+                seen.set(select.value, select);
+            }
+        });
+
+        return valid;
+    }
+
+    addButtons.forEach(button => button.addEventListener('click', addSubject));
+
+    container.addEventListener('click', function (event) {
+        const removeButton = event.target.closest('.remove-subject');
+        if (!removeButton) return;
+
+        const item = removeButton.closest('.subject-item');
+        if (!item) return;
+
+        if (container.querySelectorAll('.subject-item').length <= 1) {
+            clearSingleItem(item);
+            return;
+        }
+
+        item.remove();
+        renumberRows();
+        validateDuplicateSubjects();
+    });
+
+    container.addEventListener('input', function (event) {
+        if (!event.target.matches('.subject-score')) return;
+
+        const value = Number(event.target.value);
+        if (event.target.value !== '' && Number.isFinite(value)) {
+            if (value < 0) event.target.value = 0;
+            if (value > 100) event.target.value = 100;
+        }
+
+        updateGrade(event.target);
+    });
+
+    container.addEventListener('change', function (event) {
+        if (event.target.matches('select[name*="[subject_id]"]')) {
+            renumberRows();
+            validateDuplicateSubjects();
         }
     });
 
-    refreshSubjectLabels();
+    form.addEventListener('submit', function (event) {
+        if (!validateDuplicateSubjects()) {
+            event.preventDefault();
+            container.querySelector('.is-invalid')?.focus();
+            return;
+        }
+
+        if (form.dataset.submitting === '1') {
+            event.preventDefault();
+            return;
+        }
+
+        form.dataset.submitting = '1';
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        if (submitButton) {
+            submitButton.dataset.originalHtml = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.classList.add('is-processing');
+            submitButton.innerHTML = '<i class="bi bi-save" aria-hidden="true"></i><span>กำลังบันทึก...</span>';
+        }
+    });
+
+    container.querySelectorAll('.subject-score').forEach(updateGrade);
+    renumberRows();
+    validateDuplicateSubjects();
 });
 </script>
 @endsection

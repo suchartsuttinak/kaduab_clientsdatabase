@@ -2,6 +2,46 @@
 @section('content')
 
 <style>
+    /* ใช้ตัวอักษรเดียวกับ Sidebar / Header จาก Layout หลัก */
+    .visit-family-page {
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+    }
+
+    .visit-family-page button,
+    .visit-family-page input,
+    .visit-family-page select,
+    .visit-family-page textarea,
+    .visit-family-page .form-control,
+    .visit-family-page .form-select,
+    .visit-family-page .btn,
+    .visit-family-page .card,
+    .visit-family-page .alert {
+        font-family: inherit !important;
+    }
+
+    .visit-family-page .card-title {
+        font-family: inherit;
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .visit-family-page .form-label {
+        font-family: inherit;
+        font-size: .95rem;
+        font-weight: 600;
+        line-height: 1.45;
+    }
+
+    .visit-family-page .form-control,
+    .visit-family-page .form-select {
+        font-size: .95rem;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+
     .official-form {
         border: 2px solid #0d6efd;
         padding: 20px;
@@ -80,10 +120,101 @@
             aspect-ratio: 1 / 1;
         }
     }
+
+    .visit-family-form-card {
+        border: 1px solid #dbe3ec;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .visit-family-action-btn {
+        min-width: 132px;
+        min-height: 44px;
+        padding: 9px 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 12px;
+        font-size: .95rem;
+        font-weight: 600;
+        line-height: 1.2;
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease,
+                    background-color .18s ease, color .18s ease;
+    }
+
+    .visit-family-action-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .visit-family-action-btn:active {
+        transform: translateY(0);
+    }
+
+    .visit-family-action-btn:focus-visible {
+        outline: 0;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, .16);
+    }
+
+    .visit-family-save-btn {
+        border: 1px solid #1d4ed8;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #fff;
+        box-shadow: 0 7px 16px rgba(37, 99, 235, .18);
+    }
+
+    .visit-family-save-btn:hover,
+    .visit-family-save-btn:focus {
+        border-color: #1e40af;
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        color: #fff;
+        box-shadow: 0 9px 20px rgba(37, 99, 235, .24);
+    }
+
+    .visit-family-report-btn {
+        border: 1px solid #0f766e;
+        background: #fff;
+        color: #0f766e;
+    }
+
+    .visit-family-report-btn:hover,
+    .visit-family-report-btn:focus {
+        background: #f0fdfa;
+        border-color: #115e59;
+        color: #115e59;
+        box-shadow: 0 7px 16px rgba(15, 118, 110, .12);
+    }
+
+    .visit-family-action-btn:disabled {
+        opacity: 1;
+        transform: none;
+        cursor: not-allowed;
+    }
+
+    .visit-family-upload-status {
+        min-height: 20px;
+        margin-top: 6px;
+        color: #64748b;
+    }
+
+    @media (max-width: 575.98px) {
+        .visit-family-actions {
+            display: grid !important;
+            grid-template-columns: 1fr;
+            width: 100%;
+        }
+
+        .visit-family-action-btn {
+            width: 100%;
+        }
+    }
+
 </style>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 visit-family-page">
     <form method="POST"
+          id="visit-family-form"
           action="{{ isset($visitFamily) ? route('vitsitFamily.update', $visitFamily->id) : route('vitsitFamily.store', $client_id) }}"
           enctype="multipart/form-data">
         @csrf
@@ -152,11 +283,14 @@
                             <div class="form-group col-md-3 mb-3">
                                 <label for="family_age" class="form-label">อายุ:</label>
                                 <div class="d-flex align-items-center">
-                                    <input type="text"
+                                    <input type="number"
                                            name="family_age"
                                            id="family_age"
-                                           class="form-control"
-                                           value="{{ old('family_age', $visitFamily->family_age ?? '') }}">
+                                           class="form-control @error('family_age') is-invalid @enderror"
+                                           value="{{ old('family_age', $visitFamily->family_age ?? '') }}"
+                                           min="0"
+                                           max="120"
+                                           inputmode="numeric">
                                     <span class="ms-2">ปี</span>
                                 </div>
                                 @error('family_age')
@@ -409,7 +543,7 @@
                             </label>
                             <select name="sub_district_id"
                                     id="subdistrict"
-                                    class="form-select"
+                                    class="form-select @error('sub_district_id') is-invalid @enderror"
                                     data-selected="{{ old('sub_district_id', $visitFamily->sub_district_id ?? '') }}">
                                 <option value="">-- เลือกตำบล --</option>
                                 @foreach ($sub_districts as $subdistrict)
@@ -420,19 +554,25 @@
                                 @endforeach
                             </select>
                             @error('sub_district_id')
-                                <small class="text-danger">{{ $message }}</small>
+                                <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="row">
                             <div class="form-group col-md-3 mb-3">
-                                <label for="zipcode" class="form-label">รหัสไปรษณีย์</label>
+                                <label for="zipcode" class="form-label">
+                                    รหัสไปรษณีย์ <span class="text-danger">*</span>
+                                </label>
                                 <input type="text"
                                        name="zipcode"
                                        id="zipcode"
-                                       class="form-control"
+                                       class="form-control @error('zipcode') is-invalid @enderror"
                                        value="{{ old('zipcode', $visitFamily->zipcode ?? '') }}"
+                                       maxlength="10"
                                        readonly>
+                                @error('zipcode')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <div class="mb-3 col-md-8">
@@ -440,8 +580,10 @@
                                 <input type="text"
                                        name="phone"
                                        id="phone"
-                                       class="form-control"
-                                       value="{{ old('phone', $visitFamily->phone ?? '') }}">
+                                       class="form-control @error('phone') is-invalid @enderror"
+                                       value="{{ old('phone', $visitFamily->phone ?? '') }}"
+                                       maxlength="20"
+                                       inputmode="tel">
                                 @error('phone')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror
@@ -527,10 +669,20 @@
     <input type="file"
            name="images[]"
            id="images"
-           class="form-control"
+           class="form-control @error('images') is-invalid @enderror @error('images.*') is-invalid @enderror"
            multiple
-           accept="image/*">
+           accept="image/jpeg,image/png,image/webp"
+           data-max-files="10">
 
+    @error('images')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+    @error('images.*')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+
+    <div class="form-text">อัปโหลดได้ไม่เกิน 10 รูปต่อครั้ง รูปละไม่เกิน 10 MB</div>
+    <div id="visit-family-upload-status" class="visit-family-upload-status" aria-live="polite"></div>
     <div id="preview" class="row mt-3 visit-family-preview"></div>
 </div>
 
@@ -554,9 +706,11 @@
                 <div class="col-6 col-md-4 col-xl-3 mb-3" id="image-{{ $img->id }}">
                     <div class="visit-family-image-card">
                         @php
-                            $imageUrl = str_starts_with($img->file_path, 'upload/')
-                                ? asset($img->file_path)
-                                : asset('storage/' . $img->file_path);
+                            $imagePath = ltrim((string) $img->file_path, '/');
+                            $imageUrl = str_starts_with($imagePath, 'upload/')
+                                || str_starts_with($imagePath, 'storage/')
+                                    ? asset($imagePath)
+                                    : asset('storage/' . $imagePath);
                         @endphp
 
                         <img src="{{ $imageUrl }}"
@@ -582,16 +736,21 @@
                     บีบอัดรูปก่อน Upload
                 ===================================================== --}}
 
-                        <div class="d-flex flex-wrap gap-2 mt-3">
-                            <button type="submit" class="btn btn-success">
-                                {{ isset($visitFamily) ? 'แก้ไขข้อมูล' : 'บันทึกข้อมูลใหม่' }}
+                        <div class="d-flex flex-wrap gap-2 mt-3 visit-family-actions">
+                            <button type="submit"
+                                    class="btn visit-family-action-btn visit-family-save-btn"
+                                    id="visit-family-submit">
+                                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                                <span>{{ isset($visitFamily) ? 'บันทึกการแก้ไข' : 'บันทึกข้อมูล' }}</span>
                             </button>
 
                             @if(isset($visitFamily) && !empty($visitFamily->id))
                                 <a href="{{ route('vitsitFamily.report', $visitFamily->id) }}"
-                                   class="btn btn-primary"
-                                   target="_blank">
-                                    <i class="bi bi-printer me-1"></i> รายงาน
+                                   class="btn visit-family-action-btn visit-family-report-btn"
+                                   target="_blank"
+                                   rel="noopener">
+                                    <i class="bi bi-printer" aria-hidden="true"></i>
+                                    <span>รายงาน</span>
                                 </a>
                             @endif
                         </div>
@@ -602,227 +761,433 @@
     </form>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<script>
-$(function() {
-    const province = $('#province');
-    const district = $('#district');
-    const subdistrict = $('#subdistrict');
-    const zipcode = $('#zipcode');
-
-    function resetDistrict() {
-        district.html('<option value="">--เลือกอำเภอ--</option>');
-    }
-
-    function resetSubdistrict() {
-        subdistrict.html('<option value="">--เลือกตำบล--</option>');
-    }
-
-    function resetZipcode() {
-        zipcode.val('');
-    }
-
-    province.on('change', function() {
-        const province_id = $(this).val();
-
-        resetDistrict();
-        resetSubdistrict();
-        resetZipcode();
-
-        if (province_id) {
-            $.get('/vitsitFamily/get-districts/' + province_id).done(function(data) {
-                district.html('<option value="">--เลือกอำเภอ--</option>');
-
-                $.each(data, function(i, value) {
-                    district.append('<option value="' + value.id + '">' + value.dist_name + '</option>');
-                });
-            });
-        }
-    });
-
-    district.on('change', function() {
-        const district_id = $(this).val();
-
-        resetSubdistrict();
-        resetZipcode();
-
-        if (district_id) {
-            $.get('/vitsitFamily/get-subdistricts/' + district_id).done(function(data) {
-                subdistrict.html('<option value="">--เลือกตำบล--</option>');
-
-                $.each(data, function(i, value) {
-                    subdistrict.append('<option value="' + value.id + '">' + value.subd_name + '</option>');
-                });
-            });
-        }
-    });
-
-    subdistrict.on('change', function() {
-        const subdistrict_id = $(this).val();
-
-        resetZipcode();
-
-        if (subdistrict_id) {
-            $.get('/vitsitFamily/get-zipcode/' + subdistrict_id).done(function(data) {
-                zipcode.val(data.zipcode || '');
-            });
-        }
-    });
-});
-</script>
-
-{{-- PATCH: Browser Image Compression --}}
+{{-- ใช้ browser-image-compression เมื่อ CDN พร้อมใช้งาน หากโหลดไม่ได้จะส่งไฟล์ต้นฉบับ --}}
 <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const input = document.getElementById('images');
+    'use strict';
+
+    const form = document.getElementById('visit-family-form');
+    const province = document.getElementById('province');
+    const district = document.getElementById('district');
+    const subdistrict = document.getElementById('subdistrict');
+    const zipcode = document.getElementById('zipcode');
+    const imageInput = document.getElementById('images');
     const preview = document.getElementById('preview');
+    const uploadStatus = document.getElementById('visit-family-upload-status');
+    const submitButton = document.getElementById('visit-family-submit');
 
-    if (!input || !preview) return;
+    const urls = {
+        districts: @json(url('/vitsitFamily/get-districts')),
+        subdistricts: @json(url('/vitsitFamily/get-subdistricts')),
+        zipcode: @json(url('/vitsitFamily/get-zipcode')),
+    };
 
-    input.addEventListener('change', async function (event) {
-        preview.innerHTML = '';
+    let districtRequest = null;
+    let subdistrictRequest = null;
+    let zipcodeRequest = null;
 
-        const originalFiles = Array.from(event.target.files || []);
-        const dt = new DataTransfer();
+    function clearOptions(select, placeholder) {
+        if (!select) return;
+        select.replaceChildren(new Option(placeholder, ''));
+    }
 
-        // แสดง preview ทันทีจากไฟล์ต้นฉบับก่อน
-        originalFiles.forEach(function(file) {
-            if (!file.type.startsWith('image/')) return;
+    function setSelectLoading(select, placeholder) {
+        clearOptions(select, placeholder);
+        select.disabled = true;
+    }
 
-            const reader = new FileReader();
+    function addOptions(select, items, valueKey, labelKey, selectedValue = '') {
+        clearOptions(
+            select,
+            select === district ? '--เลือกอำเภอ--' : '--เลือกตำบล--'
+        );
 
-            reader.onload = function(e) {
-                const col = document.createElement('div');
-                col.className = 'col-6 col-md-4 col-xl-3 mb-3';
-
-                col.innerHTML = `
-                    <div class="visit-family-image-card">
-                        <img src="${e.target.result}"
-                             alt="preview"
-                             loading="lazy"
-                             decoding="async">
-                    </div>
-                `;
-
-                preview.appendChild(col);
-            };
-
-            reader.readAsDataURL(file);
+        items.forEach(item => {
+            const option = new Option(item[labelKey] ?? '-', item[valueKey]);
+            option.selected = String(item[valueKey]) === String(selectedValue || '');
+            select.add(option);
         });
 
-        // บีบอัดไฟล์สำหรับส่งขึ้น server
-        for (const file of originalFiles) {
-            if (!file.type.startsWith('image/')) continue;
+        select.disabled = false;
+    }
 
-            try {
-                const compressedFile = await imageCompression(file, {
-                    maxSizeMB: 0.7,
-                    maxWidthOrHeight: 1600,
-                    useWebWorker: true,
-                    fileType: 'image/jpeg',
-                    initialQuality: 0.75,
+    async function fetchJson(url, controller) {
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        return response.json();
+    }
+
+    async function loadDistricts(provinceId, selectedDistrict = '') {
+        districtRequest?.abort();
+        districtRequest = new AbortController();
+
+        setSelectLoading(district, 'กำลังโหลดอำเภอ...');
+        clearOptions(subdistrict, '--เลือกตำบล--');
+        subdistrict.disabled = true;
+        zipcode.value = '';
+
+        if (!provinceId) {
+            clearOptions(district, '--เลือกอำเภอ--');
+            district.disabled = false;
+            subdistrict.disabled = false;
+            return;
+        }
+
+        try {
+            const data = await fetchJson(
+                `${urls.districts}/${encodeURIComponent(provinceId)}`,
+                districtRequest
+            );
+
+            addOptions(district, Array.isArray(data) ? data : [], 'id', 'dist_name', selectedDistrict);
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error('Unable to load districts.', error);
+            clearOptions(district, '--ไม่สามารถโหลดอำเภอ--');
+            district.disabled = false;
+        }
+    }
+
+    async function loadSubdistricts(districtId, selectedSubdistrict = '') {
+        subdistrictRequest?.abort();
+        subdistrictRequest = new AbortController();
+
+        setSelectLoading(subdistrict, 'กำลังโหลดตำบล...');
+        zipcode.value = '';
+
+        if (!districtId) {
+            clearOptions(subdistrict, '--เลือกตำบล--');
+            subdistrict.disabled = false;
+            return;
+        }
+
+        try {
+            const data = await fetchJson(
+                `${urls.subdistricts}/${encodeURIComponent(districtId)}`,
+                subdistrictRequest
+            );
+
+            addOptions(
+                subdistrict,
+                Array.isArray(data) ? data : [],
+                'id',
+                'subd_name',
+                selectedSubdistrict
+            );
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error('Unable to load subdistricts.', error);
+            clearOptions(subdistrict, '--ไม่สามารถโหลดตำบล--');
+            subdistrict.disabled = false;
+        }
+    }
+
+    async function loadZipcode(subdistrictId) {
+        zipcodeRequest?.abort();
+        zipcodeRequest = new AbortController();
+        zipcode.value = '';
+
+        if (!subdistrictId) return;
+
+        try {
+            const data = await fetchJson(
+                `${urls.zipcode}/${encodeURIComponent(subdistrictId)}`,
+                zipcodeRequest
+            );
+
+            zipcode.value = data.zipcode ?? '';
+            clearFieldError(zipcode);
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error('Unable to load zipcode.', error);
+            }
+        }
+    }
+
+    province?.addEventListener('change', async function () {
+        await loadDistricts(this.value);
+    });
+
+    district?.addEventListener('change', async function () {
+        await loadSubdistricts(this.value);
+    });
+
+    subdistrict?.addEventListener('change', function () {
+        loadZipcode(this.value);
+    });
+
+    async function restoreAddressSelections() {
+        if (!province || !district || !subdistrict) return;
+
+        const selectedProvince = province.dataset.selected || province.value;
+        const selectedDistrict = district.dataset.selected || district.value;
+        const selectedSubdistrict = subdistrict.dataset.selected || subdistrict.value;
+
+        if (!selectedProvince) return;
+
+        await loadDistricts(selectedProvince, selectedDistrict);
+
+        if (selectedDistrict) {
+            await loadSubdistricts(selectedDistrict, selectedSubdistrict);
+        }
+
+        if (selectedSubdistrict) {
+            await loadZipcode(selectedSubdistrict);
+        }
+    }
+
+    function clearFieldError(field) {
+        if (!field) return;
+
+        field.classList.remove('is-invalid');
+
+        const parent = field.closest('.mb-3, .form-group, .col-md-3, .col-md-6, .col-md-8, .col-12');
+        parent?.querySelectorAll('.invalid-feedback').forEach(feedback => {
+            feedback.remove();
+        });
+    }
+
+    document.querySelectorAll(
+        '#visit-family-form input, #visit-family-form select, #visit-family-form textarea'
+    ).forEach(field => {
+        ['input', 'change'].forEach(eventName => {
+            field.addEventListener(eventName, () => clearFieldError(field));
+        });
+    });
+
+    function renderPreview(files) {
+        if (!preview) return;
+        preview.replaceChildren();
+
+        files.forEach(file => {
+            const col = document.createElement('div');
+            col.className = 'col-6 col-md-4 col-xl-3 mb-3';
+
+            const card = document.createElement('div');
+            card.className = 'visit-family-image-card';
+
+            const image = document.createElement('img');
+            image.alt = 'ตัวอย่างรูปเยี่ยมบ้าน';
+            image.decoding = 'async';
+
+            const objectUrl = URL.createObjectURL(file);
+            image.src = objectUrl;
+            image.addEventListener('load', () => URL.revokeObjectURL(objectUrl), { once: true });
+
+            card.appendChild(image);
+            col.appendChild(card);
+            preview.appendChild(col);
+        });
+    }
+
+    function normalizedJpegName(filename) {
+        const base = filename.replace(/\.[^.]+$/, '') || 'visit-family-image';
+        return `${base}.jpg`;
+    }
+
+    imageInput?.addEventListener('change', async function (event) {
+        let files = Array.from(event.target.files || [])
+            .filter(file => file.type.startsWith('image/'));
+
+        const maxFiles = Number(imageInput.dataset.maxFiles || 10);
+
+        if (files.length > maxFiles) {
+            files = files.slice(0, maxFiles);
+
+            if (window.Swal) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'เลือกรูปภาพเกินจำนวน',
+                    text: `ระบบจะใช้เฉพาะ ${maxFiles} รูปแรก`,
+                    confirmButtonText: 'ตกลง',
                 });
-
-                dt.items.add(compressedFile);
-            } catch (error) {
-                console.error('Image compression failed:', error);
-                dt.items.add(file);
             }
         }
 
-        input.files = dt.files;
+        renderPreview(files);
+
+        if (files.length === 0) {
+            imageInput.value = '';
+            imageInput.dataset.processing = '0';
+            if (uploadStatus) uploadStatus.textContent = '';
+            return;
+        }
+
+        if (typeof DataTransfer === 'undefined') {
+            imageInput.dataset.processing = '0';
+            if (uploadStatus) {
+                uploadStatus.textContent = 'เบราว์เซอร์นี้จะส่งไฟล์ต้นฉบับ และให้เซิร์ฟเวอร์ลดขนาดรูป';
+            }
+            return;
+        }
+
+        imageInput.dataset.processing = '1';
+        if (uploadStatus) uploadStatus.textContent = 'กำลังเตรียมและบีบอัดรูปภาพ...';
+
+        const transfer = new DataTransfer();
+
+        try {
+            for (const file of files) {
+                let output = file;
+
+                if (typeof window.imageCompression === 'function') {
+                    try {
+                        const compressed = await window.imageCompression(file, {
+                            maxSizeMB: 0.7,
+                            maxWidthOrHeight: 1600,
+                            useWebWorker: true,
+                            fileType: 'image/jpeg',
+                            initialQuality: 0.75,
+                        });
+
+                        output = new File(
+                            [compressed],
+                            normalizedJpegName(file.name),
+                            { type: 'image/jpeg', lastModified: Date.now() }
+                        );
+                    } catch (compressionError) {
+                        console.warn('Image compression failed; original file will be used.', compressionError);
+                    }
+                }
+
+                transfer.items.add(output);
+            }
+
+            imageInput.files = transfer.files;
+
+            if (uploadStatus) {
+                uploadStatus.textContent = `พร้อมอัปโหลด ${imageInput.files.length} รูป`;
+            }
+        } catch (error) {
+            console.error('Unable to prepare image files.', error);
+
+            if (uploadStatus) {
+                uploadStatus.textContent = 'ไม่สามารถบีบอัดรูปได้ ระบบจะใช้ไฟล์ต้นฉบับ';
+            }
+        } finally {
+            imageInput.dataset.processing = '0';
+        }
     });
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const fields = document.querySelectorAll("input.form-control, select.form-select, textarea.form-control");
-
-    fields.forEach(field => {
-        field.addEventListener("input", function() {
-            if (this.value.trim() !== "") clearError(this);
-        });
-
-        field.addEventListener("change", function() {
-            if (this.value.trim() !== "") clearError(this);
-        });
-
-        if (field.value.trim() !== "") clearError(field);
-    });
-
-    function clearError(el) {
-        el.classList.remove("is-invalid");
-
-        const feedbacks = el.parentElement.querySelectorAll(".invalid-feedback, .text-danger");
-        feedbacks.forEach(fb => fb.style.display = "none");
-
-        const labelStar = el.parentElement.querySelector("label .text-danger");
-        if (labelStar) labelStar.style.display = "none";
-    }
-});
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const csrf = '{{ csrf_token() }}';
 
     document.querySelectorAll('.delete-image').forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', async function () {
+            if (button.dataset.deleting === '1') return;
+
             const url = button.dataset.url;
-            const id  = button.dataset.id;
+            const id = button.dataset.id;
+            const confirmed = window.Swal
+                ? (await Swal.fire({
+                    title: 'ยืนยันการลบ',
+                    text: 'คุณต้องการลบรูปภาพนี้ใช่หรือไม่',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'ลบรูปภาพ',
+                    cancelButtonText: 'ยกเลิก',
+                    reverseButtons: true,
+                    allowOutsideClick: false,
+                })).isConfirmed
+                : window.confirm('คุณต้องการลบรูปภาพนี้ใช่หรือไม่');
 
-            Swal.fire({
-                title: '⚠️ ยืนยันการลบ',
-                text: 'คุณแน่ใจหรือไม่ว่าต้องการลบภาพนี้?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#e74c3c',
-                cancelButtonColor: '#95a5a6',
-                confirmButtonText: 'ตกลง',
-                cancelButtonText: 'ยกเลิก',
-                reverseButtons: true,
-                backdrop: true,
-                allowOutsideClick: false,
-            }).then((result) => {
-                if (!result.isConfirmed) return;
+            if (!confirmed) return;
 
-                fetch(url, {
+            button.dataset.deleting = '1';
+            button.disabled = true;
+            const originalText = button.textContent;
+            button.textContent = 'กำลังลบ...';
+
+            try {
+                const response = await fetch(url, {
                     method: 'DELETE',
                     headers: {
-                        'X-CSRF-TOKEN': csrf,
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        const imageBox = document.getElementById(`image-${id}`);
-                        if (imageBox) imageBox.remove();
+                        'X-CSRF-TOKEN': @json(csrf_token()),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin',
+                });
 
-                        Swal.fire({
-                            title: 'ลบแล้ว!',
-                            text: 'ภาพถูกลบเรียบร้อย',
-                            icon: 'success',
-                            timer: 1200,
-                            showConfirmButton: false
-                        });
-                    } else {
-                        Swal.fire('ผิดพลาด!', data.error || 'เกิดข้อผิดพลาดในการลบภาพ', 'error');
-                    }
-                })
-                .catch(() => Swal.fire('ผิดพลาด!', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'));
-            });
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || data.message || 'ไม่สามารถลบรูปภาพได้');
+                }
+
+                document.getElementById(`image-${id}`)?.remove();
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'ลบรูปภาพแล้ว',
+                        timer: 1200,
+                        showConfirmButton: false,
+                    });
+                }
+            } catch (error) {
+                console.error('Unable to delete image.', error);
+                button.disabled = false;
+                button.dataset.deleting = '0';
+                button.textContent = originalText;
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ไม่สามารถลบรูปภาพได้',
+                        text: error.message || 'กรุณาลองใหม่อีกครั้ง',
+                        confirmButtonText: 'ตกลง',
+                    });
+                } else {
+                    alert(error.message || 'ไม่สามารถลบรูปภาพได้');
+                }
+            }
         });
     });
+
+    form?.addEventListener('submit', function (event) {
+        if (imageInput?.dataset.processing === '1') {
+            event.preventDefault();
+
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'กำลังเตรียมรูปภาพ',
+                    text: 'กรุณารอให้ระบบเตรียมรูปภาพเสร็จก่อนบันทึก',
+                    confirmButtonText: 'ตกลง',
+                });
+            }
+
+            return;
+        }
+
+        if (form.dataset.submitting === '1') {
+            event.preventDefault();
+            return;
+        }
+
+        form.dataset.submitting = '1';
+
+        if (submitButton) {
+            submitButton.dataset.originalHtml ||= submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.querySelector('span').textContent = 'กำลังบันทึก...';
+        }
+    });
+
+    restoreAddressSelections();
 });
 </script>
 
 @endsection
-
-

@@ -5,481 +5,972 @@
    <style>
     @page {
         size: A4 portrait;
-        margin: 12mm 10mm 12mm 14mm;
+        margin: 12mm;
     }
 
-    body {
-        margin: 0;
-        padding: 24px;
-        background: #eef1f5;
-        font-family: "TH Sarabun New", "Sarabun", "Tahoma", sans-serif;
-        color: #1f2937;
-        font-size: 19px;
-        line-height: 1.4;
-        letter-spacing: 0.1px;
-    }
+    .welfare-report-page {
+        --wr-ink: #172033;
+        --wr-muted: #64748b;
+        --wr-line: #cbd5e1;
+        --wr-line-dark: #64748b;
+        --wr-surface: #ffffff;
+        --wr-soft: #f6f8fb;
+        --wr-accent: #243b5a;
+        --wr-accent-dark: #172a43;
+        --wr-radius: 14px;
+        --wr-font: var(--bs-body-font-family, inherit);
 
-    .report-wrap {
-        width: 1080px;
-        margin: 0 auto;
-        background: #ffffff;
-        border: 1px solid #d8dee8;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-        padding: 26px 34px 30px 46px;
+        min-height: 100%;
+        padding: 24px 16px 40px;
+        background: #eef2f6;
+        color: var(--wr-ink);
+        font-family: var(--wr-font);
+        font-size: 14px;
+        line-height: 1.55;
         box-sizing: border-box;
     }
 
-    .report-header {
-        position: relative;
-        min-height: 126px;
-        margin-bottom: 14px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #e5e7eb;
+    .welfare-report-page *,
+    .welfare-report-page *::before,
+    .welfare-report-page *::after {
+        box-sizing: border-box;
     }
 
-    .report-title {
-        text-align: center;
-        font-size: 28px;
-        font-weight: 700;
-        color: #4f46e5;
-        margin: 2px 110px 4px 0;
+    /* ------------------------------------------------------------------
+     | แถบคำสั่ง
+     * ------------------------------------------------------------------ */
+    .welfare-report-page .report-actions {
+        width: min(210mm, 100%);
+        margin: 0 auto 12px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border: 1px solid #dbe3ec;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, .96);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
+    }
+
+    .welfare-report-page .report-actions-note {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 8px;
+        color: var(--wr-muted);
+        font-family: var(--wr-font);
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    .welfare-report-page .report-actions-note i {
+        flex: 0 0 auto;
+        color: var(--wr-accent);
+        font-size: 15px;
+    }
+
+    .welfare-report-page .report-actions-buttons {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .welfare-report-page .report-action-btn {
+        display: inline-flex;
+        min-height: 40px;
+        padding: 8px 14px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        font-family: var(--wr-font);
+        font-size: 13px;
+        font-weight: 600;
         line-height: 1.2;
-        letter-spacing: .2px;
+        text-decoration: none;
+        cursor: pointer;
+        box-shadow: none;
+        transition: background-color .18s ease,
+                    border-color .18s ease,
+                    color .18s ease,
+                    transform .18s ease;
     }
 
-    .photo-box {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 92px;
-        height: 108px;
-        border: 1px solid #bfc7d4;
-        border-radius: 4px;
+    .welfare-report-page .report-action-btn:hover {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .welfare-report-page .report-action-btn:focus-visible {
+        outline: 3px solid rgba(36, 59, 90, .18);
+        outline-offset: 2px;
+    }
+
+    .welfare-report-page .report-action-back {
+        border-color: #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .welfare-report-page .report-action-back:hover {
+        border-color: #94a3b8;
+        background: #f8fafc;
+        color: #0f172a;
+    }
+
+    .welfare-report-page .report-action-print {
+        border-color: var(--wr-accent);
+        background: var(--wr-accent);
+        color: #ffffff;
+    }
+
+    .welfare-report-page .report-action-print:hover {
+        border-color: var(--wr-accent-dark);
+        background: var(--wr-accent-dark);
+        color: #ffffff;
+    }
+
+    /* ------------------------------------------------------------------
+     | กระดาษรายงาน
+     * ------------------------------------------------------------------ */
+    .welfare-report-page .report-wrap {
+        width: min(210mm, 100%);
+        margin: 0 auto;
+        padding: 12mm 12mm 15mm;
+        border: 1px solid #d7dee8;
+        border-radius: var(--wr-radius);
+        background: var(--wr-surface);
+        box-shadow: 0 14px 36px rgba(15, 23, 42, .09);
+    }
+
+    .welfare-report-page .report-header {
+        display: grid;
+        grid-template-columns: 28mm minmax(0, 1fr) 28mm;
+        align-items: start;
+        gap: 7mm;
+        min-height: 27mm;
+        margin-bottom: 4mm;
+        padding: 3mm 0 3mm;
+        border-bottom: 1.5px solid var(--wr-line-dark);
+    }
+
+    .welfare-report-page .report-header-spacer {
+        width: 28mm;
+        min-height: 1px;
+    }
+
+    .welfare-report-page .report-header-copy {
+        min-width: 0;
+        padding-top: 2.5mm;
+        text-align: center;
+    }
+
+    .welfare-report-page .report-title {
+        margin: 0;
+        color: #111827;
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1.25;
+        letter-spacing: .1px;
+    }
+
+    .welfare-report-page .report-title-rule {
+        width: 24mm;
+        height: 1.5px;
+        margin: 3mm auto 0;
+        background: var(--wr-accent);
+    }
+
+    .welfare-report-page .photo-box {
+        width: 23mm;
+        height: 27mm;
+        margin-left: auto;
         overflow: hidden;
-        background: #fff;
+        border: 1px solid #64748b;
+        border-radius: 2px;
+        background: #ffffff;
     }
 
-    .photo-box img {
+    .welfare-report-page .photo-box img {
+        display: block;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        display: block;
     }
 
-    .form-row {
+    /* ------------------------------------------------------------------
+     | ฟิลด์ข้อมูล
+     * ------------------------------------------------------------------ */
+    .welfare-report-page .form-row {
         display: flex;
         align-items: flex-start;
-        margin-bottom: 12px;
+        margin-bottom: 2.7mm;
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
 
-    .row-no {
-        width: 42px;
-        flex: 0 0 42px;
-        font-weight: 700;
-        font-size: 20px;
-        line-height: 1.5;
-        padding-top: 2px;
+    .welfare-report-page .row-no {
+        width: 9mm;
+        flex: 0 0 9mm;
+        padding-top: .2mm;
         color: #111827;
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.35;
     }
 
-    .row-body {
-        flex: 1;
+    .welfare-report-page .row-body {
+        flex: 1 1 auto;
         min-width: 0;
     }
 
-    .line {
+    .welfare-report-page .line {
         display: flex;
         flex-wrap: wrap;
         align-items: flex-end;
-        gap: 8px 18px;
+        gap: 1.7mm 4.5mm;
     }
 
-    .sub-line {
-        margin-top: 8px;
+    .welfare-report-page .sub-line {
+        margin-top: 1.8mm;
     }
 
-    .sub-line + .sub-line {
-        margin-top: 6px;
+    .welfare-report-page .sub-line + .sub-line {
+        margin-top: 1.3mm;
     }
 
-    .field {
+    .welfare-report-page .field {
         display: inline-flex;
+        min-width: 0;
+        min-height: 6.5mm;
         align-items: flex-end;
         white-space: nowrap;
-        min-height: 30px;
     }
 
-    .label {
-        font-weight: 700;
-        margin-right: 4px;
+    .welfare-report-page .label {
+        flex: 0 0 auto;
+        margin-right: 1.2mm;
         color: #111827;
+        font-weight: 600;
     }
 
-    .value {
+    .welfare-report-page .value {
         display: inline-block;
-        border-bottom: 1px solid #98a2b3;
-        min-height: 26px;
-        line-height: 1.2;
-        padding: 0 5px 2px 5px;
-        vertical-align: bottom;
-        text-align: center;
+        min-height: 5.5mm;
+        padding: 0 1.2mm .4mm;
+        border-bottom: .35mm solid #94a3b8;
         color: #111827;
+        line-height: 1.15;
+        text-align: center;
+        vertical-align: bottom;
     }
 
-    .value.left {
+    .welfare-report-page .value.left {
         text-align: left;
     }
 
-    .w-30  { min-width: 30px; }
-    .w-35  { min-width: 35px; }
-    .w-40  { min-width: 40px; }
-    .w-45  { min-width: 45px; }
-    .w-50  { min-width: 50px; }
-    .w-55  { min-width: 55px; }
-    .w-60  { min-width: 60px; }
-    .w-70  { min-width: 70px; }
-    .w-80  { min-width: 80px; }
-    .w-90  { min-width: 90px; }
-    .w-100 { min-width: 100px; }
-    .w-110 { min-width: 110px; }
-    .w-120 { min-width: 120px; }
-    .w-130 { min-width: 130px; }
-    .w-140 { min-width: 140px; }
-    .w-150 { min-width: 150px; }
-    .w-160 { min-width: 160px; }
-    .w-180 { min-width: 180px; }
-    .w-200 { min-width: 200px; }
-    .w-220 { min-width: 220px; }
-    .w-240 { min-width: 240px; }
-    .w-260 { min-width: 260px; }
-    .w-320 { min-width: 320px; }
-    .w-420 { min-width: 420px; }
-    .w-520 { min-width: 520px; }
-    .w-full { width: 100%; min-height: 30px; }
-
-    .report-block-title,
-    .problem-title,
-    .member-table-title,
-    .factfinding-subtitle {
-        font-weight: 700;
-        color: #374151;
-        padding-bottom: 4px;
-        border-bottom: 1px solid #d9dee7;
+    .welfare-report-page .field.wrap {
+        align-items: flex-start;
+        white-space: normal;
     }
 
-    .report-block-title,
-    .problem-title,
-    .member-table-title {
-        font-size: 22px;
-        margin: 22px 0 10px;
+    .welfare-report-page .field.wrap .label {
+        flex-shrink: 0;
+        margin-top: .4mm;
+        white-space: nowrap;
     }
 
-    .problem-list {
+    .welfare-report-page .field.wrap .value {
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-height: 1.35;
+    }
+
+    .welfare-report-page .full-row-field {
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px 24px;
-        padding-top: 2px;
-    }
-
-    .problem-item {
-        min-width: 260px;
-        font-size: 18px;
-        line-height: 1.5;
-    }
-
-    .checkbox {
-        font-weight: 700;
-        margin-right: 4px;
-    }
-
-    .member-table-wrap {
-        margin-top: 22px;
-    }
-
-    .member-table {
         width: 100%;
+        min-width: 0;
+        align-items: flex-start;
+        gap: 2mm;
+    }
+
+    .welfare-report-page .full-row-field .label {
+        flex: 0 0 auto;
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .welfare-report-page .full-row-field .value {
+        flex: 1 1 auto;
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        text-align: left;
+        line-height: 1.35;
+    }
+
+    /* ความกว้างฟิลด์ ใช้หน่วยมิลลิเมตรเพื่อให้หน้าจอและงานพิมพ์ตรงกัน */
+    .welfare-report-page .w-30  { min-width: 6mm; }
+    .welfare-report-page .w-35  { min-width: 7mm; }
+    .welfare-report-page .w-40  { min-width: 8mm; }
+    .welfare-report-page .w-45  { min-width: 9mm; }
+    .welfare-report-page .w-50  { min-width: 10mm; }
+    .welfare-report-page .w-55  { min-width: 11mm; }
+    .welfare-report-page .w-60  { min-width: 12mm; }
+    .welfare-report-page .w-70  { min-width: 14mm; }
+    .welfare-report-page .w-80  { min-width: 16mm; }
+    .welfare-report-page .w-90  { min-width: 18mm; }
+    .welfare-report-page .w-100 { min-width: 20mm; }
+    .welfare-report-page .w-110 { min-width: 22mm; }
+    .welfare-report-page .w-120 { min-width: 24mm; }
+    .welfare-report-page .w-130 { min-width: 26mm; }
+    .welfare-report-page .w-140 { min-width: 28mm; }
+    .welfare-report-page .w-150 { min-width: 30mm; }
+    .welfare-report-page .w-160 { min-width: 32mm; }
+    .welfare-report-page .w-180 { min-width: 36mm; }
+    .welfare-report-page .w-200 { min-width: 40mm; }
+    .welfare-report-page .w-220 { min-width: 44mm; }
+    .welfare-report-page .w-240 { min-width: 48mm; }
+    .welfare-report-page .w-260 { min-width: 52mm; }
+    .welfare-report-page .w-320 { min-width: 64mm; }
+    .welfare-report-page .w-420 { min-width: 84mm; }
+    .welfare-report-page .w-520 { min-width: 104mm; }
+    .welfare-report-page .w-full { width: 100%; min-height: 6.5mm; }
+
+    /* ------------------------------------------------------------------
+     | หัวข้อหมวด
+     * ------------------------------------------------------------------ */
+    .welfare-report-page .report-block-title,
+    .welfare-report-page .problem-title,
+    .welfare-report-page .member-table-title,
+    .welfare-report-page .factfinding-subtitle {
+        break-after: avoid;
+        page-break-after: avoid;
+        color: #111827;
+        font-weight: 700;
+    }
+
+    .welfare-report-page .report-block-title,
+    .welfare-report-page .problem-title,
+    .welfare-report-page .member-table-title {
+        margin: 5.5mm 0 3mm;
+        padding: 1.8mm 2.5mm;
+        border-left: 1.1mm solid var(--wr-accent);
+        border-bottom: 1px solid #d8dee8;
+        background: var(--wr-soft);
+        font-size: 16px;
+        line-height: 1.2;
+    }
+
+    .welfare-report-page .factfinding-section {
+        margin-top: 7mm;
+        padding-top: 5mm;
+        border-top: .7mm solid #64748b;
+    }
+
+    .welfare-report-page .factfinding-subtitle {
+        margin: 5mm 0 2.5mm;
+        padding-bottom: 1.3mm;
+        border-bottom: 1px solid #94a3b8;
+        font-size: 15px;
+        line-height: 1.25;
+    }
+
+    /* ------------------------------------------------------------------
+     | สภาพปัญหาและเอกสาร
+     * ------------------------------------------------------------------ */
+    .welfare-report-page .problem-list,
+    .welfare-report-page .doc-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.5mm 6mm;
+        padding: 0 2mm;
+    }
+
+    .welfare-report-page .problem-item,
+    .welfare-report-page .doc-item {
+        min-width: 0;
+        font-size: 13px;
+        line-height: 1.35;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .welfare-report-page .checkbox {
+        margin-right: 1.5mm;
+        color: #111827;
+        font-weight: 700;
+    }
+
+    .welfare-report-page .muted {
+        color: var(--wr-muted);
+    }
+
+    /* ------------------------------------------------------------------
+     | ตารางสมาชิกครอบครัว
+     * ------------------------------------------------------------------ */
+    .welfare-report-page .member-table-wrap {
+        margin-top: 6mm;
+    }
+
+    .welfare-report-page .member-table {
+        width: 100%;
+        margin-top: 2mm;
         border-collapse: collapse;
         table-layout: fixed;
-        margin-top: 8px;
     }
 
-    .member-table th,
-    .member-table td {
-        border: 1px solid #4b5563;
-        padding: 8px 10px;
-        font-size: 17px;
-        line-height: 1.4;
+    .welfare-report-page .member-table thead {
+        display: table-header-group;
+    }
+
+    .welfare-report-page .member-table tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .welfare-report-page .member-table th,
+    .welfare-report-page .member-table td {
+        padding: 1.6mm 1.8mm;
+        border: .35mm solid #64748b;
         vertical-align: top;
+        color: #111827;
+        font-size: 12px;
+        line-height: 1.28;
+        overflow-wrap: anywhere;
         word-break: break-word;
     }
 
-    .member-table th {
-        text-align: center;
+    .welfare-report-page .member-table th {
+        background: #edf1f5;
         font-weight: 700;
-        background: #f8fafc;
-        color: #1f2937;
-    }
-
-    .center {
         text-align: center;
     }
 
-    .factfinding-section {
-        margin-top: 28px;
-        padding-top: 16px;
-        border-top: 2px solid #c7cfdb;
+    .welfare-report-page .center {
+        text-align: center;
     }
 
-    .factfinding-subtitle {
-        font-size: 21px;
-        margin: 18px 0 10px 0;
-    }
-
-    .factfinding-box {
-        border: 1px solid #d6dde8;
-        background: #fbfcff;
-        padding: 12px 14px;
-        margin-top: 10px;
-        border-radius: 4px;
-    }
-
-    .factfinding-box + .factfinding-box {
-        margin-top: 12px;
-    }
-
-    .factfinding-text {
-        border: 1px solid #d3d9e3;
-        background: #ffffff;
-        min-height: 58px;
-        padding: 10px 12px;
-        line-height: 1.55;
-        white-space: pre-line;
-        margin-top: 6px;
-        border-radius: 3px;
-        word-break: break-word;
-        overflow-wrap: anywhere;
-    }
-
-    .doc-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px 18px;
-        margin-top: 4px;
-    }
-
-    .doc-item {
-        min-width: 240px;
-        font-size: 18px;
-    }
-
-    .muted {
-        color: #6b7280;
-    }
-
-    /* ---------- ช่องข้อความยาวแบบอยู่แถวเดิม แต่ขึ้นบรรทัดใหม่ได้ ---------- */
-    .field.wrap {
-        white-space: normal;
-        align-items: flex-start;
-        min-width: 0;
-    }
-
-    .field.wrap .label {
-        white-space: nowrap;
-        flex-shrink: 0;
-        margin-top: 1px;
-    }
-
-    .field.wrap .value {
-        white-space: normal;
-        word-break: break-word;
-        overflow-wrap: anywhere;
-        line-height: 1.5;
-        min-width: 0;
-    }
-
-    /* ---------- แถวคู่ที่ข้อความยาวและตัดบรรทัดได้ ---------- */
-    .paired-wrap-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: 18px;
-        align-items: start;
-    }
-
-    .paired-wrap-row .field.wrap {
+    /* ------------------------------------------------------------------
+     | ตารางข้อ 18 การติดตามผลการช่วยเหลือ
+     * ------------------------------------------------------------------ */
+    .welfare-report-page .followup-table-wrap {
         width: 100%;
+        margin-top: 2mm;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .paired-wrap-row .field.wrap .value {
-        flex: 1 1 auto;
+    .welfare-report-page .followup-report-table {
+        width: 100%;
+        min-width: 0;
+        margin-top: 0;
+        table-layout: fixed;
+    }
+
+    .welfare-report-page .followup-report-table col.followup-col-date {
+        width: 28mm;
+    }
+
+    .welfare-report-page .followup-report-table col.followup-col-detail {
         width: auto;
     }
 
-    /* ---------- หัวข้อย่อย 14.1 - 14.4 ---------- */
-    .subitem-group {
-        padding-left: 42px;
-        margin-top: 6px;
+    .welfare-report-page .followup-report-table col.followup-col-note {
+        width: 34mm;
     }
 
-    .subitem-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        margin-bottom: 10px;
+    .welfare-report-page .followup-report-table th,
+    .welfare-report-page .followup-report-table td {
+        vertical-align: top;
     }
 
-    .subitem-no {
-        width: 60px;
-        flex: 0 0 60px;
-        font-weight: 700;
-        color: #111827;
-        line-height: 1.55;
-        padding-top: 1px;
-    }
-
-    .subitem-body {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .subitem-line {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        width: 100%;
-        min-width: 0;
-    }
-
-    .subitem-label {
-        flex: 0 0 250px;
-        font-weight: 700;
-        color: #111827;
-        line-height: 1.55;
+    .welfare-report-page .followup-report-table td:first-child {
         white-space: nowrap;
-        padding-top: 1px;
+        text-align: center;
     }
 
-    .subitem-value {
-        flex: 1 1 auto;
-        min-width: 0;
-        border-bottom: 1px dashed #9aa3af;
-        color: #111827;
-        line-height: 1.55;
-        padding: 0 5px 2px 5px;
-        white-space: normal;
-        word-break: break-word;
+    .welfare-report-page .followup-report-table .followup-cell-text {
+        white-space: pre-line;
         overflow-wrap: anywhere;
-        text-align: left;
+        word-break: break-word;
+        line-height: 1.42;
     }
 
-    @media (max-width: 1200px) {
-        body {
-            padding: 14px;
+    .welfare-report-page .followup-report-table .followup-empty-row {
+        padding: 4mm 2mm;
+        color: var(--wr-muted);
+        text-align: center;
+    }
+
+    /* ------------------------------------------------------------------
+     | ข้อมูลข้อเท็จจริงและข้อความยาว
+     * ------------------------------------------------------------------ */
+    .welfare-report-page .factfinding-box {
+        margin-top: 2.5mm;
+        padding: 2.5mm 3mm;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #fbfcfd;
+    }
+
+    .welfare-report-page .factfinding-box + .factfinding-box {
+        margin-top: 2.5mm;
+    }
+
+    .welfare-report-page .factfinding-text {
+        min-height: 13mm;
+        margin-top: 1.5mm;
+        padding: 2mm 2.5mm;
+        border: 1px solid #d7dde5;
+        border-radius: 2px;
+        background: #ffffff;
+        line-height: 1.42;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .welfare-report-page .paired-wrap-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4mm;
+        align-items: start;
+    }
+
+    .welfare-report-page .paired-wrap-row .field.wrap {
+        width: 100%;
+    }
+
+    .welfare-report-page .paired-wrap-row .field.wrap .value {
+        width: auto;
+        flex: 1 1 auto;
+    }
+
+    .welfare-report-page .subitem-group {
+        margin-top: 1.5mm;
+        padding-left: 9mm;
+    }
+
+    .welfare-report-page .subitem-row {
+        display: grid;
+        grid-template-columns: 12mm minmax(0, 1fr);
+        gap: 2mm;
+        margin-bottom: 2.5mm;
+        align-items: start;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .welfare-report-page .subitem-no {
+        color: #111827;
+        font-weight: 700;
+        line-height: 1.4;
+    }
+
+    .welfare-report-page .subitem-body {
+        min-width: 0;
+    }
+
+    /* ------------------------------------------------------------------
+     | Responsive
+     * ------------------------------------------------------------------ */
+    @media (max-width: 900px) {
+        .welfare-report-page {
+            padding: 14px 8px 28px;
         }
 
-        .report-wrap {
+        .welfare-report-page .report-wrap {
+            padding: 22px 18px 26px;
+        }
+
+        .welfare-report-page .report-actions-note {
+            display: none;
+        }
+
+        .welfare-report-page .report-actions {
+            justify-content: flex-end;
+        }
+    }
+
+    @media (max-width: 680px) {
+        .welfare-report-page {
+            font-size: 13px;
+        }
+
+        .welfare-report-page .report-actions,
+        .welfare-report-page .report-actions-buttons {
             width: 100%;
-            padding: 22px 22px 26px 26px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        body {
-            padding: 8px;
-            font-size: 18px;
         }
 
-        .report-wrap {
-            padding: 18px 16px 22px 18px;
+        .welfare-report-page .report-actions-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
-        .photo-box {
-            position: static;
-            margin: 12px auto 0;
+        .welfare-report-page .report-action-btn {
+            width: 100%;
         }
 
-        .report-header {
-            padding-bottom: 14px;
+        .welfare-report-page .report-header {
+            grid-template-columns: 1fr;
+            justify-items: center;
+            gap: 10px;
         }
 
-        .form-row {
-            gap: 6px;
+        .welfare-report-page .report-header-spacer {
+            display: none;
         }
 
-        .row-no {
-            width: 34px;
-            flex-basis: 34px;
+        .welfare-report-page .report-header-copy {
+            order: 1;
+            padding-top: 0;
         }
 
-        .paired-wrap-row {
+        .welfare-report-page .photo-box {
+            order: 2;
+            margin: 0 auto;
+        }
+
+        .welfare-report-page .report-title {
+            font-size: 24px;
+        }
+
+        .welfare-report-page .form-row {
+            gap: 4px;
+        }
+
+        .welfare-report-page .row-no {
+            width: 8mm;
+            flex-basis: 8mm;
+        }
+
+        .welfare-report-page .problem-list,
+        .welfare-report-page .doc-list,
+        .welfare-report-page .paired-wrap-row {
             grid-template-columns: 1fr;
         }
 
-        .subitem-group {
+        .welfare-report-page .subitem-group {
             padding-left: 0;
         }
 
-        .subitem-row {
-            flex-direction: column;
-            gap: 2px;
+        .welfare-report-page .subitem-row {
+            grid-template-columns: 1fr;
+            gap: 0;
         }
 
-        .subitem-no {
-            width: 100%;
-            flex: 0 0 auto;
-        }
-
-        .subitem-line {
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .subitem-label {
-            flex: 0 0 auto;
-            width: 100%;
-            white-space: normal;
-        }
-
-        .subitem-value {
-            width: 100%;
+        .welfare-report-page .followup-report-table {
+            min-width: 620px;
         }
     }
 
+    /* ------------------------------------------------------------------
+     | งานพิมพ์ A4
+     * ------------------------------------------------------------------ */
     @media print {
+        html,
         body {
-            background: #fff;
-            padding: 0;
-            font-size: 18px;
-            line-height: 1.32;
-            color: #000;
+            width: auto !important;
+            min-width: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: #ffffff !important;
         }
 
-        .report-wrap {
-            width: 100%;
-            margin: 0;
-            border: 0;
-            box-shadow: none;
-            padding: 0;
+        /*
+         * ก่อนเปิดหน้าต่างพิมพ์ JavaScript จะย้ายรายงานมาไว้ใต้ body โดยตรง
+         * เพื่อไม่ให้ layout, sidebar, topbar หรือ container ของหน้า Admin
+         * บีบขนาดรายงานจนตัวหนังสือเล็กกว่าหน้าจอ
+         */
+        body.welfare-report-printing > *:not(.welfare-report-page) {
+            display: none !important;
         }
 
-        .report-header {
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #cfcfcf;
+        body.welfare-report-printing > .welfare-report-page {
+            display: block !important;
         }
 
-        .factfinding-section,
-        .member-table-wrap,
-        .factfinding-box,
-        .subitem-row,
-        .form-row {
+        .welfare-report-page {
+            position: static !important;
+            inset: auto !important;
+            width: auto !important;
+            max-width: none !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: #ffffff !important;
+            color: var(--wr-ink) !important;
+            font-family: var(--bs-body-font-family, inherit) !important;
+            font-size: 14px !important;
+            line-height: 1.55 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .welfare-report-page .report-actions {
+            display: none !important;
+        }
+
+        /* ใช้สัดส่วนเดียวกับหน้ารายงาน แต่ตัดกรอบและเงาสำหรับกระดาษ */
+        .welfare-report-page .report-wrap {
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            background: #ffffff !important;
+            box-shadow: none !important;
+        }
+
+        .welfare-report-page .report-header {
+            grid-template-columns: 28mm minmax(0, 1fr) 28mm;
+            gap: 7mm;
+            min-height: 27mm;
+            margin: 0 0 4mm;
+            padding: 2mm 0 3mm;
+            border-bottom: 1.5px solid var(--wr-line-dark);
+            break-inside: avoid;
             page-break-inside: avoid;
+        }
+
+        .welfare-report-page .report-header-spacer {
+            width: 28mm;
+        }
+
+        .welfare-report-page .report-header-copy {
+            padding-top: 2.5mm;
+        }
+
+        .welfare-report-page .report-title {
+            color: #111827 !important;
+            font-size: 22px !important;
+            font-weight: 700 !important;
+            line-height: 1.25 !important;
+        }
+
+        .welfare-report-page .report-title-rule {
+            width: 24mm;
+            height: 1.5px;
+            margin-top: 3mm;
+            background: var(--wr-accent) !important;
+        }
+
+        .welfare-report-page .photo-box {
+            width: 23mm;
+            height: 27mm;
+            border-color: #64748b;
+        }
+
+        /* คงขนาดและระยะห่างเดียวกับหน้ารายงาน */
+        .welfare-report-page .form-row {
+            margin-bottom: 2.7mm;
+        }
+
+        .welfare-report-page .row-no {
+            width: 9mm;
+            flex-basis: 9mm;
+            font-size: 14px;
+            line-height: 1.35;
+        }
+
+        .welfare-report-page .line {
+            gap: 1.7mm 4.5mm;
+        }
+
+        .welfare-report-page .sub-line {
+            margin-top: 1.8mm;
+        }
+
+        .welfare-report-page .sub-line + .sub-line {
+            margin-top: 1.3mm;
+        }
+
+        .welfare-report-page .field {
+            min-height: 6.5mm;
+        }
+
+        .welfare-report-page .value {
+            min-height: 5.5mm;
+            padding-bottom: .4mm;
+            border-bottom: .35mm solid #94a3b8;
+        }
+
+        .welfare-report-page .report-block-title,
+        .welfare-report-page .problem-title,
+        .welfare-report-page .member-table-title {
+            margin: 5.5mm 0 3mm;
+            padding: 1.8mm 2.5mm;
+            border-left: 1.1mm solid var(--wr-accent);
+            border-bottom: 1px solid #d8dee8;
+            background: var(--wr-soft) !important;
+            color: #111827 !important;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .welfare-report-page .factfinding-section {
+            margin-top: 7mm;
+            padding-top: 5mm;
+            border-top: .7mm solid #64748b;
+        }
+
+        .welfare-report-page .factfinding-subtitle {
+            margin: 5mm 0 2.5mm;
+            padding-bottom: 1.3mm;
+            border-bottom: 1px solid #94a3b8;
+            color: #111827 !important;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .welfare-report-page .problem-list,
+        .welfare-report-page .doc-list {
+            gap: 1.5mm 6mm;
+        }
+
+        .welfare-report-page .problem-item,
+        .welfare-report-page .doc-item {
+            font-size: 13px;
+            line-height: 1.35;
+        }
+
+        .welfare-report-page .member-table-wrap {
+            margin-top: 6mm;
+        }
+
+        .welfare-report-page .member-table {
+            margin-top: 2mm;
+        }
+
+        .welfare-report-page .member-table thead {
+            display: table-header-group;
+        }
+
+        .welfare-report-page .member-table th,
+        .welfare-report-page .member-table td {
+            padding: 1.8mm 2mm;
+            border: .25mm solid #475569;
+            color: #111827 !important;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .welfare-report-page .member-table th {
+            background: #f1f5f9 !important;
+        }
+
+        .welfare-report-page .factfinding-box {
+            margin-top: 2.5mm;
+            padding: 2.5mm 3mm;
+            border: 1px solid #cbd5e1;
+            border-radius: 2px;
+            background: #f8fafc !important;
+        }
+
+        .welfare-report-page .factfinding-box + .factfinding-box {
+            margin-top: 2.5mm;
+        }
+
+        .welfare-report-page .factfinding-text {
+            min-height: 12mm;
+            margin-top: 1.5mm;
+            padding: 2mm 2.5mm;
+            border: 1px solid #d7dee8;
+            border-radius: 2px;
+            background: #ffffff !important;
+            line-height: 1.5;
+        }
+
+        .welfare-report-page .subitem-group {
+            padding-left: 9mm;
+        }
+
+        .welfare-report-page .subitem-row {
+            grid-template-columns: 13mm minmax(0, 1fr);
+            gap: 2mm;
+            margin-bottom: 2.5mm;
+        }
+
+        .welfare-report-page .followup-table-wrap {
+            overflow: visible !important;
+        }
+
+        .welfare-report-page .followup-report-table {
+            width: 100% !important;
+            min-width: 0 !important;
+            table-layout: fixed !important;
+        }
+
+        .welfare-report-page .followup-report-table col.followup-col-date {
+            width: 28mm;
+        }
+
+        .welfare-report-page .followup-report-table col.followup-col-note {
+            width: 34mm;
+        }
+
+        /* การแบ่งหน้า */
+        .welfare-report-page .report-header,
+        .welfare-report-page .report-block-title,
+        .welfare-report-page .problem-title,
+        .welfare-report-page .member-table-title,
+        .welfare-report-page .factfinding-subtitle,
+        .welfare-report-page .subitem-row,
+        .welfare-report-page .form-row,
+        .welfare-report-page .problem-item,
+        .welfare-report-page .doc-item,
+        .welfare-report-page .member-table tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .welfare-report-page .factfinding-box {
+            break-inside: auto;
+            page-break-inside: auto;
+        }
+
+        .welfare-report-page p,
+        .welfare-report-page .factfinding-text {
+            orphans: 3;
+            widows: 3;
         }
     }
 </style>
 
 
+
 @php
     $factFinding = $factFinding ?? null;
+    $followups = $followups ?? collect();
+
+    $thaiMonths = [
+        1 => 'มกราคม',
+        2 => 'กุมภาพันธ์',
+        3 => 'มีนาคม',
+        4 => 'เมษายน',
+        5 => 'พฤษภาคม',
+        6 => 'มิถุนายน',
+        7 => 'กรกฎาคม',
+        8 => 'สิงหาคม',
+        9 => 'กันยายน',
+        10 => 'ตุลาคม',
+        11 => 'พฤศจิกายน',
+        12 => 'ธันวาคม',
+    ];
 
     $birthDate   = $client->birth_date ? date('d/m/Y', strtotime($client->birth_date)) : '-';
     $arrivalDate = $client->arrival_date ? date('d/m/Y', strtotime($client->arrival_date)) : '-';
@@ -553,14 +1044,46 @@
     };
 @endphp
 
-<div class="report-wrap">
-    <div class="report-header">
-        <div class="report-title">ทะเบียนประวัติผู้รับการสงเคราะห์</div>
-      
-        <div class="photo-box">
-            <img src="{{ !empty($client->image) ? asset('upload/client_images/'.$client->image) : asset('upload/no_image.jpg') }}" alt="รูปถ่าย">
+
+<div class="welfare-report-page">
+    <div class="report-actions" role="toolbar" aria-label="คำสั่งรายงาน">
+        <div class="report-actions-note">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <span>ตั้งค่ากระดาษ A4 และปิด “หัวกระดาษและท้ายกระดาษ” ในหน้าต่างพิมพ์</span>
+        </div>
+
+        <div class="report-actions-buttons">
+            <a href="{{ url()->previous() }}"
+               class="report-action-btn report-action-back"
+               aria-label="กลับหน้าหลัก">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                <span>กลับหน้าหลัก</span>
+            </a>
+
+            <button type="button"
+                    class="report-action-btn report-action-print"
+                    onclick="printWelfareReport()"
+                    aria-label="พิมพ์รายงาน">
+                <i class="bi bi-printer" aria-hidden="true"></i>
+                <span>พิมพ์รายงาน</span>
+            </button>
         </div>
     </div>
+
+    <div class="report-wrap">
+        <div class="report-header">
+            <div class="report-header-spacer" aria-hidden="true"></div>
+
+            <div class="report-header-copy">
+                <h1 class="report-title">ทะเบียนประวัติผู้รับการสงเคราะห์</h1>
+                <div class="report-title-rule" aria-hidden="true"></div>
+            </div>
+
+            <div class="photo-box">
+                <img src="{{ !empty($client->image) ? asset('upload/client_images/'.$client->image) : asset('upload/no_image.jpg') }}"
+                     alt="รูปถ่ายผู้รับการสงเคราะห์">
+            </div>
+        </div>
 
     <div class="form-row">
         <div class="row-no"></div>
@@ -1412,7 +1935,113 @@
                 <div class="doc-item muted">- ไม่มีข้อมูลเอกสารประกอบ -</div>
             @endif
         </div>
+
+        <div class="factfinding-subtitle">18. การติดตามผลการช่วยเหลือ</div>
+
+        <div class="followup-table-wrap" role="region" aria-label="ตารางการติดตามผลการช่วยเหลือ" tabindex="0">
+            <table class="member-table followup-report-table">
+                <colgroup>
+                    <col class="followup-col-date">
+                    <col class="followup-col-detail">
+                    <col class="followup-col-note">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col">วันที่</th>
+                        <th scope="col">การช่วยเหลือและติดตามผล</th>
+                        <th scope="col">หมายเหตุ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($followups as $followup)
+                        @php
+                            $followupDate = !empty($followup->followup_date)
+                                ? \Carbon\Carbon::parse($followup->followup_date)
+                                : null;
+
+                            $followupThaiDate = $followupDate
+                                ? $followupDate->day . ' ' . $thaiMonths[$followupDate->month] . ' ' . ($followupDate->year + 543)
+                                : '-';
+                        @endphp
+                        <tr>
+                            <td>{{ $followupThaiDate }}</td>
+                            <td class="followup-cell-text">{{ $showText($followup->assistance_detail) }}</td>
+                            <td class="followup-cell-text">{{ $showText($followup->note) }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" class="followup-empty-row">- ไม่มีข้อมูลการติดตามผลการช่วยเหลือ -</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
     </div>
 </div>
+
+
+<script>
+    (function () {
+        const reportPage = document.querySelector('.welfare-report-page');
+
+        if (!reportPage) {
+            return;
+        }
+
+        let originalParent = null;
+        let originalNextSibling = null;
+        let isPrepared = false;
+
+        function preparePrintLayout() {
+            if (isPrepared) {
+                return;
+            }
+
+            originalParent = reportPage.parentNode;
+            originalNextSibling = reportPage.nextSibling;
+
+            document.body.appendChild(reportPage);
+            document.body.classList.add('welfare-report-printing');
+            isPrepared = true;
+        }
+
+        function restorePrintLayout() {
+            if (!isPrepared || !originalParent) {
+                return;
+            }
+
+            document.body.classList.remove('welfare-report-printing');
+
+            if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
+                originalParent.insertBefore(reportPage, originalNextSibling);
+            } else {
+                originalParent.appendChild(reportPage);
+            }
+
+            isPrepared = false;
+        }
+
+        window.printWelfareReport = function () {
+            preparePrintLayout();
+
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(function () {
+                    window.print();
+                });
+            });
+        };
+
+        window.addEventListener('beforeprint', preparePrintLayout);
+        window.addEventListener('afterprint', restorePrintLayout);
+
+        /* Safari/บางเบราว์เซอร์อาจไม่เรียก afterprint เมื่อยกเลิก */
+        window.addEventListener('focus', function () {
+            if (isPrepared) {
+                window.setTimeout(restorePrintLayout, 300);
+            }
+        });
+    })();
+</script>
 
 @endsection

@@ -22,7 +22,13 @@
 <div class="followup-page">
     <style>
         .followup-page {
-            padding-bottom: 1.5rem;
+            --followup-footer-space: 2rem;
+            min-height: auto;
+            height: auto;
+            max-height: none;
+            padding-bottom: var(--followup-footer-space);
+            overflow: visible;
+            scroll-padding-bottom: var(--followup-footer-space);
         }
 
         .followup-page .followup-card {
@@ -129,41 +135,150 @@
         .followup-page .followup-filter-actions {
             display: flex;
             flex-wrap: wrap;
+            align-items: stretch;
             gap: .5rem;
         }
 
+        /* แยกชั้นของแถบปุ่ม ตัวกรอง และตารางให้ชัดเจน ป้องกันการซ้อนทับจาก CSS ของ layout */
+        .followup-page .followup-toolbar,
+        .followup-page .followup-filter-box,
         .followup-page .table-wrap {
+            position: relative;
+            inset: auto;
+            clear: both;
+            float: none;
+            transform: none;
+        }
+
+        .followup-page .followup-toolbar {
+            z-index: 3;
+        }
+
+        .followup-page .followup-filter-box {
+            z-index: 2;
+            height: auto;
+            min-height: 0;
+            overflow: visible;
+        }
+
+        .followup-page .table-wrap {
+            z-index: 1;
+            margin-top: 0;
+        }
+
+        .followup-page .dataTables_wrapper {
+            position: relative;
+            clear: both;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .followup-page .table-wrap {
+            width: 100%;
             padding: 0 1.25rem 1.25rem;
             overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
         }
 
         .followup-page table.dataTable thead th {
             white-space: nowrap;
+            vertical-align: middle;
+            padding: .8rem .75rem;
         }
 
         .followup-page .followup-table {
             width: 100% !important;
-            min-width: 830px;
+            min-width: 960px;
+            table-layout: fixed;
+            margin-bottom: 0 !important;
+        }
+
+        .followup-page .followup-table tbody td {
+            vertical-align: top !important;
+            padding: .8rem .75rem;
+        }
+
+        .followup-page .followup-table .date-column {
+            width: 145px;
+            min-width: 145px;
+            white-space: nowrap;
+        }
+
+        .followup-page .followup-table .detail-column {
+            width: auto;
+            min-width: 360px;
+        }
+
+        .followup-page .followup-table .note-column {
+            width: 250px;
+            min-width: 250px;
+        }
+
+        .followup-page .followup-table .action-column {
+            width: 170px;
+            min-width: 170px;
+            white-space: nowrap;
         }
 
         .followup-page .text-preline {
             white-space: pre-line;
+            overflow-wrap: anywhere;
+            word-break: break-word;
             line-height: 1.7;
         }
 
+        .followup-page .action-cell {
+            vertical-align: top !important;
+        }
+
         .followup-page .action-group {
-            display: flex;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             gap: .45rem;
-            flex-wrap: nowrap;
+            flex-wrap: nowrap !important;
+            white-space: nowrap;
+            width: max-content;
+            min-width: max-content;
+        }
+
+        .followup-page .action-group form {
+            display: inline-flex !important;
+            flex: 0 0 auto;
+            margin: 0;
         }
 
         .followup-page .btn-action {
+            flex: 0 0 40px;
+            width: 40px;
             min-width: 40px;
             height: 40px;
+            padding: 0;
             display: inline-flex;
             justify-content: center;
             align-items: center;
             border-radius: 12px;
+            line-height: 1;
+        }
+
+        .followup-page .btn-action i {
+            margin: 0;
+            line-height: 1;
+        }
+
+        .followup-page .dataTables_wrapper .dataTables_length,
+        .followup-page .dataTables_wrapper .dataTables_filter {
+            margin-bottom: .25rem;
+        }
+
+        .followup-page .dataTables_wrapper .dataTables_filter input {
+            width: 172px;
+            min-height: 42px;
+            margin-left: .45rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 13px;
+            padding: .45rem .75rem;
         }
 
         .followup-page .modal .form-label {
@@ -212,7 +327,168 @@
             line-height: 1.8;
         }
 
+        @media (min-width: 1400px) {
+            .followup-page .followup-table {
+                min-width: 100%;
+            }
+
+            .followup-page .followup-table .date-column {
+                width: 140px;
+                min-width: 140px;
+            }
+
+            .followup-page .followup-table .note-column {
+                width: 280px;
+                min-width: 280px;
+            }
+
+            .followup-page .followup-table .action-column {
+                width: 165px;
+                min-width: 165px;
+            }
+        }
+
+        @media (min-width: 992px) and (max-width: 1399.98px) {
+            .followup-page .followup-table {
+                min-width: 980px;
+            }
+
+            .followup-page .followup-table .date-column {
+                width: 132px;
+                min-width: 132px;
+            }
+
+            .followup-page .followup-table .detail-column {
+                min-width: 390px;
+            }
+
+            .followup-page .followup-table .note-column {
+                width: 260px;
+                min-width: 260px;
+            }
+
+            .followup-page .followup-table .action-column {
+                width: 160px;
+                min-width: 160px;
+            }
+        }
+
+        /* จอขนาดกลาง: ให้ปุ่มอยู่ในพื้นที่ของตนเอง ไม่ลอยหรือทับส่วนตาราง */
+        @media (min-width: 768px) and (max-width: 1199.98px) {
+            .followup-page .followup-toolbar {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                align-items: stretch;
+                gap: .65rem;
+            }
+
+            .followup-page .followup-toolbar-left,
+            .followup-page .followup-toolbar-right {
+                display: contents;
+            }
+
+            .followup-page .followup-toolbar .btn {
+                width: 100%;
+                min-width: 0;
+                min-height: 42px;
+                margin: 0;
+                white-space: normal;
+                line-height: 1.35;
+            }
+
+            .followup-page .followup-filter-box form > .col-md-3 {
+                flex: 0 0 50%;
+                width: 50%;
+                max-width: 50%;
+            }
+
+            .followup-page .followup-filter-box form > .col-md-6 {
+                flex: 0 0 100%;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .followup-page .followup-filter-actions {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                width: 100%;
+                gap: .65rem;
+            }
+
+            .followup-page .followup-filter-actions .btn {
+                width: 100%;
+                min-width: 0;
+                min-height: 42px;
+                margin: 0;
+                white-space: normal;
+                line-height: 1.35;
+            }
+
+            .followup-page .followup-filter-box {
+                margin-bottom: 1.25rem;
+            }
+
+            .followup-page .table-wrap {
+                padding-top: 0;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 991.98px) {
+            .followup-page .followup-table {
+                min-width: 930px;
+            }
+
+            .followup-page .followup-table .date-column {
+                width: 128px;
+                min-width: 128px;
+            }
+
+            .followup-page .followup-table .detail-column {
+                min-width: 350px;
+            }
+
+            .followup-page .followup-table .note-column {
+                width: 245px;
+                min-width: 245px;
+            }
+
+            .followup-page .followup-table .action-column {
+                width: 158px;
+                min-width: 158px;
+            }
+        }
+
         @media (max-width: 767.98px) {
+            html,
+            body {
+                min-height: 100%;
+                overflow-x: hidden;
+            }
+
+            body {
+                overflow-y: auto !important;
+            }
+
+            .followup-page {
+                --followup-footer-space: calc(7rem + env(safe-area-inset-bottom));
+                min-height: auto !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                padding-bottom: var(--followup-footer-space) !important;
+            }
+
+            .followup-page .followup-card {
+                overflow: visible;
+                margin-bottom: 1.5rem;
+            }
+
+            .followup-page .followup-filter-box,
+            .followup-page .table-wrap,
+            .followup-page .followup-empty {
+                scroll-margin-bottom: var(--followup-footer-space);
+            }
+
             .followup-page .followup-header,
             .followup-page .followup-toolbar,
             .followup-page .table-wrap {
@@ -230,8 +506,26 @@
                 font-size: 1.15rem;
             }
 
+            .followup-page .followup-toolbar {
+                display: flex;
+                grid-template-columns: none;
+            }
+
             .followup-page .followup-toolbar-left,
             .followup-page .followup-toolbar-right {
+                display: flex;
+                width: 100%;
+            }
+
+            .followup-page .followup-filter-box form > .col-md-3,
+            .followup-page .followup-filter-box form > .col-md-6 {
+                flex: 0 0 100%;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .followup-page .followup-filter-actions {
+                display: flex;
                 width: 100%;
             }
 
@@ -239,6 +533,44 @@
             .followup-page .followup-toolbar-right .btn,
             .followup-page .followup-filter-actions .btn {
                 flex: 1 1 100%;
+            }
+
+            .followup-page .followup-table {
+                min-width: 860px;
+            }
+
+            .followup-page .followup-table .date-column {
+                width: 130px;
+                min-width: 130px;
+            }
+
+            .followup-page .followup-table .detail-column {
+                min-width: 330px;
+            }
+
+            .followup-page .followup-table .note-column {
+                width: 215px;
+                min-width: 215px;
+            }
+
+            .followup-page .followup-table .action-column {
+                width: 155px;
+                min-width: 155px;
+            }
+
+            .followup-page .dataTables_wrapper .dataTables_length,
+            .followup-page .dataTables_wrapper .dataTables_filter {
+                width: 100%;
+                text-align: left !important;
+            }
+
+            .followup-page .dataTables_wrapper .dataTables_filter {
+                margin-top: .75rem;
+            }
+
+            .followup-page .dataTables_wrapper .dataTables_filter input {
+                width: calc(100% - 55px);
+                max-width: 260px;
             }
         }
     </style>
@@ -380,14 +712,19 @@
 
             @if($hasFollowupRows)
                 <div class="table-wrap">
-                    <table id="followupTable" class="table table-bordered table-hover align-middle followup-table">
+                    <table id="followupTable" class="table table-bordered table-hover followup-table">
+                        <colgroup>
+                            <col class="date-column">
+                            <col class="detail-column">
+                            <col class="note-column">
+                            <col class="action-column">
+                        </colgroup>
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 180px;">วันเดือนปี</th>
-                                <th>การช่วยเหลือและติดตามผล</th>
-                                <th>หมายเหตุ</th>
-                                <th style="width: 160px;">รายงาน</th>
-                                <th style="width: 160px;">จัดการ</th>
+                                <th class="date-column">วันเดือนปี</th>
+                                <th class="detail-column">การช่วยเหลือและติดตามผล</th>
+                                <th class="note-column">หมายเหตุ</th>
+                                <th class="action-column text-center">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -398,19 +735,20 @@
                                 @endphp
 
                                 <tr>
-                                    <td>{{ $thaiDate }}</td>
-                                    <td class="text-preline">{{ $item->assistance_detail }}</td>
-                                    <td class="text-preline">{{ $item->note ?: '-' }}</td>
-                                    <td class="text-center">
-                                        <a href="{{ route('followup.report_item', $item->id) }}"
-                                           target="_blank"
-                                           class="btn btn-outline-primary btn-sm">
-                                            <i class="bi bi-file-earmark-text me-1"></i>
-                                            เปิดรายงาน
-                                        </a>
-                                    </td>
-                                    <td class="text-center">
+                                    <td class="date-column">{{ $thaiDate }}</td>
+                                    <td class="detail-column text-preline">{{ $item->assistance_detail }}</td>
+                                    <td class="note-column text-preline">{{ $item->note ?: '-' }}</td>
+                                    <td class="action-column action-cell text-center">
                                         <div class="action-group justify-content-center">
+                                            <a href="{{ route('followup.report_item', $item->id) }}"
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               class="btn btn-outline-primary btn-sm btn-action"
+                                               title="เปิดรายงาน"
+                                               aria-label="เปิดรายงาน">
+                                                <i class="bi bi-file-earmark-text"></i>
+                                            </a>
+
                                             @if(auth()->check() && in_array(auth()->user()->role, ['admin', 'executive', 'social_worker']))
                                                 <button
                                                     type="button"
@@ -588,12 +926,61 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const followupPage = document.querySelector('.followup-page');
+
+    function syncFollowupBottomSpace() {
+        if (!followupPage) {
+            return;
+        }
+
+        const isSmallScreen = window.matchMedia('(max-width: 767.98px)').matches;
+        const footerSelectors = [
+            'footer',
+            '.footer',
+            '.app-footer',
+            '.client-footer',
+            '.admin-footer'
+        ];
+
+        let footerHeight = 0;
+
+        footerSelectors.some(selector => {
+            const footer = document.querySelector(selector);
+
+            if (!footer) {
+                return false;
+            }
+
+            const footerStyle = window.getComputedStyle(footer);
+            const overlaysContent = footerStyle.position === 'fixed' || footerStyle.position === 'sticky';
+
+            if (overlaysContent) {
+                footerHeight = Math.ceil(footer.getBoundingClientRect().height || 0);
+                return true;
+            }
+
+            return false;
+        });
+
+        const minimumSpace = isSmallScreen ? 112 : 32;
+        const safeSpace = Math.max(minimumSpace, footerHeight + 32);
+        followupPage.style.setProperty('--followup-footer-space', `${safeSpace}px`);
+    }
+
+    syncFollowupBottomSpace();
+    window.addEventListener('resize', syncFollowupBottomSpace, { passive: true });
+    window.addEventListener('orientationchange', syncFollowupBottomSpace, { passive: true });
+
     if (window.jQuery && $.fn.DataTable && document.getElementById('followupTable')) {
-        $('#followupTable').DataTable({
+        const followupDataTable = $('#followupTable').DataTable({
             responsive: false,
             autoWidth: false,
+            scrollX: false,
             pageLength: 10,
             order: [],
+            columnDefs: [
+                { targets: 3, orderable: false, searchable: false }
+            ],
             language: {
                 search: 'ค้นหา:',
                 lengthMenu: 'แสดง _MENU_ รายการ',
@@ -609,6 +996,14 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             dom: '<"row align-items-center mb-3"<"col-md-6"l><"col-md-6 text-md-end"f>>rt<"row align-items-center mt-3"<"col-md-6"i><"col-md-6 text-md-end"p>>'
         });
+
+        let tableResizeTimer = null;
+        window.addEventListener('resize', function () {
+            window.clearTimeout(tableResizeTimer);
+            tableResizeTimer = window.setTimeout(function () {
+                followupDataTable.columns.adjust();
+            }, 150);
+        }, { passive: true });
     }
 
     const editButtons = document.querySelectorAll('.edit-followup-btn');

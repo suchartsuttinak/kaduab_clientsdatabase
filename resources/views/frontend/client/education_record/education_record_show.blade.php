@@ -565,15 +565,92 @@
             grid-column: auto;
         }
     }
+
+
+    /* ปรับปุ่มให้เป็นมาตรฐานเดียวกับหน้าอื่นในระบบ */
+    .btn-modern,
+    .btn-add-modern {
+        min-height: 42px;
+        border-radius: 12px;
+        font-weight: 750;
+        border: 1px solid transparent;
+        transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease;
+    }
+
+    .btn-modern:focus-visible,
+    .btn-add-modern:focus-visible {
+        outline: 0;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, .16) !important;
+    }
+
+    .btn-modern:disabled,
+    .btn-modern.disabled,
+    .btn-add-modern:disabled,
+    .btn-add-modern.disabled {
+        opacity: 1 !important;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .btn-edit-soft {
+        background: #16a34a;
+        border-color: #15803d;
+        color: #fff;
+    }
+
+    .btn-edit-soft:hover {
+        background: #15803d;
+        border-color: #166534;
+        color: #fff;
+    }
+
+    .btn-delete-soft {
+        background: #dc2626;
+        border-color: #b91c1c;
+        color: #fff;
+    }
+
+    .btn-delete-soft:hover {
+        background: #b91c1c;
+        border-color: #991b1b;
+        color: #fff;
+    }
+
+    .btn-info-soft {
+        background: #0284c7;
+        border-color: #0369a1;
+        color: #fff;
+    }
+
+    .btn-info-soft:hover {
+        background: #0369a1;
+        border-color: #075985;
+        color: #fff;
+    }
+
+    .btn-report-soft {
+        background: #4f46e5;
+        border-color: #4338ca;
+        color: #fff;
+    }
+
+    .btn-report-soft:hover {
+        background: #4338ca;
+        border-color: #3730a3;
+        color: #fff;
+    }
+
 </style>
 
 @php
-    $recordsWithGpa = $educationRecords->filter(function ($record) {
-        return !empty($record->grade_average) && $record->grade_average > 0;
-    });
+    $hasGpa = static function ($record): bool {
+        return $record->grade_average !== null && $record->grade_average !== '';
+    };
 
-    $overallAverageGpa = $recordsWithGpa->count()
-        ? round($recordsWithGpa->avg('grade_average'), 2)
+    // GPA 0.00 เป็นผลการเรียนที่ถูกต้องและต้องนำมาคำนวณด้วย
+    $recordsWithGpa = $educationRecords->filter($hasGpa);
+    $overallAverageGpa = $recordsWithGpa->isNotEmpty()
+        ? round((float) $recordsWithGpa->avg('grade_average'), 2)
         : null;
 @endphp
 
@@ -659,7 +736,7 @@
                                             </td>
 
                                             <td class="col-gpa">
-                                                @if(empty($record->grade_average) || $record->grade_average == 0)
+                                                @if(!$hasGpa($record))
                                                     <span class="badge-status badge-wait">รอผล</span>
                                                 @else
                                                     <span class="badge-status badge-grade">
@@ -762,7 +839,7 @@
                                     </p>
                                 </div>
 
-                                @if(empty($record->grade_average) || $record->grade_average == 0)
+                                @if(!$hasGpa($record))
                                     <span class="badge-status badge-wait">รอผล</span>
                                 @else
                                     <span class="badge-status badge-grade">
@@ -780,7 +857,7 @@
                                 <div class="mobile-item">
                                     <span class="mobile-label">เกรดเฉลี่ย</span>
                                     <div class="mobile-value">
-                                        {{ (!empty($record->grade_average) && $record->grade_average != 0) ? number_format($record->grade_average, 2) : 'รอผล' }}
+                                        {{ $hasGpa($record) ? number_format((float) $record->grade_average, 2) : 'รอผล' }}
                                     </div>
                                 </div>
 
@@ -813,7 +890,7 @@
                                 </div>
 
                                 <div class="mobile-actions-row">
-                                    <a href="{{ route('education_record.report', $client->id) }}"
+                                    <a href="{{ route('education_record.report_by_id', $record->id) }}"
                                        class="btn btn-modern btn-table btn-report-soft">
                                         <i class="bi bi-printer"></i>
                                         รายงาน
@@ -886,19 +963,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     collapseElements.forEach(function (collapseEl) {
         collapseEl.addEventListener('show.bs.collapse', function () {
-            const button = document.querySelector(`[data-bs-target="#${collapseEl.id}"]`);
-            if (button) {
+            document.querySelectorAll(`[data-bs-target="#${collapseEl.id}"]`).forEach(button => {
                 const label = button.querySelector('.btn-label');
                 if (label) label.textContent = 'ซ่อนรายวิชา';
-            }
+                button.setAttribute('aria-expanded', 'true');
+            });
         });
 
         collapseEl.addEventListener('hide.bs.collapse', function () {
-            const button = document.querySelector(`[data-bs-target="#${collapseEl.id}"]`);
-            if (button) {
+            document.querySelectorAll(`[data-bs-target="#${collapseEl.id}"]`).forEach(button => {
                 const label = button.querySelector('.btn-label');
                 if (label) label.textContent = 'แสดงรายวิชา';
-            }
+                button.setAttribute('aria-expanded', 'false');
+            });
         });
     });
 });

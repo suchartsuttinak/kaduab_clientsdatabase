@@ -3,25 +3,28 @@
 use App\Http\Controllers\Frontend\ClientFileController;
 use Illuminate\Support\Facades\Route;
 
-    Route::prefix('clients/{client_id}')->group(function () {
+Route::prefix('clients/{client_id}')
+    ->where(['client_id' => '[0-9]+'])
+    ->controller(ClientFileController::class)
+    ->group(function (): void {
+        Route::get('files', 'index')
+            ->name('client_files.index');
 
-    Route::get('files', [ClientFileController::class, 'index'])
-        ->name('client_files.index');
+        Route::get('files/create', 'create')
+            ->name('client_files.create');
 
-    Route::get('files/create', [ClientFileController::class, 'create'])
-        ->name('client_files.create');
+        Route::post('files', 'store')
+            ->name('client_files.store');
 
-    Route::post('files', [ClientFileController::class, 'store'])
-        ->name('client_files.store');
+        Route::get('files/{file}/view', 'view')
+            ->whereNumber('file')
+            ->name('client_files.view');
 
-    Route::delete('files/{file}', [ClientFileController::class, 'destroy'])
-        ->name('client_files.destroy');
+        Route::get('files/{file}/download', 'download')
+            ->whereNumber('file')
+            ->name('client_files.download');
 
-    // ✅ เพิ่ม 2 route นี้ (สำคัญมาก)
-    Route::get('files/{file}/view', [ClientFileController::class, 'view'])
-        ->name('client_files.view');
-
-    Route::get('files/{file}/download', [ClientFileController::class, 'download'])
-        ->name('client_files.download');
-
-});
+        Route::delete('files/{file}', 'destroy')
+            ->whereNumber('file')
+            ->name('client_files.destroy');
+    });

@@ -1,126 +1,158 @@
-<div class="table-card card">
-    <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
-        <div>
-            <h5 class="section-title">
-                <i class="bi bi-table me-2 text-primary"></i>รายการบันทึกการบาดเจ็บ
-            </h5>
-            <p class="section-subtitle">
-                แสดงรายการล่าสุดก่อน พร้อมปุ่มแก้ไข ลบ และพิมพ์รายงาน
-            </p>
+<section class="acc-table-card" aria-labelledby="accidentTableTitle">
+    <div class="acc-card-header">
+        <div class="acc-card-heading">
+            <div class="acc-card-heading-icon" aria-hidden="true">
+                <i class="bi bi-table"></i>
+            </div>
+
+            <div>
+                <h2 class="acc-card-title" id="accidentTableTitle">
+                    รายการบันทึกการบาดเจ็บ
+                </h2>
+                <p class="acc-card-subtitle">
+                    แสดงรายการล่าสุดก่อน พร้อมคำสั่งแก้ไข ลบ และพิมพ์รายงาน
+                </p>
+            </div>
         </div>
-        <div>
-            <span class="badge text-bg-light border">ทั้งหมด {{ $accidents->count() }} รายการ</span>
-        </div>
+
+        <span class="acc-count-badge">
+            <i class="bi bi-list-check" aria-hidden="true"></i>
+            ทั้งหมด {{ number_format($accidents->count()) }} รายการ
+        </span>
     </div>
 
- <div class="card-body">
-    @if($accidents->isNotEmpty())
+    <div class="acc-card-body">
         @php
             $hasDoctorVisit = $accidents->contains(function ($row) {
                 return ($row->treat_no ?? '') === 'พบแพทย์';
             });
         @endphp
 
-        <div class="table-responsive">
-            <table id="datatable-accident" class="table table-hover align-middle w-100 mb-0">
+        <div class="acc-table-wrap">
+            <table id="datatable-accident"
+                   class="table table-hover align-middle acc-table {{ $hasDoctorVisit ? 'acc-table-expanded' : 'acc-table-compact' }}">
+
                 <thead>
                     <tr>
-                        <th style="width: 90px;">วันที่เกิดเหตุ</th>
-                        <th>สถานที่</th>
-                        <th>รายละเอียด</th>
-                        <th>สาเหตุ</th>
-                        <th class="text-center">พบแพทย์</th>
+                        <th class="acc-col-date">วันที่เกิดเหตุ</th>
+                        <th class="acc-col-location">สถานที่</th>
+                        <th class="acc-col-detail">รายละเอียด</th>
+                        <th class="acc-col-cause">สาเหตุ</th>
+                        <th class="acc-col-treatment text-center">การพบแพทย์</th>
 
                         @if($hasDoctorVisit)
-                            <th>สถานพยาบาล</th>
-                            <th>นัดครั้งต่อไป</th>
+                            <th class="acc-col-hospital">สถานพยาบาล</th>
+                            <th class="acc-col-appointment">นัดครั้งต่อไป</th>
                         @endif
 
-                        <th>ผู้ดูแล</th>
-                        <th class="text-center" style="width: 150px;">จัดการ</th>
+                        <th class="acc-col-caretaker">ผู้ดูแล</th>
+                        <th class="acc-col-actions text-center"
+                            data-orderable="false"
+                            data-searchable="false">
+                            จัดการ
+                        </th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    @foreach ($accidents as $row)
+                    @foreach($accidents as $row)
                         @php
                             $isDoctorVisit = ($row->treat_no ?? '') === 'พบแพทย์';
+                            $incidentSort = !empty($row->incident_date)
+                                ? \Carbon\Carbon::parse($row->incident_date)->format('Ymd')
+                                : '00000000';
                         @endphp
 
                         <tr>
-                            <td>
-                                {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}
+                            <td class="acc-col-date" data-order="{{ $incidentSort }}">
+                                <span class="acc-cell-main text-nowrap">
+                                    {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}
+                                </span>
                             </td>
 
-                            <td>
-                                <div class="fw-semibold text-dark">
-                                    {{ $row->location ?? '-' }}
-                                </div>
+                            <td class="acc-col-location">
+                                <span class="acc-cell-main acc-text-block"
+                                      title="{{ $row->location ?: '-' }}">
+                                    {{ $row->location ?: '-' }}
+                                </span>
                             </td>
 
-                            <td>
-                                @if(!empty($row->detail))
-                                    <div style="min-width: 220px;">
-                                        {{ \Illuminate\Support\Str::limit($row->detail, 80) }}
-                                    </div>
-                                @else
-                                    -
-                                @endif
+                            <td class="acc-col-detail">
+                                <span class="acc-text-block acc-text-clamp"
+                                      title="{{ $row->detail ?: '-' }}">
+                                    {{ $row->detail ?: '-' }}
+                                </span>
                             </td>
 
-                            <td>{{ $row->cause ?? '-' }}</td>
+                            <td class="acc-col-cause">
+                                <span class="acc-text-block acc-text-clamp"
+                                      title="{{ $row->cause ?: '-' }}">
+                                    {{ $row->cause ?: '-' }}
+                                </span>
+                            </td>
 
-                            <td class="text-center">
+                            <td class="acc-col-treatment text-center">
                                 @if($isDoctorVisit)
-                                    <span class="badge rounded-pill badge-soft-success">
+                                    <span class="acc-status acc-status-doctor">
+                                        <i class="bi bi-hospital" aria-hidden="true"></i>
                                         พบแพทย์
                                     </span>
                                 @else
-                                    <span class="badge rounded-pill badge-soft-secondary">
+                                    <span class="acc-status acc-status-home">
+                                        <i class="bi bi-house-heart" aria-hidden="true"></i>
                                         {{ $row->treat_no ?: 'ไม่พบแพทย์' }}
                                     </span>
                                 @endif
                             </td>
 
                             @if($hasDoctorVisit)
-                                <td>
-                                    @if($isDoctorVisit)
-                                        {{ $row->hospital ?: '-' }}
-                                    @else
-                                        -
-                                    @endif
+                                <td class="acc-col-hospital">
+                                    <span class="acc-text-block acc-text-clamp"
+                                          title="{{ $isDoctorVisit ? ($row->hospital ?: '-') : '-' }}">
+                                        {{ $isDoctorVisit ? ($row->hospital ?: '-') : '-' }}
+                                    </span>
                                 </td>
 
-                                <td>
+                                <td class="acc-col-appointment">
                                     @if($isDoctorVisit && !empty($row->appointment))
-                                        {{ \Carbon\Carbon::parse($row->appointment)->format('d/m/Y') }}
+                                        <span class="acc-cell-main text-nowrap">
+                                            {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->appointment) }}
+                                        </span>
                                     @else
-                                        -
+                                        <span class="acc-cell-muted">-</span>
                                     @endif
                                 </td>
                             @endif
 
-                            <td>{{ $row->caretaker ?? '-' }}</td>
+                            <td class="acc-col-caretaker">
+                                <span class="acc-text-block acc-text-clamp"
+                                      title="{{ $row->caretaker ?: '-' }}">
+                                    {{ $row->caretaker ?: '-' }}
+                                </span>
+                            </td>
 
-                            <td class="text-center">
-                                <div class="d-inline-flex flex-nowrap gap-1">
+                            <td class="acc-col-actions text-center">
+                                <div class="acc-row-actions" role="group" aria-label="จัดการรายการ">
                                     <a href="{{ route('accident.edit', $row->id) }}"
-                                       class="btn btn-warning btn-icon"
-                                       title="แก้ไข">
-                                        <i class="bi bi-pencil-square"></i>
+                                       class="btn btn-warning acc-icon-btn"
+                                       title="แก้ไขข้อมูล"
+                                       aria-label="แก้ไขข้อมูลวันที่ {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}">
+                                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                     </a>
 
                                     <button type="button"
-                                            class="btn btn-danger btn-icon"
+                                            class="btn btn-danger acc-icon-btn"
                                             onclick="confirmDelete({{ $row->id }})"
-                                            title="ลบ">
-                                        <i class="bi bi-trash"></i>
+                                            title="ลบข้อมูล"
+                                            aria-label="ลบข้อมูลวันที่ {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}">
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
 
                                     <a href="{{ route('accident.report', $row->id) }}"
-                                       class="btn btn-info btn-icon text-white"
-                                       title="พิมพ์รายงาน">
-                                        <i class="bi bi-printer"></i>
+                                       class="btn btn-info text-white acc-icon-btn"
+                                       title="พิมพ์รายงาน"
+                                       aria-label="พิมพ์รายงานวันที่ {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}">
+                                        <i class="bi bi-printer" aria-hidden="true"></i>
                                     </a>
                                 </div>
 
@@ -137,29 +169,5 @@
                 </tbody>
             </table>
         </div>
-    @else
-        <div class="empty-state">
-            <div class="empty-icon">
-                <i class="bi bi-clipboard2-pulse"></i>
-            </div>
-
-            <h6 class="fw-bold mb-2">ยังไม่มีข้อมูลการบาดเจ็บ</h6>
-
-            <p class="text-muted mb-3">
-                เริ่มต้นโดยกดปุ่ม “เพิ่มข้อมูลการบาดเจ็บ” ด้านบนเพื่อบันทึกรายการแรก
-            </p>
-
-            <button
-                type="button"
-                class="btn btn-primary btn-modern"
-                data-bs-toggle="collapse"
-                data-bs-target="#accidentFormCollapse"
-                aria-expanded="false"
-                aria-controls="accidentFormCollapse"
-            >
-                <i class="bi bi-plus-circle me-1"></i>เพิ่มข้อมูลการบาดเจ็บ
-            </button>
-        </div>
-    @endif
-</div>
-</div>
+    </div>
+</section>

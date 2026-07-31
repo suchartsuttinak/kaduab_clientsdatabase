@@ -173,7 +173,108 @@
             padding: 14px 18px;
             border-top: 1px solid var(--estimate-border);
             flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            background: #f8fafc;
+        }
+
+        /* =============================================================
+           ปุ่มคำสั่งหลัก: เพิ่มข้อมูล / บันทึก / อัปเดต / ยกเลิก
+        ============================================================== */
+        .estimate-page .estimate-action-btn {
+            min-width: 118px;
+            min-height: 44px;
+            padding: 9px 17px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            font-size: .9rem;
+            font-weight: 750;
+            line-height: 1.2;
+            letter-spacing: .01em;
+            box-shadow: none;
+            transition:
+                transform .18s ease,
+                box-shadow .18s ease,
+                border-color .18s ease,
+                background-color .18s ease,
+                color .18s ease;
+        }
+
+        .estimate-page .estimate-action-btn i {
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .estimate-page .estimate-action-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .estimate-page .estimate-action-btn:active {
+            transform: translateY(0);
+        }
+
+        .estimate-page .estimate-action-btn:focus-visible {
+            outline: 0;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, .16);
+        }
+
+        .estimate-page .estimate-add-btn {
+            min-width: 132px;
+            border-color: #1d4ed8;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, .20);
+        }
+
+        .estimate-page .estimate-add-btn:hover,
+        .estimate-page .estimate-add-btn:focus {
+            border-color: #1e40af;
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            color: #fff;
+            box-shadow: 0 10px 22px rgba(37, 99, 235, .26);
+        }
+
+        .estimate-page .estimate-submit-btn {
+            border-color: #1d4ed8;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #fff;
+            box-shadow: 0 7px 16px rgba(37, 99, 235, .18);
+        }
+
+        .estimate-page .estimate-submit-btn:hover,
+        .estimate-page .estimate-submit-btn:focus {
+            border-color: #1e40af;
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            color: #fff;
+            box-shadow: 0 9px 20px rgba(37, 99, 235, .24);
+        }
+
+        .estimate-page .estimate-cancel-btn {
+            border-color: #cbd5e1;
             background: #fff;
+            color: #475569;
+        }
+
+        .estimate-page .estimate-cancel-btn:hover,
+        .estimate-page .estimate-cancel-btn:focus {
+            border-color: #94a3b8;
+            background: #f1f5f9;
+            color: #1e293b;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, .08);
+        }
+
+        .estimate-page .estimate-action-btn:disabled,
+        .estimate-page .estimate-action-btn.disabled {
+            transform: none;
+            opacity: .62;
+            cursor: not-allowed;
+            box-shadow: none;
         }
 
         .estimate-page .estimate-form-section {
@@ -268,6 +369,41 @@
             background: #f8fafc;
         }
 
+        .estimate-page .estimate-image-status {
+            min-height: 20px;
+            margin-top: 6px;
+            color: var(--estimate-muted);
+        }
+
+        .estimate-page .estimate-old-picture-item,
+        .estimate-page .estimate-preview-item {
+            position: relative;
+            width: 92px;
+            height: 92px;
+            flex: 0 0 92px;
+        }
+
+        .estimate-page .estimate-old-picture-item img,
+        .estimate-page .estimate-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .estimate-page .estimate-picture-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
         @media(max-width:768px) {
             .estimate-photo-thumb {
                 width: 90px;
@@ -337,7 +473,15 @@
                 position: sticky;
                 bottom: 0;
                 z-index: 3;
+                flex-wrap: nowrap;
                 box-shadow: 0 -6px 18px rgba(15, 23, 42, .05);
+            }
+
+            .estimate-page .estimate-action-btn {
+                min-width: 0;
+                min-height: 44px;
+                flex: 1 1 0;
+                padding: 9px 12px;
             }
 
             .estimate-page .estimate-form-section {
@@ -374,36 +518,6 @@
 
     <div class="estimate-page">
 
-        @if ($errors->any() && session('form') === 'add-estimate')
-            <script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    bootstrap.Modal.getOrCreateInstance(document.getElementById('add-estimate-modal')).show();
-
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'เกิดข้อผิดพลาด',
-                        html: `{!! implode('<br>', $errors->all()) !!}`,
-                        confirmButtonText: 'ตกลง'
-                    });
-                });
-            </script>
-        @endif
-
-        @if ($errors->any() && session('form') === 'edit-estimate')
-            <script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    bootstrap.Modal.getOrCreateInstance(document.getElementById('edit-estimate-modal')).show();
-
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'เกิดข้อผิดพลาด',
-                        html: `{!! implode('<br>', $errors->all()) !!}`,
-                        confirmButtonText: 'ตกลง'
-                    });
-                });
-            </script>
-        @endif
-
         <div class="estimate-card mt-3">
             <div class="estimate-header">
                 <h5 class="estimate-title">
@@ -411,9 +525,12 @@
                     <span>ประวัติการติดตามและประเมินครอบครัวเด็ก</span>
                 </h5>
 
-                <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center shadow-sm px-3"
-                    data-bs-toggle="modal" data-bs-target="#add-estimate-modal" id="btn-add-estimate">
-                    <i class="bi bi-plus-circle me-1"></i>
+                <button type="button"
+                    class="btn estimate-action-btn estimate-add-btn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#add-estimate-modal"
+                    id="btn-add-estimate">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
                     <span>เพิ่มข้อมูล</span>
                 </button>
             </div>
@@ -421,7 +538,7 @@
             <div class="estimate-client-info">
                 <div class="estimate-client-line">
                     <span><strong>ชื่อ:</strong> {{ $client->full_name }}</span>
-                    <span><strong>อายุ:</strong> {{ \Carbon\Carbon::parse($client->birth_date)->age }} ปี</span>
+                    <span><strong>อายุ:</strong> {{ $client->birth_date ? \Carbon\Carbon::parse($client->birth_date)->age . ' ปี' : '-' }}</span>
                 </div>
             </div>
 
@@ -447,7 +564,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($client->estimates->sortByDesc('date')->sortByDesc('id') as $item)
+                                @foreach ($client->estimates as $item)
                                     <tr>
                                         <td class="text-center">{{ $item->count }}</td>
                                         <td class="text-center">{{ \Carbon\Carbon::parse($item->date)->format('d/m/Y') }}
@@ -497,14 +614,14 @@
                                             <div class="d-flex flex-wrap align-items-start gap-2">
                                                 @forelse($item->pictures as $pic)
                                                     @php
-                                                        $imageUrl = str_starts_with($pic->path, 'upload/')
+                                                        $imageUrl = str_starts_with($pic->path, 'upload/') || str_starts_with($pic->path, 'storage/')
                                                             ? asset($pic->path)
-                                                            : asset('storage/' . $pic->path);
+                                                            : asset('storage/' . ltrim($pic->path, '/'));
                                                     @endphp
 
                                                     <div class="estimate-photo-thumb">
                                                         <img src="{{ $imageUrl }}"
-                                                            class="img-thumbnail estimate-thumb-img" alt="estimate picture">
+                                                            class="img-thumbnail estimate-thumb-img" alt="รูปภาพประกอบการประเมิน" loading="lazy" decoding="async">
                                                     </div>
 
                                                 @empty
@@ -518,9 +635,8 @@
                                                 <i class="bi bi-printer-fill me-1"></i> รายงาน
                                             </a>
 
-                                            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
-                                                data-bs-target="#edit-estimate-modal"
-                                                onclick="estimateEdit({{ $item->id }})">
+                                            <button type="button" class="btn btn-success btn-sm js-edit-estimate"
+                                                onclick="estimateEdit({{ $item->id }}, this)">
                                                 <i class="bi bi-pencil-square"></i> แก้ไข
                                             </button>
 
@@ -569,7 +685,7 @@
                                             วันที่ติดตาม <span class="text-danger">*</span>
                                         </label>
 
-                                        <input type="date" name="date"
+                                        <input type="date" name="date" id="add_date"
                                             class="form-control @error('date') is-invalid @enderror"
                                             value="{{ old('date', \Carbon\Carbon::now()->format('Y-m-d')) }}"
                                             max="{{ now('Asia/Bangkok')->toDateString() }}">
@@ -602,7 +718,7 @@
                                             </label>
                                         </div>
                                         @error('follo_no')
-                                            <span id="follo_no-error"
+                                            <span id="follo_no-error-add"
                                                 class="text-danger d-block mt-2">{{ $message }}</span>
                                         @enderror
                                     </div>
@@ -753,20 +869,27 @@
                                             PATCH:
                                             พื้นที่แสดง Preview รูปตอนเพิ่มข้อมูล
                                         ====================================================== --}}
-                                        <div id="preview-area-add" class="d-flex flex-wrap gap-2 mt-3">
-                                        </div>
+                                        <div id="preview-area-add" class="d-flex flex-wrap gap-2 mt-3"></div>
+                                        <div class="form-text estimate-image-status" aria-live="polite"></div>
                                     </div>
 
-                                    <div class="col-12">
-                                        <div id="preview-area-add" class="d-flex flex-wrap gap-2 mt-2"></div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary">บันทึก</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                            <button type="button"
+                                class="btn btn-secondary estimate-action-btn estimate-cancel-btn"
+                                data-bs-dismiss="modal">
+                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                <span>ยกเลิก</span>
+                            </button>
+
+                            <button type="submit"
+                                class="btn btn-primary estimate-action-btn estimate-submit-btn">
+                                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                                <span>บันทึกข้อมูล</span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -833,7 +956,7 @@
                                         </div>
 
                                         @error('follo_no')
-                                            <span id="follo_no-error" class="text-danger d-block mt-2">
+                                            <span id="follo_no-error-edit" class="text-danger d-block mt-2">
                                                 {{ $message }}
                                             </span>
                                         @enderror
@@ -977,24 +1100,32 @@
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
 
-                                        {{-- =====================================================
-                                            PATCH:
-                                            พื้นที่แสดง Preview รูปใหม่ตอนแก้ไข
-                                        ====================================================== --}}
-                                        <div id="preview-area-edit" class="d-flex flex-wrap gap-2 mt-3">
-                                        </div>
+                                        <div id="preview-area-edit" class="d-flex flex-wrap gap-2 mt-3"></div>
+                                        <div class="form-text estimate-image-status" aria-live="polite"></div>
                                     </div>
+
                                     <div class="col-12">
-                                        <div id="preview-area-edit" class="d-flex flex-wrap gap-2 mt-2"></div>
+                                        <label class="form-label">รูปภาพเดิม</label>
+                                        <div id="existing-pictures-edit" class="d-flex flex-wrap gap-2"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary" id="btn-update-estimate">อัปเดต</button>
-                            <button type="button" class="btn btn-secondary btn-cancel"
-                                data-bs-dismiss="modal">ยกเลิก</button>
+                            <button type="button"
+                                class="btn btn-secondary btn-cancel estimate-action-btn estimate-cancel-btn"
+                                data-bs-dismiss="modal">
+                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                <span>ยกเลิก</span>
+                            </button>
+
+                            <button type="submit"
+                                class="btn btn-primary estimate-action-btn estimate-submit-btn"
+                                id="btn-update-estimate">
+                                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                                <span>บันทึกการแก้ไข</span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -1003,349 +1134,556 @@
     </div>
 
     @push('scripts')
-        {{-- =====================================================
-     PATCH: Browser Image Compression
-     บีบอัดรูปก่อนส่งขึ้น Server
-     ช่วยลดเวลาอัปโหลดบน Host จริง
-===================================================== --}}
         <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
         <script>
-            function toggleIncomeReason(section) {
-                let radios = document.querySelectorAll(`.estimate-income-sufficiency-${section}`);
-                let wrap = document.getElementById(`income-reason-wrap-${section}`);
-                let textarea = document.getElementById(section === 'add' ? 'income_reason_add' : 'edit_income_reason');
+            (() => {
+                'use strict';
 
-                if (!wrap) return;
+                const config = {
+                    today: @json(now('Asia/Bangkok')->toDateString()),
+                    editUrlTemplate: @json(url('/estimate/edit/__ID__')),
+                    updateUrlTemplate: @json(route('estimate.update', '__ID__')),
+                    duplicateUrl: @json(url('/estimate/check-duplicate')),
+                    formMode: @json(session('form')),
+                    editId: @json(session('edit_estimate_id')),
+                    oldInput: @json(old()),
+                    validationErrors: @json($errors->all()),
+                    maxPictures: 8,
+                };
 
-                let selected = '';
-                radios.forEach(radio => {
-                    if (radio.checked) selected = radio.value;
-                });
+                const replaceId = (template, id) => template.replace('__ID__', encodeURIComponent(id));
 
-                if (selected === 'ไม่เพียงพอ') {
-                    wrap.classList.remove('estimate-hidden');
-                } else {
-                    wrap.classList.add('estimate-hidden');
-                    if (textarea) textarea.value = '';
+                function toggleIncomeReason(section) {
+                    const form = document.getElementById(`${section}-estimate-form`);
+                    const wrap = document.getElementById(`income-reason-wrap-${section}`);
+                    const textarea = document.getElementById(section === 'add' ? 'income_reason_add' : 'edit_income_reason');
+
+                    if (!form || !wrap) return;
+
+                    const selected = form.querySelector('input[name="income_sufficiency"]:checked')?.value ?? '';
+                    const shouldShow = selected === 'ไม่เพียงพอ';
+
+                    wrap.classList.toggle('estimate-hidden', !shouldShow);
+
+                    if (!shouldShow && textarea) {
+                        textarea.value = '';
+                    }
                 }
-            }
 
-            /* =====================================================
-               PATCH:
-               Preview + Compress รูปก่อน Upload
-               ใช้ได้ทั้ง Add และ Edit
-            ===================================================== */
-            function previewFiles(inputId, previewId) {
-                const input = document.getElementById(inputId);
-                const previewArea = document.getElementById(previewId);
+                function showValidationAlert(errors) {
+                    if (!Array.isArray(errors) || errors.length === 0 || typeof Swal === 'undefined') return;
 
-                if (!input || !previewArea) return;
+                    const container = document.createElement('div');
+                    container.className = 'text-start';
 
-                input.addEventListener('change', async function(event) {
-                    previewArea.innerHTML = "";
-
-                    const originalFiles = Array.from(event.target.files || []);
-                    const dt = new DataTransfer();
-
-                    // =====================================================
-                    // PATCH:
-                    // แสดง preview ทันทีจากไฟล์ต้นฉบับก่อน
-                    // ไม่ต้องรอ compression
-                    // =====================================================
-                    originalFiles.forEach(file => {
-                        if (!file.type.startsWith("image/")) return;
-
-                        const reader = new FileReader();
-
-                        reader.onload = function(e) {
-                            const wrapper = document.createElement("div");
-                            wrapper.className =
-                                "position-relative border rounded shadow-sm d-inline-block me-2 mb-2 estimate-preview-item";
-                            wrapper.style.width = "90px";
-
-                            wrapper.innerHTML = `
-                    <img src="${e.target.result}"
-                         class="img-thumbnail"
-                         style="width:90px; height:90px; object-fit:cover;"
-                         loading="lazy"
-                         decoding="async">
-                `;
-
-                            previewArea.appendChild(wrapper);
-                        };
-
-                        reader.readAsDataURL(file);
+                    errors.forEach(error => {
+                        const line = document.createElement('div');
+                        line.textContent = `• ${error}`;
+                        container.appendChild(line);
                     });
 
-                    // =====================================================
-                    // PATCH:
-                    // บีบอัดไฟล์สำหรับ submit
-                    // =====================================================
-                    for (const file of originalFiles) {
-                        if (!file.type.startsWith("image/")) continue;
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'กรุณาตรวจสอบข้อมูล',
+                        html: container,
+                        confirmButtonText: 'ตกลง',
+                    });
+                }
+
+                function setStatus(input, message = '') {
+                    const status = input.closest('.col-12')?.querySelector('.estimate-image-status');
+                    if (status) status.textContent = message;
+                }
+
+                function renderNewPictures(files, previewArea) {
+                    previewArea.innerHTML = '';
+
+                    files.forEach(file => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'estimate-preview-item';
+
+                        const image = document.createElement('img');
+                        image.className = 'img-thumbnail';
+                        image.alt = 'ตัวอย่างรูปภาพใหม่';
+                        image.decoding = 'async';
+
+                        const objectUrl = URL.createObjectURL(file);
+                        image.src = objectUrl;
+                        image.addEventListener('load', () => URL.revokeObjectURL(objectUrl), { once: true });
+
+                        wrapper.appendChild(image);
+                        previewArea.appendChild(wrapper);
+                    });
+                }
+
+                function normalizedJpegName(filename) {
+                    const base = filename.replace(/\.[^.]+$/, '') || 'estimate-picture';
+                    return `${base}.jpg`;
+                }
+
+                function bindImageInput(inputId, previewId) {
+                    const input = document.getElementById(inputId);
+                    const previewArea = document.getElementById(previewId);
+
+                    if (!input || !previewArea) return;
+
+                    input.addEventListener('change', async event => {
+                        let files = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/'));
+
+                        if (files.length > config.maxPictures) {
+                            files = files.slice(0, config.maxPictures);
+
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'เลือกรูปภาพเกินจำนวน',
+                                    text: `ระบบจะใช้เฉพาะ ${config.maxPictures} รูปแรก`,
+                                    confirmButtonText: 'ตกลง',
+                                });
+                            }
+                        }
+
+                        renderNewPictures(files, previewArea);
+
+                        if (files.length === 0) {
+                            input.value = '';
+                            setStatus(input, '');
+                            return;
+                        }
+
+                        if (typeof DataTransfer === 'undefined') {
+                            setStatus(input, 'เบราว์เซอร์นี้ไม่รองรับการบีบอัดก่อนอัปโหลด ระบบจะบีบอัดที่เซิร์ฟเวอร์');
+                            return;
+                        }
+
+                        input.dataset.processing = '1';
+                        setStatus(input, 'กำลังเตรียมและบีบอัดรูปภาพ...');
+
+                        const transfer = new DataTransfer();
 
                         try {
-                            const compressedFile = await imageCompression(file, {
-                                maxSizeMB: 0.7,
-                                maxWidthOrHeight: 1600,
-                                useWebWorker: true,
-                                fileType: 'image/jpeg',
-                                initialQuality: 0.75,
-                            });
+                            for (const file of files) {
+                                let output = file;
 
-                            dt.items.add(compressedFile);
+                                if (typeof window.imageCompression === 'function') {
+                                    try {
+                                        const compressed = await window.imageCompression(file, {
+                                            maxSizeMB: 0.8,
+                                            maxWidthOrHeight: 1600,
+                                            useWebWorker: true,
+                                            fileType: 'image/jpeg',
+                                            initialQuality: 0.78,
+                                        });
+
+                                        output = new File(
+                                            [compressed],
+                                            normalizedJpegName(file.name),
+                                            { type: 'image/jpeg', lastModified: Date.now() }
+                                        );
+                                    } catch (compressionError) {
+                                        console.warn('Image compression failed; original file will be used.', compressionError);
+                                    }
+                                }
+
+                                transfer.items.add(output);
+                            }
+
+                            input.files = transfer.files;
+                            setStatus(input, `พร้อมอัปโหลด ${input.files.length} รูป`);
                         } catch (error) {
-                            console.error('Image compression failed:', error);
-                            dt.items.add(file);
+                            console.error('Unable to prepare image files.', error);
+                            setStatus(input, 'ไม่สามารถบีบอัดรูปได้ ระบบจะใช้ไฟล์ต้นฉบับ');
+                        } finally {
+                            input.dataset.processing = '0';
                         }
-                    }
-
-                    input.files = dt.files;
-                });
-            }
-
-            previewFiles('pictures-input-add', 'preview-area-add');
-            previewFiles('pictures-input-edit', 'preview-area-edit');
-
-            function estimateEdit(id) {
-                $.ajax({
-                    url: "/estimate/edit/" + id,
-                    type: "GET",
-                    dataType: "json",
-                    success: function(data) {
-
-                        // ==============================
-                        // PATCH: ล้าง Error เดิมก่อนเปิด Modal แก้ไข
-                        // ==============================
-                        const editForm = $('#edit-estimate-form');
-
-                        editForm.find('.is-invalid').removeClass('is-invalid');
-                        editForm.find('.invalid-feedback').hide();
-
-                        editForm.find('#edit-date-error').hide();
-                        editForm.find('#follo_no-error').hide();
-
-                        $('#btn-update-estimate').prop('disabled', false);
-
-                        $('#edit-estimate-form').attr('action', '/estimate/update/' + data.id);
-                        $('#edit-estimate-form').attr('data-id', data.id);
-
-                        $('#edit_client_id').val(data.client_id ?? '');
-                        $('#edit_date').val(data.date ?? '');
-                        $('#edit_results').val(data.results ?? '');
-                        $('#edit_family_income').val(data.family_income ?? '');
-                        $('#edit_guardian_job').val(data.guardian_job ?? '');
-                        $('#edit_income_reason').val(data.income_reason ?? '');
-                        $('#edit_debt').val(data.debt ?? '');
-                        $('#edit_teacher').val(data.teacher ?? '');
-                        $('#edit_remark').val(data.remark ?? '');
-
-                        $('#edit-estimate-form input[name="follo_no"]').prop('checked', false);
-                        $('#edit-estimate-form input[name="follo_no"]').each(function() {
-                            $(this).prop('checked', $(this).val() === data.follo_no);
-                        });
-
-                        $('#edit-estimate-form input[name="income_sufficiency"]').prop('checked', false);
-                        $('#edit-estimate-form input[name="income_sufficiency"]').each(function() {
-                            $(this).prop('checked', $(this).val() === (data.income_sufficiency ??
-                                'เพียงพอ'));
-                        });
-
-                        $('#edit-estimate-form input[name="housing_condition"]').prop('checked', false);
-                        $('#edit-estimate-form input[name="housing_condition"]').each(function() {
-                            $(this).prop('checked', $(this).val() === data.housing_condition);
-                        });
-
-                        toggleIncomeReason('edit');
-
-                        const preview = $('#preview-area-edit');
-                        preview.html('');
-                        $('#edit-estimate-form input[name="remove_pictures[]"]').remove();
-
-                        if (Array.isArray(data.pictures)) {
-                            data.pictures.forEach(function(pic) {
-                                preview.append(`
-                        <div class="position-relative d-inline-block me-1 mb-1" style="width:80px;">
-                            <img src="${pic.url}" class="img-thumbnail" style="width:80px; height:auto;" loading="lazy">
-                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0"
-                                    onclick="removeOldPicture(${pic.id}, this)">ลบ</button>
-                        </div>
-                    `);
-                            });
-                        }
-
-                        const modalEl = document.getElementById('edit-estimate-modal');
-                        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-
-                        setTimeout(() => {
-                            const modalBody = modalEl.querySelector('.modal-body');
-                            if (modalBody) modalBody.scrollTop = 0;
-                        }, 150);
-                    }
-                });
-            }
-
-            function removeOldPicture(picId, btn) {
-                $(btn).closest('div').remove();
-                $('#edit-estimate-form').append(
-                    `<input type="hidden" name="remove_pictures[]" value="${picId}">`
-                );
-            }
-
-            function resetForm(formId, previewId, setToday = false) {
-                const form = document.getElementById(formId);
-                if (!form) return;
-
-                form.reset();
-
-                form.querySelectorAll(".is-invalid").forEach(el => {
-                    el.classList.remove("is-invalid");
-                });
-
-                form.querySelectorAll(".invalid-feedback, .text-danger").forEach(el => {
-                    el.style.display = "none";
-                });
-
-                const previewArea = document.getElementById(previewId);
-                if (previewArea) previewArea.innerHTML = "";
-
-                form.querySelectorAll('input[type="file"]').forEach(fi => fi.value = "");
-                form.querySelectorAll('input[name="remove_pictures[]"]').forEach(el => el.remove());
-
-                if (setToday) {
-                    const dateInput = form.querySelector('input[name="date"]');
-                    if (dateInput) {
-                        dateInput.value = new Date().toISOString().split('T')[0];
-                    }
+                    });
                 }
 
-                if (formId === 'add-estimate-form') {
-                    const defaultRadio = form.querySelector('input[name="income_sufficiency"][value="เพียงพอ"]');
-                    if (defaultRadio) defaultRadio.checked = true;
-                    toggleIncomeReason('add');
+                function setRadioValue(form, name, value) {
+                    form.querySelectorAll(`input[name="${name}"]`).forEach(input => {
+                        input.checked = input.value === String(value ?? '');
+                    });
                 }
 
-                if (formId === 'edit-estimate-form') {
+                function setFieldValue(form, selector, value) {
+                    const field = form.querySelector(selector);
+                    if (field) field.value = value ?? '';
+                }
+
+                function renderExistingPictures(pictures) {
+                    const area = document.getElementById('existing-pictures-edit');
+                    if (!area) return;
+
+                    area.innerHTML = '';
+
+                    if (!Array.isArray(pictures) || pictures.length === 0) {
+                        const empty = document.createElement('span');
+                        empty.className = 'text-muted';
+                        empty.textContent = 'ไม่มีรูปภาพเดิม';
+                        area.appendChild(empty);
+                        return;
+                    }
+
+                    pictures.forEach(picture => {
+                        if (!picture?.id || !picture?.url) return;
+
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'estimate-old-picture-item';
+
+                        const image = document.createElement('img');
+                        image.className = 'img-thumbnail';
+                        image.src = picture.url;
+                        image.alt = 'รูปภาพเดิม';
+                        image.loading = 'lazy';
+                        image.decoding = 'async';
+
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'btn btn-danger btn-sm estimate-picture-remove';
+                        button.setAttribute('aria-label', 'ลบรูปภาพนี้');
+                        button.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+                        button.addEventListener('click', () => removeOldPicture(picture.id, wrapper));
+
+                        wrapper.append(image, button);
+                        area.appendChild(wrapper);
+                    });
+                }
+
+                function applyEstimateData(data, useOldInput = false) {
+                    const form = document.getElementById('edit-estimate-form');
+                    if (!form) return;
+
+                    const old = useOldInput ? config.oldInput : {};
+                    const value = key => Object.prototype.hasOwnProperty.call(old, key) ? old[key] : data[key];
+
+                    form.action = replaceId(config.updateUrlTemplate, data.id);
+                    form.dataset.id = data.id;
+
+                    setFieldValue(form, '#edit_client_id', data.client_id);
+                    setFieldValue(form, '#edit_date', value('date'));
+                    setFieldValue(form, '#edit_results', value('results'));
+                    setFieldValue(form, '#edit_family_income', value('family_income'));
+                    setFieldValue(form, '#edit_guardian_job', value('guardian_job'));
+                    setFieldValue(form, '#edit_income_reason', value('income_reason'));
+                    setFieldValue(form, '#edit_debt', value('debt'));
+                    setFieldValue(form, '#edit_teacher', value('teacher'));
+                    setFieldValue(form, '#edit_remark', value('remark'));
+
+                    setRadioValue(form, 'follo_no', value('follo_no'));
+                    setRadioValue(form, 'income_sufficiency', value('income_sufficiency') ?? 'เพียงพอ');
+                    setRadioValue(form, 'housing_condition', value('housing_condition'));
+
+                    form.querySelectorAll('input[name="remove_pictures[]"]').forEach(input => input.remove());
+                    document.getElementById('preview-area-edit')?.replaceChildren();
+                    const fileInput = document.getElementById('pictures-input-edit');
+                    if (fileInput) {
+                        fileInput.value = '';
+                        fileInput.dataset.processing = '0';
+                        setStatus(fileInput, '');
+                    }
+
+                    renderExistingPictures(data.pictures);
                     toggleIncomeReason('edit');
                 }
 
-                const modalBody = form.closest('.modal-content')?.querySelector('.modal-body');
-                if (modalBody) modalBody.scrollTop = 0;
-            }
+                async function estimateEdit(id, trigger = null, useOldInput = false) {
+                    const button = trigger instanceof HTMLElement ? trigger : null;
+                    const originalButtonHtml = button?.innerHTML;
 
-            async function checkDuplicateDate(clientId, date, estimateId) {
-                const response = await fetch(
-                    `/estimate/check-duplicate?client_id=${clientId}&date=${date}&id=${estimateId}`);
-                const result = await response.json();
-                return result.duplicate;
-            }
+                    if (button) {
+                        button.disabled = true;
+                        button.innerHTML = '<span>กำลังโหลด...</span>';
+                    }
 
-            document.addEventListener("DOMContentLoaded", function() {
-                document.querySelectorAll('.estimate-income-sufficiency-add').forEach(radio => {
-                    radio.addEventListener('change', function() {
-                        toggleIncomeReason('add');
-                    });
-                });
+                    try {
+                        const response = await fetch(replaceId(config.editUrlTemplate, id), {
+                            headers: { 'Accept': 'application/json' },
+                            credentials: 'same-origin',
+                        });
 
-                document.querySelectorAll('.estimate-income-sufficiency-edit').forEach(radio => {
-                    radio.addEventListener('change', function() {
-                        toggleIncomeReason('edit');
-                    });
-                });
-
-                toggleIncomeReason('add');
-                toggleIncomeReason('edit');
-
-                document.getElementById('btn-add-estimate')
-                    ?.addEventListener('click', () => {
-                        resetForm('add-estimate-form', 'preview-area-add', true);
-                        const modalEl = document.getElementById('add-estimate-modal');
-                        setTimeout(() => {
-                            const modalBody = modalEl?.querySelector('.modal-body');
-                            if (modalBody) modalBody.scrollTop = 0;
-                        }, 150);
-                    });
-
-                document.querySelector('#add-estimate-modal .btn-secondary[data-bs-dismiss="modal"]')
-                    ?.addEventListener('click', () => resetForm('add-estimate-form', 'preview-area-add'));
-
-                document.querySelector('#edit-estimate-modal .btn-secondary[data-bs-dismiss="modal"]')
-                    ?.addEventListener('click', () => resetForm('edit-estimate-form', 'preview-area-edit'));
-
-                document.querySelectorAll('input[name="follo_no"]').forEach(radio => {
-                    radio.addEventListener('change', function() {
-                        const errorEl = document.getElementById('follo_no-error');
-
-                        if (errorEl) {
-                            errorEl.remove();
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
                         }
+
+                        const data = await response.json();
+                        if (!useOldInput) {
+                            clearFormErrors(document.getElementById('edit-estimate-form'));
+                        }
+                        applyEstimateData(data, useOldInput);
+
+                        const modalElement = document.getElementById('edit-estimate-modal');
+                        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+
+                        requestAnimationFrame(() => {
+                            const modalBody = modalElement.querySelector('.modal-body');
+                            if (modalBody) modalBody.scrollTop = 0;
+                        });
+
+                        return true;
+                    } catch (error) {
+                        console.error('Unable to load estimate.', error);
+
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'ไม่สามารถโหลดข้อมูลได้',
+                                text: 'กรุณาลองใหม่อีกครั้ง',
+                                confirmButtonText: 'ตกลง',
+                            });
+                        }
+
+                        return false;
+                    } finally {
+                        if (button) {
+                            button.disabled = false;
+                            button.innerHTML = originalButtonHtml;
+                        }
+                    }
+                }
+
+                function removeOldPicture(pictureId, wrapper) {
+                    wrapper?.remove();
+
+                    const form = document.getElementById('edit-estimate-form');
+                    if (!form || form.querySelector(`input[name="remove_pictures[]"][value="${pictureId}"]`)) return;
+
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'remove_pictures[]';
+                    hidden.value = pictureId;
+                    form.appendChild(hidden);
+
+                    const area = document.getElementById('existing-pictures-edit');
+                    if (area && area.children.length === 0) {
+                        const empty = document.createElement('span');
+                        empty.className = 'text-muted';
+                        empty.textContent = 'ไม่มีรูปภาพเดิม';
+                        area.appendChild(empty);
+                    }
+                }
+
+                function clearFormErrors(form) {
+                    if (!form) return;
+
+                    form.querySelectorAll('.is-invalid').forEach(element => element.classList.remove('is-invalid'));
+                    form.querySelectorAll('.invalid-feedback, .estimate-validation-error').forEach(element => {
+                        element.style.display = 'none';
                     });
-                });
+                }
 
-                document.querySelectorAll('input[name="date"]').forEach(dateInput => {
-                    dateInput.addEventListener('change', function() {
-                        const wrapper = dateInput.closest('.col-12, .col-md-4, .mb-3');
-                        const errorEl = wrapper ? wrapper.querySelector('.invalid-feedback') : null;
-                        if (errorEl) errorEl.style.display = 'none';
-                        dateInput.classList.remove('is-invalid');
+                function resetForm(formId, previewId, setToday = false) {
+                    const form = document.getElementById(formId);
+                    if (!form) return;
+
+                    form.reset();
+                    form.dataset.submitting = '0';
+                    clearFormErrors(form);
+
+                    document.getElementById(previewId)?.replaceChildren();
+                    form.querySelectorAll('input[type="file"]').forEach(input => {
+                        input.value = '';
+                        input.dataset.processing = '0';
+                        setStatus(input, '');
                     });
-                });
+                    form.querySelectorAll('input[name="remove_pictures[]"]').forEach(input => input.remove());
 
-                const dateInput = document.getElementById('edit_date');
-                const updateBtn = document.getElementById('btn-update-estimate');
+                    if (formId === 'edit-estimate-form') {
+                        document.getElementById('existing-pictures-edit')?.replaceChildren();
+                        form.dataset.id = '';
+                    }
 
-                if (dateInput) {
-                    dateInput.addEventListener('change', async function() {
-                        const date = this.value;
-                        const clientId = document.getElementById('edit_client_id')?.value;
-                        const estimateId = document.querySelector('#edit-estimate-form')?.getAttribute(
-                            'data-id');
+                    if (setToday) {
+                        const dateInput = form.querySelector('input[name="date"]');
+                        if (dateInput) dateInput.value = config.today;
+                    }
 
-                        if (!date || !clientId || !estimateId) return;
+                    if (formId === 'add-estimate-form') {
+                        const defaultRadio = form.querySelector('input[name="income_sufficiency"][value="เพียงพอ"]');
+                        if (defaultRadio) defaultRadio.checked = true;
+                    }
 
-                        const duplicate = await checkDuplicateDate(clientId, date, estimateId);
+                    toggleIncomeReason(formId.startsWith('add') ? 'add' : 'edit');
 
-                        if (duplicate) {
-                            let errorEl = this.parentElement.querySelector('.invalid-feedback');
+                    const submitButton = form.querySelector('button[type="submit"]');
+                    restoreSubmitButton(submitButton);
 
-                            if (!errorEl) {
-                                errorEl = document.createElement('div');
-                                errorEl.className = 'invalid-feedback';
-                                this.parentElement.appendChild(errorEl);
+                    const modalBody = form.closest('.modal-content')?.querySelector('.modal-body');
+                    if (modalBody) modalBody.scrollTop = 0;
+                }
+
+                function restoreSubmitButton(button) {
+                    if (!button) return;
+                    button.disabled = false;
+                    if (button.dataset.originalHtml) {
+                        button.innerHTML = button.dataset.originalHtml;
+                    }
+                }
+
+                function bindSafeSubmit(formId, loadingText) {
+                    const form = document.getElementById(formId);
+                    if (!form) return;
+
+                    form.addEventListener('submit', event => {
+                        const processing = Array.from(form.querySelectorAll('input[type="file"]'))
+                            .some(input => input.dataset.processing === '1');
+
+                        if (processing) {
+                            event.preventDefault();
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'กำลังเตรียมรูปภาพ',
+                                    text: 'กรุณารอให้ระบบเตรียมรูปภาพเสร็จก่อนบันทึก',
+                                    confirmButtonText: 'ตกลง',
+                                });
                             }
+                            return;
+                        }
 
-                            errorEl.textContent = 'วันที่นี้ถูกบันทึกไว้แล้ว กรุณาเลือกวันอื่น';
-                            errorEl.style.display = 'block';
-                            this.classList.add('is-invalid');
+                        if (form.querySelector('input[name="date"].is-invalid')) {
+                            event.preventDefault();
+                            return;
+                        }
 
-                            if (updateBtn) updateBtn.disabled = true;
-                        } else {
-                            const errorEl = this.parentElement.querySelector('.invalid-feedback');
+                        if (form.dataset.submitting === '1') {
+                            event.preventDefault();
+                            return;
+                        }
 
-                            if (errorEl) errorEl.style.display = 'none';
+                        form.dataset.submitting = '1';
+                        const button = form.querySelector('button[type="submit"]');
 
-                            this.classList.remove('is-invalid');
-
-                            if (updateBtn) updateBtn.disabled = false;
+                        if (button) {
+                            button.dataset.originalHtml ||= button.innerHTML;
+                            button.disabled = true;
+                            button.innerHTML = `<span>${loadingText}</span>`;
                         }
                     });
                 }
 
-                ['add-estimate-modal', 'edit-estimate-modal'].forEach(function(id) {
-                    const modalEl = document.getElementById(id);
-                    if (!modalEl) return;
+                async function checkDuplicateDate(input, estimateId = null) {
+                    const form = input.form;
+                    const clientId = form?.querySelector('input[name="client_id"]')?.value;
+                    const submitButton = form?.querySelector('button[type="submit"]');
 
-                    modalEl.addEventListener('shown.bs.modal', function() {
-                        const modalBody = modalEl.querySelector('.modal-body');
+                    if (!input.value || !clientId) return;
 
-                        if (modalBody) {
-                            modalBody.scrollTop = 0;
-                            modalBody.style.overflowY = 'auto';
+                    input._duplicateController?.abort();
+                    input._duplicateController = new AbortController();
+
+                    const params = new URLSearchParams({ client_id: clientId, date: input.value });
+                    if (estimateId) params.set('id', estimateId);
+
+                    try {
+                        const response = await fetch(`${config.duplicateUrl}?${params.toString()}`, {
+                            headers: { 'Accept': 'application/json' },
+                            credentials: 'same-origin',
+                            signal: input._duplicateController.signal,
+                        });
+
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                        const result = await response.json();
+                        let error = input.parentElement.querySelector('.estimate-duplicate-error');
+
+                        if (result.duplicate) {
+                            if (!error) {
+                                error = document.createElement('div');
+                                error.className = 'invalid-feedback estimate-duplicate-error';
+                                input.parentElement.appendChild(error);
+                            }
+
+                            error.textContent = 'วันที่นี้ถูกบันทึกไว้แล้ว กรุณาเลือกวันอื่น';
+                            error.style.display = 'block';
+                            input.classList.add('is-invalid');
+                            if (submitButton) submitButton.disabled = true;
+                        } else {
+                            error?.remove();
+                            input.classList.remove('is-invalid');
+                            if (submitButton && form.dataset.submitting !== '1') submitButton.disabled = false;
                         }
+                    } catch (error) {
+                        if (error.name !== 'AbortError') {
+                            console.warn('Duplicate date check failed; server validation remains active.', error);
+                            if (submitButton && form.dataset.submitting !== '1') submitButton.disabled = false;
+                        }
+                    }
+                }
+
+                function bindDuplicateDateCheck(inputId, estimateIdResolver) {
+                    const input = document.getElementById(inputId);
+                    if (!input) return;
+
+                    input.addEventListener('change', () => {
+                        input.parentElement.querySelector('.estimate-duplicate-error')?.remove();
+                        input.classList.remove('is-invalid');
+                        checkDuplicateDate(input, estimateIdResolver?.() ?? null);
                     });
+                }
+
+                document.addEventListener('DOMContentLoaded', async () => {
+                    bindImageInput('pictures-input-add', 'preview-area-add');
+                    bindImageInput('pictures-input-edit', 'preview-area-edit');
+                    bindSafeSubmit('add-estimate-form', 'กำลังบันทึก...');
+                    bindSafeSubmit('edit-estimate-form', 'กำลังบันทึก...');
+
+                    document.querySelectorAll('.estimate-income-sufficiency-add').forEach(radio => {
+                        radio.addEventListener('change', () => toggleIncomeReason('add'));
+                    });
+
+                    document.querySelectorAll('.estimate-income-sufficiency-edit').forEach(radio => {
+                        radio.addEventListener('change', () => toggleIncomeReason('edit'));
+                    });
+
+                    document.querySelectorAll('input[name="follo_no"]').forEach(radio => {
+                        radio.addEventListener('change', () => {
+                            radio.form?.querySelectorAll('[id^="follo_no-error-"]').forEach(error => error.remove());
+                        });
+                    });
+
+                    bindDuplicateDateCheck('add_date', () => null);
+                    bindDuplicateDateCheck('edit_date', () => document.getElementById('edit-estimate-form')?.dataset.id);
+
+                    document.getElementById('btn-add-estimate')?.addEventListener('click', () => {
+                        resetForm('add-estimate-form', 'preview-area-add', true);
+                    });
+
+                    ['add-estimate-modal', 'edit-estimate-modal'].forEach(modalId => {
+                        const modal = document.getElementById(modalId);
+                        if (!modal) return;
+
+                        modal.addEventListener('shown.bs.modal', () => {
+                            const body = modal.querySelector('.modal-body');
+                            if (body) body.scrollTop = 0;
+                        });
+
+                        modal.addEventListener('hidden.bs.modal', () => {
+                            if (modalId === 'add-estimate-modal') {
+                                resetForm('add-estimate-form', 'preview-area-add');
+                            } else {
+                                resetForm('edit-estimate-form', 'preview-area-edit');
+                            }
+                        });
+                    });
+
+                    toggleIncomeReason('add');
+                    toggleIncomeReason('edit');
+
+                    if (config.formMode === 'add-estimate' && config.validationErrors.length) {
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('add-estimate-modal')).show();
+                        showValidationAlert(config.validationErrors);
+                    }
+
+                    if (config.formMode === 'edit-estimate' && config.editId) {
+                        const loaded = await estimateEdit(config.editId, null, true);
+                        if (loaded) showValidationAlert(config.validationErrors);
+                    }
                 });
-            });
+
+                window.estimateEdit = estimateEdit;
+                window.removeOldPicture = removeOldPicture;
+            })();
         </script>
     @endpush
 

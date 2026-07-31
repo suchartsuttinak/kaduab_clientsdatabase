@@ -14,6 +14,7 @@ use App\Models\Absent;
 use App\Models\SchoolFollowup;
 use App\Models\CaseOutside;
 use App\Models\CaseActivity;
+use App\Models\Followup;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Route;
@@ -266,51 +267,59 @@ $latestActivityDate = $latestActivity?->occurred_at;
         ));
     }
 
-            public function ClientReport($id)
-        {
-            $client = $this->findAuthorizedClient((int) $id, [
-                'problems',
-                'province',
-                'district',
-                'sub_district',
-                'national',
-                'religion',
-                'marital',
-                'occupation',
-                'income',
-                'education',
-                'contact',
-                'project',
-                'status',
-                'house',
-                'target',
-                'title',
-                'originProvince',
-                'originDistrict',
-                'originSubDistrict',
-                'members.education',
-                'members.occupation',
-                'members.income',
-                'father',
-                'mother',
-                'relative',
-                'spouse',
-            ]);
+    public function ClientReport($id)
+    {
+        $client = $this->findAuthorizedClient((int) $id, [
+            'problems',
+            'province',
+            'district',
+            'sub_district',
+            'national',
+            'religion',
+            'marital',
+            'occupation',
+            'income',
+            'education',
+            'contact',
+            'project',
+            'status',
+            'house',
+            'target',
+            'title',
+            'originProvince',
+            'originDistrict',
+            'originSubDistrict',
+            'members.education',
+            'members.occupation',
+            'members.income',
+            'father',
+            'mother',
+            'relative',
+            'spouse',
+        ]);
 
-            $factFinding = \App\Models\Factfinding::with([
-                'marital',
-                'documents',
-            ])->where('client_id', $client->id)->first();
+        $factFinding = \App\Models\Factfinding::with([
+            'marital',
+            'documents',
+        ])->where('client_id', $client->id)->first();
 
-            // ✅ สภาพปัญหาของเด็กคนนี้เท่านั้น
-            $clientProblems = $client->problems ?? collect();
+        // สภาพปัญหาของผู้รับบริการรายนี้เท่านั้น
+        $clientProblems = $client->problems ?? collect();
 
-            return view('admin_client.index.client_report', compact(
-                'client',
-                'clientProblems',
-                'factFinding'
-            ));
-        }
+        // ข้อ 18 การติดตามผลการช่วยเหลือ
+        // เรียงจากวันที่เก่าไปใหม่ เพื่อให้อ่านลำดับการดำเนินงานต่อเนื่องในรายงาน
+        $followups = Followup::where('client_id', $client->id)
+            ->orderBy('followup_date', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        return view('admin_client.index.client_report', compact(
+            'client',
+            'clientProblems',
+            'factFinding',
+            'followups'
+        ));
+    }
 
     /**
      * [NEW]
