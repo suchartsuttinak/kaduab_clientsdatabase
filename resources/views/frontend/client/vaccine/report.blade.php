@@ -2,247 +2,242 @@
 
 @section('content')
 @php
-    use Carbon\Carbon;
+    $formatThaiDate = static function ($date): string {
+        if (!$date) {
+            return '-';
+        }
 
-    function thaiDateVaccineReport($date) {
-        if (!$date) return '-';
-        return Carbon::parse($date)->addYears(543)->format('d/m/Y');
+        return \Carbon\Carbon::parse($date)
+            ->locale('th')
+            ->translatedFormat('d/m/')
+            . (\Carbon\Carbon::parse($date)->year + 543);
+    };
+
+    $clientDisplayName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+    if ($clientDisplayName === '') {
+        $clientDisplayName = $client->fullname ?? $client->full_name ?? $client->name ?? '-';
     }
+
+    $clientAgeDisplay = filled($client->age ?? null)
+        ? ($client->age . ' ปี')
+        : '-';
+
+    $startDateDisplay = request()->filled('start_date')
+        ? $formatThaiDate(request('start_date'))
+        : 'ทั้งหมด';
+
+    $endDateDisplay = request()->filled('end_date')
+        ? $formatThaiDate(request('end_date'))
+        : 'ทั้งหมด';
 @endphp
 
 <style>
 .vaccine-report-page{
     padding:16px 12px 28px;
     background:#eef2f7;
+    color:#1f2937;
 }
 
-.report-page{
+.vaccine-report-page *{
+    box-sizing:border-box;
+}
+
+.vaccine-report-page .report-page{
     max-width:1280px;
     margin:0 auto;
-    background:#fff;
-    border-radius:16px;
-    box-shadow:0 10px 30px rgba(0,0,0,.05);
     overflow:hidden;
     border:1px solid #e5e7eb;
+    border-radius:16px;
+    background:#fff;
+    box-shadow:0 10px 30px rgba(15,23,42,.06);
 }
 
-.report-toolbar{
+.vaccine-report-page .report-toolbar{
     display:flex;
-    justify-content:space-between;
     align-items:center;
+    justify-content:space-between;
     gap:10px;
-    flex-wrap:wrap;
     padding:14px 18px 0;
 }
 
-.report-btn{
-    border-radius:10px;
+.vaccine-report-page .report-btn{
+    display:inline-flex;
+    min-height:40px;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
     padding:7px 14px;
-    font-size:14px;
-    cursor:pointer;
     border:1px solid #d1d5db;
+    border-radius:10px;
     background:#fff;
     color:#374151;
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
+    font-size:14px;
+    font-weight:700;
     text-decoration:none;
+    cursor:pointer;
 }
 
-.report-btn-primary{
+.vaccine-report-page .report-btn-primary{
+    border-color:#2563eb;
     background:#2563eb;
     color:#fff;
-    border-color:#2563eb;
 }
 
-.report-wrap{
+.vaccine-report-page .report-wrap{
     padding:16px 18px 22px;
 }
 
-.report-header{
-    text-align:center;
-    border-bottom:1px solid #e5e7eb;
-    padding-bottom:12px;
+.vaccine-report-page .report-header{
     margin-bottom:14px;
+    padding-bottom:12px;
+    border-bottom:1px solid #e5e7eb;
+    text-align:center;
 }
 
-.report-title{
+.vaccine-report-page .report-title{
     margin:0;
-    font-size:24px;
-    font-weight:700;
     color:#111827;
+    font-size:24px;
+    font-weight:800;
+    line-height:1.35;
 }
 
-.report-subtitle{
+.vaccine-report-page .report-subtitle{
     margin:4px 0 0;
     color:#6b7280;
     font-size:14px;
 }
 
-.client-info{
+.vaccine-report-page .client-info{
     display:grid;
-    grid-template-columns:repeat(2, minmax(0, 1fr));
+    grid-template-columns:repeat(2,minmax(0,1fr));
     gap:8px 18px;
     margin-bottom:12px;
 }
 
-.client-info-item{
-    font-size:15px;
+.vaccine-report-page .client-info-item{
     color:#1f2937;
+    font-size:15px;
 }
 
-.client-info-label{
-    font-weight:700;
-    color:#111827;
+.vaccine-report-page .client-info-label{
     margin-right:6px;
+    color:#111827;
+    font-weight:700;
 }
 
-.report-meta{
+.vaccine-report-page .report-meta{
     display:flex;
     justify-content:space-between;
-    flex-wrap:wrap;
     gap:10px;
-    background:#f8fafc;
-    padding:9px 12px;
-    border-radius:12px;
+    flex-wrap:wrap;
     margin-bottom:12px;
-    font-size:14px;
+    padding:9px 12px;
     border:1px solid #e5e7eb;
+    border-radius:12px;
+    background:#f8fafc;
+    font-size:14px;
 }
 
-.table-wrap{
+.vaccine-report-page .table-wrap{
     overflow-x:auto;
 }
 
-.report-table{
+.vaccine-report-page .report-table{
     width:100%;
+    min-width:980px;
     border-collapse:collapse;
-    min-width:1180px;
+    table-layout:fixed;
 }
 
-.report-table th,
-.report-table td{
-    border:1px solid #e5e7eb;
+.vaccine-report-page .report-table th,
+.vaccine-report-page .report-table td{
     padding:7px 8px;
+    border:1px solid #dfe5ec;
     font-size:14px;
+    line-height:1.4;
     vertical-align:top;
-    line-height:1.35;
+    overflow-wrap:anywhere;
 }
 
-.report-table th{
+.vaccine-report-page .report-table th{
     background:#f1f5f9;
     color:#334155;
-    font-weight:700;
+    font-weight:800;
     text-align:center;
     white-space:nowrap;
 }
 
-.report-table td{
-    color:#1f2937;
-    word-break:break-word;
-}
-
-.text-center{
+.vaccine-report-page .text-center{
     text-align:center;
 }
 
-.no-col{
-    width:55px;
-}
+.vaccine-report-page .no-col{width:55px;}
+.vaccine-report-page .date-col{width:125px;}
+.vaccine-report-page .vaccine-col{width:220px;}
+.vaccine-report-page .hospital-col{width:220px;}
+.vaccine-report-page .recorder-col{width:160px;}
+.vaccine-report-page .remark-col{width:auto;}
 
-.date-col{
-    width:120px;
-    min-width:120px;
-    white-space:nowrap;
-}
-
-.vaccine-col{
-    width:270px;
-}
-
-.hospital-col{
-    width:270px;
-}
-
-.recorder-col{
-    width:140px;
-}
-
-.remark-col{
-    min-width:220px;
-}
-
-.empty-state{
-    text-align:center;
+.vaccine-report-page .empty-state{
     padding:32px 16px;
     border:1px dashed #d9e2ef;
-    border-radius:16px;
+    border-radius:14px;
     background:#fff;
     color:#64748b;
+    text-align:center;
 }
 
-.signature-wrap{
-    margin-top:30px;
+.vaccine-report-page .signature-wrap{
     display:flex;
     justify-content:flex-end;
+    margin-top:30px;
 }
 
-.signature-box{
+.vaccine-report-page .signature-box{
     width:280px;
-    text-align:center;
     color:#374151;
     font-size:15px;
+    text-align:center;
 }
 
-.signature-line{
+.vaccine-report-page .signature-line{
+    height:36px;
     margin-bottom:8px;
     padding-top:24px;
     border-bottom:1px solid #111827;
-    height:36px;
 }
 
-@media (max-width:768px){
-    .vaccine-report-page{
-        padding:0;
-    }
-
-    .report-page{
+@media(max-width:768px){
+    .vaccine-report-page{padding:0;}
+    .vaccine-report-page .report-page{
         margin:0;
         border:0;
         border-radius:0;
         box-shadow:none;
     }
-
-    .report-toolbar,
-    .report-wrap{
+    .vaccine-report-page .report-toolbar,
+    .vaccine-report-page .report-wrap{
         padding-left:14px;
         padding-right:14px;
     }
-
-    .client-info{
-        grid-template-columns:1fr;
-    }
-
-    .report-title{
-        font-size:22px;
-    }
+    .vaccine-report-page .client-info{grid-template-columns:1fr;}
+    .vaccine-report-page .report-title{font-size:22px;}
 }
 
 @media print{
-
     @page{
         size:A4 landscape;
-        margin:6mm;
+        margin:8mm;
     }
 
     html,
     body{
-        width:297mm !important;
+        width:auto !important;
         margin:0 !important;
         padding:0 !important;
-        background:#fff !important;
         overflow:visible !important;
-        font-size:12px !important;
+        background:#fff !important;
     }
 
     body{
@@ -276,179 +271,125 @@
         padding:0 !important;
     }
 
-    .vaccine-report-page{
-        width:100% !important;
-        margin:0 !important;
-        padding:0 !important;
-        background:#fff !important;
-    }
-
-    .report-page{
+    .vaccine-report-page,
+    .vaccine-report-page .report-page{
         width:100% !important;
         max-width:100% !important;
         margin:0 !important;
+        padding:0 !important;
+        overflow:visible !important;
         border:0 !important;
         border-radius:0 !important;
+        background:#fff !important;
         box-shadow:none !important;
-        overflow:visible !important;
     }
 
-    .report-wrap{
-        padding:0 !important;
-    }
-
-    .report-header{
+    .vaccine-report-page .report-wrap{padding:0 !important;}
+    .vaccine-report-page .report-header{
         margin-bottom:8px !important;
         padding-bottom:6px !important;
     }
-
-    .report-title{
+    .vaccine-report-page .report-title{
         font-size:20px !important;
         line-height:1.2 !important;
     }
-
-    .report-subtitle{
-        font-size:12px !important;
+    .vaccine-report-page .report-subtitle{
         margin-top:2px !important;
+        font-size:12px !important;
     }
-
-    .client-info{
+    .vaccine-report-page .client-info{
         gap:4px 12px !important;
         margin-bottom:8px !important;
     }
-
-    .client-info-item,
-    .report-meta{
+    .vaccine-report-page .client-info-item,
+    .vaccine-report-page .report-meta{
         font-size:12px !important;
         line-height:1.3 !important;
     }
-
-    .report-meta{
-        padding:6px 8px !important;
+    .vaccine-report-page .report-meta{
         margin-bottom:8px !important;
+        padding:6px 8px !important;
     }
-
-    .table-wrap{
-        overflow:visible !important;
-    }
-
-    .report-table{
+    .vaccine-report-page .table-wrap{overflow:visible !important;}
+    .vaccine-report-page .report-table{
         width:100% !important;
-        min-width:unset !important;
+        min-width:0 !important;
         table-layout:fixed !important;
-        border-collapse:collapse !important;
     }
-
-    .report-table th,
-    .report-table td{
-        font-size:11px !important;
+    .vaccine-report-page .report-table thead{display:table-header-group;}
+    .vaccine-report-page .report-table tr{page-break-inside:avoid;}
+    .vaccine-report-page .report-table th,
+    .vaccine-report-page .report-table td{
         padding:4px !important;
+        font-size:11px !important;
         line-height:1.25 !important;
-        word-break:break-word !important;
         white-space:normal !important;
     }
-
-    /* ===== ปรับสัดส่วนคอลัมน์ใหม่ ===== */
-
-    .no-col{
-        width:38px !important;
-    }
-
-    .date-col{
-        width:105px !important;
-        min-width:105px !important;
-        white-space:nowrap !important;
-    }
-
-    .vaccine-col{
-        width:220px !important;
-    }
-
-    .hospital-col{
-        width:220px !important;
-    }
-
-    .recorder-col{
-        width:95px !important;
-    }
-
-    .remark-col{
-        width:140px !important;
-        min-width:140px !important;
-        max-width:140px !important;
-        word-break:break-word !important;
-        overflow-wrap:anywhere !important;
-    }
-
-    .signature-wrap{
+    .vaccine-report-page .no-col{width:38px !important;}
+    .vaccine-report-page .date-col{width:90px !important;}
+    .vaccine-report-page .vaccine-col{width:190px !important;}
+    .vaccine-report-page .hospital-col{width:190px !important;}
+    .vaccine-report-page .recorder-col{width:115px !important;}
+    .vaccine-report-page .remark-col{width:auto !important;}
+    .vaccine-report-page .signature-wrap{
         margin-top:18px !important;
         page-break-inside:avoid !important;
     }
-
-    .signature-box{
+    .vaccine-report-page .signature-box{
         width:250px !important;
         font-size:12px !important;
     }
-
-    .signature-line{
+    .vaccine-report-page .signature-line{
         height:28px !important;
         padding-top:16px !important;
     }
-
 }
 </style>
 
 <div class="vaccine-report-page">
     <div class="report-page">
-
         <div class="report-toolbar">
-            <div>
-                <a href="{{ route('vaccine.index', [
-                    'client_id'  => $client->id,
+            <a href="{{ route('vaccine.index', [
+                    'client_id' => $client->id,
                     'start_date' => request('start_date'),
-                    'end_date'   => request('end_date')
-                ]) }}" class="report-btn">
-                    ← กลับ
-                </a>
-            </div>
+                    'end_date' => request('end_date'),
+                ]) }}"
+               class="report-btn">
+                <i class="bi bi-arrow-left"></i>
+                <span>กลับหน้ารายการ</span>
+            </a>
 
-            <div>
-                <button onclick="window.print()" type="button" class="report-btn report-btn-primary">
-                    🖨 พิมพ์
-                </button>
-            </div>
+            <button onclick="window.print()" type="button" class="report-btn report-btn-primary">
+                <i class="bi bi-printer"></i>
+                <span>พิมพ์รายงาน</span>
+            </button>
         </div>
 
         <div class="report-wrap">
-
             <div class="report-header">
-                <h1 class="report-title">รายงานการได้รับวัคซีน</h1>
-                <p class="report-subtitle">สรุปข้อมูลการได้รับวัคซีนของผู้รับบริการ</p>
+                <h1 class="report-title">รายงานประวัติการรับวัคซีน</h1>
+                <p class="report-subtitle">สรุปข้อมูลการรับวัคซีนของผู้รับบริการ</p>
             </div>
 
             <div class="client-info">
                 <div class="client-info-item">
                     <span class="client-info-label">ชื่อผู้รับบริการ:</span>
-                    {{ $client->fullname ?? $client->full_name ?? '-' }}
+                    {{ $clientDisplayName }}
                 </div>
-
                 <div class="client-info-item">
                     <span class="client-info-label">อายุ:</span>
-                    {{ $client->age ?? $age ?? '-' }} ปี
+                    {{ $clientAgeDisplay }}
                 </div>
             </div>
 
             <div class="report-meta">
                 <div>
                     <strong>ช่วงวันที่:</strong>
-                    {{ request('start_date') ? thaiDateVaccineReport(request('start_date')) : 'ทั้งหมด' }}
-                    -
-                    {{ request('end_date') ? thaiDateVaccineReport(request('end_date')) : 'ทั้งหมด' }}
+                    {{ $startDateDisplay }} - {{ $endDateDisplay }}
                 </div>
-
                 <div>
                     <strong>จำนวน:</strong>
-                    {{ $vaccinations->count() }} รายการ
+                    {{ number_format($vaccinations->count()) }} รายการ
                 </div>
             </div>
 
@@ -458,34 +399,29 @@
                         <thead>
                             <tr>
                                 <th class="no-col">ลำดับ</th>
-                                <th class="date-col">วันเดือนปี</th>
-                                <th class="vaccine-col">ชื่อวัคซีน</th>
+                                <th class="date-col">วันที่รับวัคซีน</th>
+                                <th class="vaccine-col">ชนิดวัคซีน</th>
                                 <th class="hospital-col">สถานพยาบาล</th>
                                 <th class="recorder-col">ผู้บันทึก</th>
                                 <th class="remark-col">หมายเหตุ</th>
                             </tr>
                         </thead>
-
                         <tbody>
-                            @foreach($vaccinations as $key => $item)
+                            @foreach($vaccinations as $index => $item)
                                 <tr>
-                                    <td class="text-center">{{ $key + 1 }}</td>
-                                    <td class="text-center">
-                                        {{ thaiDateVaccineReport($item->date) }}
-                                    </td>
-                                    <td>{{ $item->vaccine_name ?? '-' }}</td>
-                                    <td>{{ $item->hospital ?? '-' }}</td>
-                                    <td>{{ $item->recorder ?? '-' }}</td>
-                                    <td>{{ $item->remark ?? '-' }}</td>
+                                    <td class="text-center">{{ $index + 1 }}</td>
+                                    <td class="text-center">{{ $formatThaiDate($item->date) }}</td>
+                                    <td>{{ $item->vaccine_name ?: '-' }}</td>
+                                    <td>{{ $item->hospital ?: '-' }}</td>
+                                    <td>{{ $item->recorder ?: '-' }}</td>
+                                    <td>{{ $item->remark ?: '-' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
             @else
-                <div class="empty-state">
-                    ไม่มีข้อมูลรายงานวัคซีน
-                </div>
+                <div class="empty-state">ไม่พบข้อมูลวัคซีนตามเงื่อนไขที่เลือก</div>
             @endif
 
             <div class="signature-wrap">
@@ -494,7 +430,6 @@
                     <div>ผู้จัดทำรายงาน</div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>

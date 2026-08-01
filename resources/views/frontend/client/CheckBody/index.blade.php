@@ -973,7 +973,12 @@
         box-shadow: 0 8px 18px rgba(15, 111, 97, .2);
     }
 
-    #checkBodyFormModal .cb-modal-btn:disabled { transform: none; cursor: wait; opacity: .78; }
+    #checkBodyFormModal .cb-modal-btn:disabled {
+        transform: none;
+        cursor: default;
+        opacity: 1;
+        pointer-events: none;
+    }
 
     @media (max-width: 1199.98px) {
         .checkbody-page .cb-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1084,32 +1089,38 @@
                                 </span>
                             @endif
 
-                            <span class="cb-meta-chip">
-                                <i class="bi bi-clipboard2-pulse"></i>
-                                จำนวนบันทึก:
-                                <strong>{{ number_format($totalRows) }} รายการ</strong>
-                            </span>
+                            {{-- PATCH: แสดงจำนวนบันทึกเฉพาะเมื่อมีข้อมูลจริง --}}
+                            @if($hasRows)
+                                <span class="cb-meta-chip">
+                                    <i class="bi bi-clipboard2-pulse"></i>
+                                    จำนวนบันทึก:
+                                    <strong>{{ number_format($totalRows) }} รายการ</strong>
+                                </span>
+                            @endif
                         </div>
                     </div>
                 </div>
 
-                <div class="cb-actions">
-                    @if($isEdit)
-                        <a href="{{ route('check_body.add', $client->id) }}"
-                           class="btn cb-btn cb-btn-secondary">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                            ยกเลิกการแก้ไข
-                        </a>
-                    @endif
+                {{-- PATCH: ซ่อนปุ่มเพิ่ม/แก้ไขด้านบนเมื่อยังไม่มีข้อมูล --}}
+                @if($hasRows)
+                    <div class="cb-actions">
+                        @if($isEdit)
+                            <a href="{{ route('check_body.add', $client->id) }}"
+                               class="btn cb-btn cb-btn-secondary">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                                ยกเลิกการแก้ไข
+                            </a>
+                        @endif
 
-                    <button type="button"
-                            class="btn cb-btn cb-btn-primary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#checkBodyFormModal">
-                        <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
-                        {{ $isEdit ? 'เปิดฟอร์มแก้ไข' : 'เพิ่มผลการตรวจ' }}
-                    </button>
-                </div>
+                        <button type="button"
+                                class="btn cb-btn cb-btn-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#checkBodyFormModal">
+                            <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
+                            {{ $isEdit ? 'เปิดฟอร์มแก้ไข' : 'เพิ่มผลการตรวจ' }}
+                        </button>
+                    </div>
+                @endif
             </div>
         </section>
 
@@ -1204,7 +1215,6 @@
 
         const modalBody = modalElement.querySelector('.cb-modal-body');
         const submitButton = form.querySelector('button[type="submit"]');
-        const initialSubmitHtml = submitButton ? submitButton.innerHTML : '';
 
         const developmentInputs = form.querySelectorAll('input[name="development"]');
         const developmentWrap = form.querySelector('[data-development-wrap]');
@@ -1235,8 +1245,12 @@
             const showDetail = selectedValue('development') === 'ไม่สมวัย';
             setPanelVisibility(developmentDetailPanel, showDetail);
 
-            if (!showDetail && clearHidden && developmentDetail) {
-                developmentDetail.value = '';
+            if (developmentDetail) {
+                developmentDetail.required = showDetail;
+
+                if (!showDetail && clearHidden) {
+                    developmentDetail.value = '';
+                }
             }
         }
 
@@ -1313,6 +1327,12 @@
         });
 
         form.addEventListener('submit', function (event) {
+            if (form.dataset.submitting === 'true') {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+
             const developmentValid = validateRadioGroup(
                 'development', developmentWrap, developmentClientError, true
             );
@@ -1320,6 +1340,7 @@
                 'development_type', developmentTypeWrap, developmentTypeClientError, true
             );
 
+            toggleDevelopmentDetail(false);
             toggleSpecialSupport(false);
             form.classList.add('was-validated');
 
@@ -1343,12 +1364,10 @@
                 return;
             }
 
+            form.dataset.submitting = 'true';
+
             if (submitButton) {
                 submitButton.disabled = true;
-                submitButton.innerHTML = `
-                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                    <span>กำลังบันทึก...</span>
-                `;
             }
         });
 
@@ -1373,10 +1392,8 @@
         modalElement.addEventListener('hidden.bs.modal', function () {
             document.body.classList.remove('checkbody-modal-open');
             if (modalBody) modalBody.scrollTop = 0;
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.innerHTML = initialSubmitHtml;
-            }
+            form.dataset.submitting = 'false';
+            if (submitButton) submitButton.disabled = false;
         });
 
         toggleDevelopmentDetail(false);

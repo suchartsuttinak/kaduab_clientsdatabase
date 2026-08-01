@@ -1,3 +1,7 @@
+@php
+    $isCreateError = old('_form_context') === 'psychiatric_create';
+@endphp
+
 <div class="modal fade psychiatric-page psy-modal"
      id="createPsychiatricModal"
      tabindex="-1"
@@ -11,6 +15,8 @@
                   method="POST"
                   novalidate>
                 @csrf
+                <input type="hidden" name="client_id" value="{{ $client->id }}">
+                <input type="hidden" name="_form_context" value="psychiatric_create">
 
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title fw-bold" id="createPsychiatricLabel">
@@ -20,12 +26,10 @@
                     <button type="button"
                             class="btn-close btn-close-white"
                             data-bs-dismiss="modal"
-                            aria-label="Close"></button>
+                            aria-label="ปิด"></button>
                 </div>
 
                 <div class="modal-body">
-                    <input type="hidden" name="client_id" value="{{ $client->id }}">
-
                     <div class="psy-modal-section">
                         <div class="psy-form-grid">
                             <div class="psy-field psy-col-3">
@@ -33,15 +37,15 @@
                                     วันที่ส่งตรวจ <span class="psy-required">*</span>
                                 </label>
                                 <input type="date"
-                                id="create_sent_date"
-                                name="sent_date"
-                                class="form-control @error('sent_date') is-invalid @enderror"
-                                value="{{ old('sent_date') }}"
-                                max="{{ now('Asia/Bangkok')->toDateString() }}"
-                                required>
-                                @error('sent_date')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                       id="create_sent_date"
+                                       name="sent_date"
+                                       class="form-control {{ $isCreateError && $errors->has('sent_date') ? 'is-invalid' : '' }}"
+                                       value="{{ $isCreateError ? old('sent_date') : '' }}"
+                                       max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                       required>
+                                @if($isCreateError && $errors->has('sent_date'))
+                                    <div class="invalid-feedback">{{ $errors->first('sent_date') }}</div>
+                                @endif
                             </div>
 
                             <div class="psy-field psy-col-4">
@@ -51,12 +55,14 @@
                                 <input type="text"
                                        id="create_hotpital"
                                        name="hotpital"
-                                       class="form-control @error('hotpital') is-invalid @enderror"
-                                       value="{{ old('hotpital') }}"
-                                       placeholder="ระบุสถานพยาบาล">
-                                @error('hotpital')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                       class="form-control {{ $isCreateError && $errors->has('hotpital') ? 'is-invalid' : '' }}"
+                                       value="{{ $isCreateError ? old('hotpital') : '' }}"
+                                       maxlength="255"
+                                       placeholder="ระบุสถานพยาบาล"
+                                       required>
+                                @if($isCreateError && $errors->has('hotpital'))
+                                    <div class="invalid-feedback">{{ $errors->first('hotpital') }}</div>
+                                @endif
                             </div>
 
                             <div class="psy-field psy-col-5">
@@ -65,17 +71,19 @@
                                 </label>
                                 <select id="create_psycho_id"
                                         name="psycho_id"
-                                        class="form-select @error('psycho_id') is-invalid @enderror">
+                                        class="form-select {{ $isCreateError && $errors->has('psycho_id') ? 'is-invalid' : '' }}"
+                                        required>
                                     <option value="">-- เลือกผลการตรวจ --</option>
                                     @foreach($psycho as $p)
-                                        <option value="{{ $p->id }}" {{ old('psycho_id') == $p->id ? 'selected' : '' }}>
+                                        <option value="{{ $p->id }}"
+                                            {{ $isCreateError && (string) old('psycho_id') === (string) $p->id ? 'selected' : '' }}>
                                             {{ $p->psycho_name }}
                                         </option>
                                     @endforeach
                                 </select>
-                                @error('psycho_id')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
+                                @if($isCreateError && $errors->has('psycho_id'))
+                                    <div class="invalid-feedback">{{ $errors->first('psycho_id') }}</div>
+                                @endif
                             </div>
 
                             <div class="psy-field psy-col-12">
@@ -85,11 +93,12 @@
                                 <textarea id="create_diagnose"
                                           name="diagnose"
                                           rows="4"
-                                          class="form-control @error('diagnose') is-invalid @enderror"
-                                          placeholder="ระบุรายละเอียดเพิ่มเติม">{{ old('diagnose') }}</textarea>
-                                @error('diagnose')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                          maxlength="3000"
+                                          class="form-control {{ $isCreateError && $errors->has('diagnose') ? 'is-invalid' : '' }}"
+                                          placeholder="ระบุรายละเอียดเพิ่มเติม">{{ $isCreateError ? old('diagnose') : '' }}</textarea>
+                                @if($isCreateError && $errors->has('diagnose'))
+                                    <div class="invalid-feedback">{{ $errors->first('diagnose') }}</div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -101,80 +110,91 @@
                                 <input type="date"
                                        id="create_appoin_date"
                                        name="appoin_date"
-                                       class="form-control @error('appoin_date') is-invalid @enderror"
-                                       value="{{ old('appoin_date') }}">
-                                @error('appoin_date')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                       class="form-control {{ $isCreateError && $errors->has('appoin_date') ? 'is-invalid' : '' }}"
+                                       value="{{ $isCreateError ? old('appoin_date') : '' }}">
+                                @if($isCreateError && $errors->has('appoin_date'))
+                                    <div class="invalid-feedback">{{ $errors->first('appoin_date') }}</div>
+                                @endif
                             </div>
 
                             <div class="psy-field psy-col-4">
-                                <label class="psy-label d-block">การรักษา</label>
+                                <label class="psy-label d-block">
+                                    การรักษา <span class="psy-required">*</span>
+                                </label>
                                 <div class="psy-option-group" data-option-group="drug_no">
                                     <label class="psy-option-card" for="drug_yes_new">
-                                        <input class="form-check-input @error('drug_no') is-invalid @enderror"
+                                        <input class="form-check-input"
                                                type="radio"
                                                name="drug_no"
                                                id="drug_yes_new"
                                                value="yes"
-                                               {{ old('drug_no') == 'yes' ? 'checked' : '' }}>
+                                               {{ $isCreateError && old('drug_no') === 'yes' ? 'checked' : '' }}
+                                               required>
                                         <span>รับยา</span>
                                     </label>
 
                                     <label class="psy-option-card" for="drug_no_new">
-                                        <input class="form-check-input @error('drug_no') is-invalid @enderror"
+                                        <input class="form-check-input"
                                                type="radio"
                                                name="drug_no"
                                                id="drug_no_new"
                                                value="no"
-                                               {{ old('drug_no', 'no') == 'no' ? 'checked' : '' }}>
+                                               {{ !$isCreateError || old('drug_no', 'no') === 'no' ? 'checked' : '' }}
+                                               required>
                                         <span>ไม่รับยา</span>
                                     </label>
                                 </div>
-                                @error('drug_no')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
+                                @if($isCreateError && $errors->has('drug_no'))
+                                    <div class="invalid-feedback d-block">{{ $errors->first('drug_no') }}</div>
+                                @endif
                             </div>
 
-                            <div class="psy-field psy-col-5" id="drug_name_field_new">
-                                <label class="psy-label" for="create_drug_name">ชื่อยา</label>
+                            <div class="psy-field psy-col-5 psy-drug-field" id="drug_name_field_new">
+                                <label class="psy-label" for="create_drug_name">
+                                    ชื่อยา <span class="psy-required" data-drug-required>*</span>
+                                </label>
                                 <input type="text"
                                        id="create_drug_name"
                                        name="drug_name"
-                                       class="form-control @error('drug_name') is-invalid @enderror"
-                                       value="{{ old('drug_name') }}"
+                                       class="form-control {{ $isCreateError && $errors->has('drug_name') ? 'is-invalid' : '' }}"
+                                       value="{{ $isCreateError ? old('drug_name') : '' }}"
+                                       maxlength="255"
                                        placeholder="ระบุชื่อยา">
-                                @error('drug_name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                @if($isCreateError && $errors->has('drug_name'))
+                                    <div class="invalid-feedback">{{ $errors->first('drug_name') }}</div>
+                                @endif
                             </div>
 
                             <div class="psy-field psy-col-6">
-                                <label class="psy-label d-block">การขึ้นทะเบียนคนพิการ</label>
+                                <label class="psy-label d-block">
+                                    การขึ้นทะเบียนคนพิการ <span class="psy-required">*</span>
+                                </label>
                                 <div class="psy-option-group" data-option-group="disa_no">
                                     <label class="psy-option-card" for="create_disa_yes">
-                                        <input class="form-check-input @error('disa_no') is-invalid @enderror"
+                                        <input class="form-check-input"
                                                type="radio"
                                                name="disa_no"
                                                id="create_disa_yes"
                                                value="yes"
-                                               {{ old('disa_no') == 'yes' ? 'checked' : '' }}>
+                                               {{ $isCreateError && old('disa_no') === 'yes' ? 'checked' : '' }}
+                                               required>
                                         <span>ขึ้นทะเบียน</span>
                                     </label>
 
                                     <label class="psy-option-card" for="create_disa_no">
-                                        <input class="form-check-input @error('disa_no') is-invalid @enderror"
+                                        <input class="form-check-input"
                                                type="radio"
                                                name="disa_no"
                                                id="create_disa_no"
                                                value="no"
-                                               {{ old('disa_no', 'no') == 'no' ? 'checked' : '' }}>
+                                               {{ !$isCreateError || old('disa_no', 'no') === 'no' ? 'checked' : '' }}
+                                               required>
                                         <span>ไม่ขึ้นทะเบียน</span>
                                     </label>
                                 </div>
-                                @error('disa_no')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
+                                @if($isCreateError && $errors->has('disa_no'))
+                                    <div class="invalid-feedback d-block">{{ $errors->first('disa_no') }}</div>
+                                @endif
                             </div>
                         </div>
                     </div>

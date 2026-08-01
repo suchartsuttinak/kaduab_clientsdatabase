@@ -2,17 +2,29 @@
 
 @section('content')
 @php
-    use Carbon\Carbon;
+    $formatThaiDate = static function ($date): string {
+        if (!$date) {
+            return '-';
+        }
 
-    function thaiDateMedicalReport($date) {
-        if (!$date) return '-';
-        return Carbon::parse($date)->addYears(543)->format('d/m/Y');
+        return \Carbon\Carbon::parse($date)->addYears(543)->format('d/m/Y');
+    };
+
+    $clientDisplayName = trim((string) ($client->fullname ?? $client->full_name ?? ''));
+    if ($clientDisplayName === '') {
+        $clientDisplayName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
     }
+    $clientDisplayName = $clientDisplayName !== '' ? $clientDisplayName : '-';
+
+    $ageDisplay = filled($client->age ?? null) ? $client->age . ' ปี' : '-';
+    $startDate = request('start_date');
+    $endDate = request('end_date');
 @endphp
 
 <style>
 .medical-report-page{
     padding:16px 12px 28px;
+    font-family:"Noto Sans Thai", "Sarabun", Tahoma, sans-serif;
     background:#eef2f7;
 }
 
@@ -139,6 +151,7 @@
 
 .report-table td{
     color:#1f2937;
+    break-inside:avoid;
     word-break:break-word;
 }
 
@@ -261,7 +274,7 @@
 @media print{
     @page{
         size:A4 landscape;
-        margin:6mm;
+        margin:8mm;
     }
 
     html,
@@ -460,19 +473,19 @@
             <div class="report-header">
                 <h1 class="report-title">รายงานการรักษาพยาบาลในหน่วยงาน</h1>
                 <p class="report-subtitle">
-                    แสดงข้อมูลสุขภาพ การรักษา การส่งต่อ และการนัดหมายของผู้รับบริการ
+                    แสดงข้อมูลสุขภาพ การรักษา การพบแพทย์ และการนัดหมายของผู้รับบริการ
                 </p>
             </div>
 
             <div class="client-info">
                 <div class="client-info-item">
                     <span class="client-info-label">ชื่อผู้รับบริการ:</span>
-                    {{ $client->fullname ?? $client->full_name ?? '-' }}
+                    {{ $clientDisplayName }}
                 </div>
 
                 <div class="client-info-item">
                     <span class="client-info-label">อายุ:</span>
-                    {{ $client->age ?? $age ?? '-' }} ปี
+                    {{ $ageDisplay }}
                 </div>
             </div>
 
@@ -484,8 +497,17 @@
 
                 <div>
                     <strong>จำนวน:</strong>
-                    {{ $medicals->count() }} รายการ
+                    {{ number_format($medicals->count()) }} รายการ
                 </div>
+
+                @if($startDate || $endDate)
+                    <div>
+                        <strong>ช่วงวันที่:</strong>
+                        {{ $startDate ? $formatThaiDate($startDate) : 'เริ่มต้น' }}
+                        ถึง
+                        {{ $endDate ? $formatThaiDate($endDate) : 'ปัจจุบัน' }}
+                    </div>
+                @endif
             </div>
 
             @if($medicals->isNotEmpty())
@@ -503,7 +525,7 @@
                                 <th class="disease-col">ชื่อโรค</th>
                                 <th class="illness-col">อาการเจ็บป่วย</th>
                                 <th class="treatment-col">การรักษา</th>
-                                <th class="refer-col">การส่งต่อ</th>
+                                <th class="refer-col">การพบแพทย์</th>
 
                                 @if($hasDoctorVisit)
                                     <th class="diagnosis-col">การวินิจฉัย</th>
@@ -523,7 +545,7 @@
 
                                 <tr>
                                     <td class="text-center">
-                                        {{ thaiDateMedicalReport($item->medical_date) }}
+                                        {{ $formatThaiDate($item->medical_date) }}
                                     </td>
 
                                     <td>{{ $item->disease_name ?: '-' }}</td>
@@ -537,7 +559,7 @@
                                             </span>
                                         @else
                                             <span class="medical-status medical-status--no">
-                                                {{ $item->refer ?: 'ไม่พบแพทย์' }}
+                                                {{ $item->refer ?: 'ไม่ระบุ' }}
                                             </span>
                                         @endif
                                     </td>
@@ -553,7 +575,7 @@
 
                                         <td class="text-center">
                                             @if($isDoctorVisit)
-                                                {{ thaiDateMedicalReport($item->appt_date) }}
+                                                {{ $formatThaiDate($item->appt_date) }}
                                             @else
                                                 -
                                             @endif

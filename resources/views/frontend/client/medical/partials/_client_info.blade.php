@@ -1,5 +1,12 @@
+@php
+    $medicalClientName = trim((string) ($client->fullname ?? $client->full_name ?? ''));
+    if ($medicalClientName === '') {
+        $medicalClientName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+    }
+    $medicalClientName = $medicalClientName !== '' ? $medicalClientName : '-';
+@endphp
 
-@if($medicals->isNotEmpty())
+@if(($hasMedicalRecords ?? $medicals->isNotEmpty()) || request()->filled('start_date') || request()->filled('end_date') || old('start_date') || old('end_date') || $errors->has('start_date') || $errors->has('end_date'))
 <div class="card border-0 shadow-sm mb-3 medical-client-summary-card">
     <div class="card-body p-3 p-lg-4">
 
@@ -12,7 +19,7 @@
                     </span>
                     <div class="medical-summary-content">
                         <div class="medical-summary-label">ชื่อ-สกุล</div>
-                        <div class="medical-summary-value">{{ $client->fullname ?? '-' }}</div>
+                        <div class="medical-summary-value">{{ $medicalClientName }}</div>
                     </div>
                 </div>
 
@@ -22,7 +29,7 @@
                     </span>
                     <div class="medical-summary-content">
                         <div class="medical-summary-label">อายุ</div>
-                        <div class="medical-summary-value">{{ $client->age ?? '-' }} ปี</div>
+                        <div class="medical-summary-value">{{ filled($client->age ?? null) ? ($client->age . ' ปี') : '-' }}</div>
                     </div>
                 </div>
             </div>
@@ -54,9 +61,13 @@
                         type="date"
                         id="medical_start_date"
                         name="start_date"
-                        class="form-control"
-                        value="{{ request('start_date') }}"
+                        class="form-control @error('start_date') is-invalid @enderror"
+                        value="{{ old('start_date', request('start_date')) }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                     >
+                    @error('start_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="medical-filter-group">
@@ -65,9 +76,13 @@
                         type="date"
                         id="medical_end_date"
                         name="end_date"
-                        class="form-control"
-                        value="{{ request('end_date') }}"
+                        class="form-control @error('end_date') is-invalid @enderror"
+                        value="{{ old('end_date', request('end_date')) }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                     >
+                    @error('end_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="medical-filter-actions">

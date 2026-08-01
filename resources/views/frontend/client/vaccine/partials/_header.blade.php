@@ -12,19 +12,19 @@
                     </div>
                 </div>
             </div>
-        @if($vaccinations->isNotEmpty())
-            <div class="vaccine-toolbar-scroll">
-                <div class="vaccine-toolbar-actions">
-                    <button type="button"
-                            class="btn btn-primary vaccine-btn vaccine-btn-primary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#add-vaccine-modal">
-                        <i class="bi bi-plus-circle"></i>
-                        <span>เพิ่มข้อมูลวัคซีน</span>
-                    </button>
+         @if(isset($vaccinations) && $vaccinations->isNotEmpty())
+                <div class="vaccine-toolbar-scroll">
+                    <div class="vaccine-toolbar-actions">
+                        <button type="button"
+                                class="btn btn-primary vaccine-btn vaccine-btn-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#add-vaccine-modal">
+                            <i class="bi bi-plus-circle"></i>
+                            <span>เพิ่มข้อมูลวัคซีน</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
-        @endif
+            @endif
         </div>
     </div>
 </div>

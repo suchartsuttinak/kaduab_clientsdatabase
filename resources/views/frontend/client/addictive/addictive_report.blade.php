@@ -33,9 +33,9 @@
         }
     }
 
-    $clientName = trim(($client->prefix ?? '') . ($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+    $clientName = trim(($client->prefix ?? '') . ' ' . ($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
     if ($clientName === '') {
-        $clientName = $client->fullname ?? $client->full_name ?? '-';
+        $clientName = $client->fullname ?? $client->full_name ?? $client->name ?? '-';
     }
 
     $examText = ((int) $addictive->exam === 0) ? 'ไม่พบสารเสพติด' : 'พบสารเสพติด';

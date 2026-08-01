@@ -3,6 +3,9 @@
     $oldTreatNo = old('treat_no', $accident->treat_no ?? '');
     $formPrefix = $isEdit ? 'accident_edit' : 'accident_create';
     $today = now('Asia/Bangkok')->toDateString();
+    $incidentDateValue = old('incident_date', \App\Helpers\ThaiDateHelper::toInputDate($accident->incident_date ?? null));
+    $appointmentDateValue = old('appointment', \App\Helpers\ThaiDateHelper::toInputDate($accident->appointment ?? null));
+    $recordDateValue = old('record_date', \App\Helpers\ThaiDateHelper::toInputDate($accident->record_date ?? null) ?: $today);
 @endphp
 
 <div class="modal fade"
@@ -88,7 +91,7 @@
                                     <input type="date"
                                            id="{{ $formPrefix }}_incident_date"
                                            name="incident_date"
-                                           value="{{ old('incident_date', \App\Helpers\ThaiDateHelper::toInputDate($accident->incident_date ?? null)) }}"
+                                           value="{{ $incidentDateValue }}"
                                            max="{{ $today }}"
                                            class="form-control @error('incident_date') is-invalid @enderror"
                                            aria-invalid="{{ $errors->has('incident_date') ? 'true' : 'false' }}"
@@ -168,7 +171,7 @@
                                            value="{{ old('cause', $accident->cause ?? '') }}"
                                            class="form-control @error('cause') is-invalid @enderror"
                                            placeholder="เช่น ลื่นล้ม ชนของแข็ง หรือถูกของมีคมบาด"
-                                           maxlength="500"
+                                           maxlength="255"
                                            autocomplete="off"
                                            aria-invalid="{{ $errors->has('cause') ? 'true' : 'false' }}"
                                            required>
@@ -267,7 +270,7 @@
                                                value="{{ old('diagnosis', $accident->diagnosis ?? '') }}"
                                                class="form-control @error('diagnosis') is-invalid @enderror"
                                                placeholder="ระบุผลการตรวจหรือวินิจฉัย"
-                                               maxlength="500"
+                                               maxlength="255"
                                                autocomplete="off"
                                                data-medical-field
                                                aria-invalid="{{ $errors->has('diagnosis') ? 'true' : 'false' }}">
@@ -283,7 +286,8 @@
                                         <input type="date"
                                                id="{{ $formPrefix }}_appointment"
                                                name="appointment"
-                                               value="{{ old('appointment', \App\Helpers\ThaiDateHelper::toInputDate($accident->appointment ?? null)) }}"
+                                               value="{{ $appointmentDateValue }}"
+                                               min="{{ $incidentDateValue }}"
                                                class="form-control @error('appointment') is-invalid @enderror"
                                                data-medical-field
                                                aria-invalid="{{ $errors->has('appointment') ? 'true' : 'false' }}">
@@ -304,7 +308,7 @@
                                               rows="3"
                                               class="form-control @error('treatment') is-invalid @enderror"
                                               placeholder="เช่น ทำแผล ทายา รับประทานยา หรือพักสังเกตอาการ"
-                                              maxlength="2000"
+                                              maxlength="1000"
                                               aria-invalid="{{ $errors->has('treatment') ? 'true' : 'false' }}">{{ old('treatment', $accident->treatment ?? '') }}</textarea>
                                     @error('treatment')
                                         <div class="invalid-feedback" data-server-error="true">{{ $message }}</div>
@@ -320,7 +324,7 @@
                                               rows="3"
                                               class="form-control @error('protection') is-invalid @enderror"
                                               placeholder="ระบุมาตรการป้องกันไม่ให้เกิดเหตุซ้ำ"
-                                              maxlength="2000"
+                                              maxlength="1000"
                                               aria-invalid="{{ $errors->has('protection') ? 'true' : 'false' }}">{{ old('protection', $accident->protection ?? '') }}</textarea>
                                     @error('protection')
                                         <div class="invalid-feedback" data-server-error="true">{{ $message }}</div>
@@ -368,7 +372,8 @@
                                     <input type="date"
                                            id="{{ $formPrefix }}_record_date"
                                            name="record_date"
-                                           value="{{ old('record_date', \App\Helpers\ThaiDateHelper::toInputDate($accident->record_date ?? null) ?: $today) }}"
+                                           value="{{ $recordDateValue }}"
+                                           min="{{ $incidentDateValue }}"
                                            max="{{ $today }}"
                                            class="form-control @error('record_date') is-invalid @enderror"
                                            aria-invalid="{{ $errors->has('record_date') ? 'true' : 'false' }}"

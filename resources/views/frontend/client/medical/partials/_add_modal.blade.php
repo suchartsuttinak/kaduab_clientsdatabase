@@ -1,7 +1,8 @@
-<div class="modal fade" id="add-medical-modal" tabindex="-1" aria-labelledby="addMedicalLabel" aria-hidden="true">
+<div class="modal fade medical-page" id="add-medical-modal" tabindex="-1" aria-labelledby="addMedicalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content medical-modal-content">
             <form action="{{ route('medical.store') }}" method="POST" id="add-medical-form" novalidate>
+                <input type="hidden" name="_form_context" value="medical_add">
                 @csrf
                 <input type="hidden" name="client_id" value="{{ $client->id }}">
 
@@ -12,7 +13,7 @@
                         </h5>
                         <div class="small opacity-75">กรอกข้อมูลให้ครบถ้วนเพื่อการติดตามผลที่ถูกต้อง</div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="ปิด"></button>
                 </div>
 
                 <div class="modal-body">
@@ -23,7 +24,7 @@
 
                             <div class="row g-3">
                                 <div class="col-12 col-md-4 col-lg-3">
-                                    <label class="form-label required">วันที่</label>
+                                    <label class="form-label required">วันที่รักษา</label>
                                    <input type="date" name="medical_date"
                                     class="form-control @error('medical_date') is-invalid @enderror"
                                     value="{{ old('medical_date') }}"
@@ -33,19 +34,21 @@
                                 </div>
 
                                 <div class="col-12 col-md-8 col-lg-4">
-                                    <label class="form-label">ชื่อโรค</label>
+                                    <label class="form-label required">ชื่อโรค</label>
                                     <input type="text" name="disease_name"
                                            class="form-control @error('disease_name') is-invalid @enderror"
                                            value="{{ old('disease_name') }}"
-                                           placeholder="ระบุชื่อโรค">
+                                           placeholder="ระบุชื่อโรค" maxlength="255" required>
                                     @error('disease_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-12 col-lg-5">
-                                    <label class="form-label">อาการป่วย</label>
+                                    <label class="form-label required">อาการป่วย</label>
                                     <textarea name="illness"
                                               class="form-control @error('illness') is-invalid @enderror"
                                               rows="3"
+                                              maxlength="3000"
+                                              required
                                               placeholder="ระบุอาการป่วย">{{ old('illness') }}</textarea>
                                     @error('illness') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
@@ -55,6 +58,7 @@
                                     <textarea name="treatment"
                                               class="form-control @error('treatment') is-invalid @enderror"
                                               rows="4"
+                                              maxlength="3000"
                                               placeholder="ระบุการรักษา การปฐมพยาบาล หรือการดูแลเบื้องต้น">{{ old('treatment') }}</textarea>
                                     @error('treatment') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
@@ -66,7 +70,7 @@
 
                             <div class="medical-radio-group">
                                 <label class="medical-radio-card">
-                                    <input class="form-check-input" type="radio" name="refer" id="refer_yes_new" value="พบแพทย์" {{ old('refer') == 'พบแพทย์' ? 'checked' : '' }}>
+                                    <input class="form-check-input" type="radio" name="refer" id="refer_yes_new" value="พบแพทย์" required {{ old('refer') == 'พบแพทย์' ? 'checked' : '' }}>
                                     <span class="medical-radio-content">
                                         <span class="medical-radio-icon text-success"><i class="bi bi-check-circle-fill"></i></span>
                                         <span class="medical-radio-text">
@@ -93,10 +97,11 @@
                             <div id="medical-section-new" class="medical-conditional-box mt-3" style="display:none;">
                                 <div class="row g-3">
                                     <div class="col-12 col-lg-8">
-                                        <label class="form-label">การวินิจฉัย</label>
+                                        <label class="form-label required">การวินิจฉัยของแพทย์</label>
                                         <textarea name="diagnosis"
                                                   class="form-control @error('diagnosis') is-invalid @enderror"
-                                                  rows="3">{{ old('diagnosis') }}</textarea>
+                                                  rows="3" maxlength="3000"
+                                                  placeholder="ระบุผลการวินิจฉัยของแพทย์">{{ old('diagnosis') }}</textarea>
                                         @error('diagnosis') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     </div>
 
@@ -119,7 +124,7 @@
                                     <label class="form-label">ผู้ดูแล</label>
                                     <input type="text" name="teacher"
                                            class="form-control @error('teacher') is-invalid @enderror"
-                                           value="{{ old('teacher') }}">
+                                           value="{{ old('teacher') }}" maxlength="255">
                                     @error('teacher') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
@@ -127,7 +132,7 @@
                                     <label class="form-label">หมายเหตุ</label>
                                     <textarea name="remark"
                                               class="form-control @error('remark') is-invalid @enderror"
-                                              rows="3">{{ old('remark') }}</textarea>
+                                              rows="3" maxlength="3000">{{ old('remark') }}</textarea>
                                     @error('remark') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                             </div>
@@ -153,20 +158,20 @@
 
 @push('styles')
 <style>
-.medical-page #add-medical-modal .medical-modal-content {
+#add-medical-modal .medical-modal-content {
     border: 0;
     border-radius: var(--medical-radius);
     overflow: hidden;
 }
 
-.medical-page #add-medical-modal .medical-modal-content > form {
+#add-medical-modal .medical-modal-content > form {
     display: flex;
     flex-direction: column;
     height: 100%;
     min-height: 0;
 }
 
-.medical-page #add-medical-modal .medical-modal-header {
+#add-medical-modal .medical-modal-header {
     border-bottom: 0;
     padding: 1rem 1.25rem;
     flex: 0 0 auto;
@@ -174,7 +179,7 @@
     color: #fff;
 }
 
-.medical-page #add-medical-modal .modal-body {
+#add-medical-modal .modal-body {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
@@ -182,7 +187,7 @@
     background: #fbfdff;
 }
 
-.medical-page #add-medical-modal .medical-form-section {
+#add-medical-modal .medical-form-section {
     background: #fff;
     border: 1px solid #eef2f7;
     border-radius: 16px;
@@ -190,7 +195,7 @@
     margin-bottom: 1rem;
 }
 
-.medical-page #add-medical-modal .medical-section-title {
+#add-medical-modal .medical-section-title {
     font-size: .95rem;
     font-weight: 700;
     color: #0f172a;
@@ -200,7 +205,7 @@
     gap: .5rem;
 }
 
-.medical-page #add-medical-modal .medical-section-title::before {
+#add-medical-modal .medical-section-title::before {
     content: "";
     width: 6px;
     height: 18px;
@@ -209,20 +214,20 @@
     display: inline-block;
 }
 
-.medical-page #add-medical-modal .form-label {
+#add-medical-modal .form-label {
     font-size: .85rem;
     font-weight: 600;
     color: #334155;
     margin-bottom: .4rem;
 }
 
-.medical-page #add-medical-modal .form-label.required::after {
+#add-medical-modal .form-label.required::after {
     content: " *";
     color: #dc2626;
 }
 
-.medical-page #add-medical-modal .form-control,
-.medical-page #add-medical-modal .form-select {
+#add-medical-modal .form-control,
+#add-medical-modal .form-select {
     border-radius: 12px;
     border-color: #dbe2ea;
     min-height: 42px;
@@ -230,29 +235,29 @@
     padding-bottom: .55rem;
 }
 
-.medical-page #add-medical-modal .form-control:focus,
-.medical-page #add-medical-modal .form-select:focus {
+#add-medical-modal .form-control:focus,
+#add-medical-modal .form-select:focus {
     border-color: #93c5fd;
     box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .12);
 }
 
-.medical-page #add-medical-modal .medical-radio-group {
+#add-medical-modal .medical-radio-group {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
 }
 
-.medical-page #add-medical-modal .medical-radio-card {
+#add-medical-modal .medical-radio-card {
     display: block;
     margin: 0;
     cursor: pointer;
 }
 
-.medical-page #add-medical-modal .medical-radio-card input[type="radio"] {
+#add-medical-modal .medical-radio-card input[type="radio"] {
     display: none;
 }
 
-.medical-page #add-medical-modal .medical-radio-content {
+#add-medical-modal .medical-radio-content {
     display: flex;
     align-items: flex-start;
     gap: .85rem;
@@ -264,37 +269,37 @@
     min-height: 100%;
 }
 
-.medical-page #add-medical-modal .medical-radio-icon {
+#add-medical-modal .medical-radio-icon {
     font-size: 1.1rem;
     line-height: 1;
     margin-top: 2px;
 }
 
-.medical-page #add-medical-modal .medical-radio-text {
+#add-medical-modal .medical-radio-text {
     display: flex;
     flex-direction: column;
     line-height: 1.35;
 }
 
-.medical-page #add-medical-modal .medical-radio-text small {
+#add-medical-modal .medical-radio-text small {
     color: #64748b;
     margin-top: .2rem;
 }
 
-.medical-page #add-medical-modal .medical-radio-card input[type="radio"]:checked + .medical-radio-content {
+#add-medical-modal .medical-radio-card input[type="radio"]:checked + .medical-radio-content {
     border-color: #60a5fa;
     background: #eff6ff;
     box-shadow: 0 0 0 .15rem rgba(37, 99, 235, .08);
 }
 
-.medical-page #add-medical-modal .medical-conditional-box {
+#add-medical-modal .medical-conditional-box {
     background: #f8fafc;
     border: 1px dashed #cbd5e1;
     border-radius: 14px;
     padding: 1rem;
 }
 
-.medical-page #add-medical-modal .medical-modal-footer {
+#add-medical-modal .medical-modal-footer {
     flex: 0 0 auto;
     border-top: 1px solid var(--medical-border);
     background: #fff;
@@ -305,44 +310,44 @@
     flex-wrap: wrap;
 }
 
-.medical-page #add-medical-modal .medical-btn-secondary {
+#add-medical-modal .medical-btn-secondary {
     min-width: 120px;
 }
 
 @media (max-width: 991.98px) {
-    .medical-page #add-medical-modal .medical-radio-group {
+    #add-medical-modal .medical-radio-group {
         grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 767.98px) {
-    .medical-page #add-medical-modal .medical-modal-footer {
+    #add-medical-modal .medical-modal-footer {
         flex-direction: column-reverse;
     }
 
-    .medical-page #add-medical-modal .medical-modal-footer .medical-btn {
+    #add-medical-modal .medical-modal-footer .medical-btn {
         width: 100%;
         min-width: 0;
     }
 }
 
 @media (max-width: 575.98px) {
-    .medical-page #add-medical-modal.modal.modal-fullscreen-sm-down .modal-content {
+    #add-medical-modal.modal.modal-fullscreen-sm-down .modal-content {
         height: 100vh;
         border-radius: 0;
     }
 
-    .medical-page #add-medical-modal.modal.modal-fullscreen-sm-down .medical-modal-content > form {
+    #add-medical-modal.modal.modal-fullscreen-sm-down .medical-modal-content > form {
         height: 100vh;
     }
 
-    .medical-page #add-medical-modal.modal.modal-fullscreen-sm-down .modal-header {
+    #add-medical-modal.modal.modal-fullscreen-sm-down .modal-header {
         position: sticky;
         top: 0;
         z-index: 20;
     }
 
-    .medical-page #add-medical-modal.modal.modal-fullscreen-sm-down .modal-footer {
+    #add-medical-modal.modal.modal-fullscreen-sm-down .modal-footer {
         position: sticky;
         bottom: 0;
         z-index: 20;

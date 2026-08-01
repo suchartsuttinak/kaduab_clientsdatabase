@@ -574,13 +574,24 @@
             <div class="report-info">
                 <div class="report-info-box">
                     <div class="report-info-label">ชื่อ-สกุล</div>
-                    <div class="report-info-value">{{ $client->fullname ?? '-' }}</div>
+                    <div class="report-info-value">{{ trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')) ?: ($client->fullname ?? $client->name ?? '-') }}</div>
                 </div>
 
                 <div class="report-info-box">
                     <div class="report-info-label">อายุ</div>
-                    <div class="report-info-value">{{ $client->age ?? '-' }} ปี</div>
+                    <div class="report-info-value">{{ filled($client->age) ? $client->age . ' ปี' : '-' }}</div>
                 </div>
+
+                @if(filled($startDate) || filled($endDate))
+                    <div class="report-info-box" style="grid-column:1 / -1;">
+                        <div class="report-info-label">ช่วงวันที่รายงาน</div>
+                        <div class="report-info-value">
+                            {{ filled($startDate) ? \Carbon\Carbon::parse($startDate)->addYears(543)->format('d/m/Y') : 'วันแรก' }}
+                            ถึง
+                            {{ filled($endDate) ? \Carbon\Carbon::parse($endDate)->addYears(543)->format('d/m/Y') : 'วันปัจจุบัน' }}
+                        </div>
+                    </div>
+                @endif
             </div>
 
             @if($psychiatrics->isNotEmpty())
@@ -590,7 +601,7 @@
                             <tr>
                                 <th>วันที่ส่ง</th>
                                 <th>สถานพยาบาล</th>
-                                <th>นักจิตวิทยา</th>
+                                <th>ผลการตรวจ</th>
                                 <th>การวินิจฉัย</th>
                                 <th>วันที่นัด</th>
                                 <th>ใช้ยา</th>
@@ -621,7 +632,7 @@
 
                                     <td class="text-center">
                                         <span class="{{ $item->drug_no === 'yes' ? 'status-yes' : 'status-no' }}">
-                                            {{ $item->drug_no === 'yes' ? 'มี' : 'ไม่มี' }}
+                                            {{ $item->drug_no === 'yes' ? 'รับยา' : 'ไม่รับยา' }}
                                         </span>
                                     </td>
 
@@ -629,7 +640,7 @@
 
                                     <td class="text-center">
                                         <span class="{{ $item->disa_no === 'yes' ? 'status-yes' : 'status-no' }}">
-                                            {{ $item->disa_no === 'yes' ? 'มี' : 'ไม่มี' }}
+                                            {{ $item->disa_no === 'yes' ? 'ขึ้นทะเบียน' : 'ไม่ขึ้นทะเบียน' }}
                                         </span>
                                     </td>
                                 </tr>

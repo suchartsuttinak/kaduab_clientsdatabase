@@ -1,6 +1,13 @@
-
-@if($psychiatrics->isNotEmpty())
 <div class="card border-0 psych-client-toolbar-card mb-3">
+@php
+    /*
+     * แสดงตัวกรองเมื่อมีข้อมูล หรือเมื่อผู้ใช้กำลังใช้เงื่อนไขค้นหาอยู่
+     * เพื่อไม่ให้ตัวกรองหายหลังค้นหาแล้วไม่พบรายการในช่วงวันที่นั้น
+     */
+    $hasPsychiatricRows = isset($psychiatrics) && $psychiatrics->isNotEmpty();
+    $hasActivePsychiatricFilter = request()->filled('start_date') || request()->filled('end_date');
+    $showPsychiatricFilter = $hasPsychiatricRows || $hasActivePsychiatricFilter;
+@endphp
     <style>
         /* =========================
            Scoped CSS: psych-client-toolbar
@@ -302,7 +309,7 @@
                     <i class="bi bi-person-fill"></i>
                     <div class="psych-client-text">
                         <span class="label">ชื่อ-สกุล</span>
-                        <span class="value">{{ $client->fullname ?? '-' }}</span>
+                        <span class="value">{{ trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')) ?: ($client->fullname ?? $client->name ?? '-') }}</span>
                     </div>
                 </div>
 
@@ -310,12 +317,13 @@
                     <i class="bi bi-calendar-heart"></i>
                     <div class="psych-client-text">
                         <span class="label">อายุ</span>
-                        <span class="value">{{ $client->age ?? '-' }} ปี</span>
+                        <span class="value">{{ filled($client->age) ? $client->age . ' ปี' : '-' }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
+        @if($showPsychiatricFilter)
         <form method="GET" action="{{ route('psychiatric.create', $client->id) }}" class="psych-filter-panel">
             <div class="psych-filter-head">
                 <div>
@@ -333,9 +341,13 @@
                         type="date"
                         name="start_date"
                         id="psych_date_from"
-                        class="form-control"
-                        value="{{ request('start_date') }}"
+                        class="form-control @error('start_date') is-invalid @enderror"
+                        value="{{ $startDate }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                     >
+                    @error('start_date')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="psych-filter-group">
@@ -344,13 +356,18 @@
                         type="date"
                         name="end_date"
                         id="psych_date_to"
-                        class="form-control"
-                        value="{{ request('end_date') }}"
+                        class="form-control @error('end_date') is-invalid @enderror"
+                        value="{{ $endDate }}"
+                        min="{{ $startDate }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                     >
+                    @error('end_date')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="psych-filter-actions">
-                    <a href="{{ route('psychiatric.report', ['client_id' => $client->id, 'start_date' => request('start_date'), 'end_date' => request('end_date')]) }}"
+                    <a href="{{ route('psychiatric.report', ['client_id' => $client->id, 'start_date' => $startDate, 'end_date' => $endDate]) }}"
                        class="psych-btn psych-btn-report">
                         <i class="bi bi-file-earmark-text"></i>
                         <span>รายงานทั้งหมด</span>
@@ -371,7 +388,7 @@
 
             
         </form>
+        @endif
 
     </div>
 </div>
-@endif

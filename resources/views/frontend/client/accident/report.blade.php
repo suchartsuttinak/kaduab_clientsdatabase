@@ -326,6 +326,7 @@
     }
 
     $isDoctorVisit = ($accident->treat_no ?? '') === 'พบแพทย์';
+    $clientAge = filled($client->age ?? null) ? $client->age . ' ปี' : '-';
 @endphp
 
 <div class="acc-report-shell">
@@ -333,7 +334,7 @@
         <div class="acc-report-toolbar-group">
             <button type="button"
                     class="acc-report-btn acc-report-btn-secondary"
-                    onclick="history.length > 1 ? history.back() : window.location.href='{{ route('client.edit', $client->id) }}'">
+                    onclick="history.length > 1 ? history.back() : window.location.href='{{ route('accident.add', $client->id) }}'">
                 <span aria-hidden="true">←</span>
                 <span>กลับหน้าก่อน</span>
             </button>
@@ -364,7 +365,7 @@
 
             <div class="acc-report-client-item">
                 <span class="acc-report-label">อายุ:</span>
-                <span>{{ $client->age ?? '-' }} ปี</span>
+                <span>{{ $clientAge }}</span>
             </div>
 
             @if(!empty($client->cid))

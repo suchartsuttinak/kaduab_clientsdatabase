@@ -1,4 +1,24 @@
-@if($vaccinations->isNotEmpty())
+@php
+    $clientDisplayName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+    if ($clientDisplayName === '') {
+        $clientDisplayName = $client->fullname ?? $client->full_name ?? $client->name ?? '-';
+    }
+
+    $clientAgeDisplay = filled($client->age ?? null)
+        ? ($client->age . ' ปี')
+        : '-';
+
+    /*
+     * ซ่อนเครื่องมือตัวกรองเมื่อผู้รับบริการยังไม่มีประวัติวัคซีน
+     * แต่หากผู้ใช้กำลังกรองข้อมูลอยู่ แม้ผลลัพธ์เป็นศูนย์
+     * ให้คงตัวกรองไว้เพื่อเปลี่ยนช่วงวันที่หรือล้างค่าได้
+     */
+    $hasVaccineRows = isset($vaccinations) && $vaccinations->isNotEmpty();
+    $hasActiveVaccineFilter = request()->filled('start_date')
+        || request()->filled('end_date');
+    $showVaccineFilter = $hasVaccineRows || $hasActiveVaccineFilter;
+@endphp
+
 <div class="card border-0 vaccine-client-toolbar-card mb-3">
     <style>
         .vaccine-client-toolbar-card{
@@ -280,7 +300,11 @@
             <div class="vaccine-client-top-left">
                 <h5 class="vaccine-client-title">ข้อมูลผู้รับบริการและเครื่องมือรายงานวัคซีน</h5>
                 <p class="vaccine-client-subtitle">
-                    ตรวจสอบข้อมูลผู้รับบริการ ค้นหาข้อมูลตามช่วงวันที่รับวัคซีน และเปิดหน้ารายงานตามเงื่อนไขที่เลือกได้จากส่วนเดียว
+                    @if($showVaccineFilter)
+                        ตรวจสอบข้อมูลผู้รับบริการ ค้นหาข้อมูลตามช่วงวันที่รับวัคซีน และเปิดหน้ารายงานตามเงื่อนไขที่เลือกได้จากส่วนเดียว
+                    @else
+                        ตรวจสอบข้อมูลผู้รับบริการและเริ่มบันทึกประวัติการรับวัคซีนรายการแรก
+                    @endif
                 </p>
             </div>
         </div>
@@ -291,7 +315,7 @@
                     <i class="bi bi-person-fill"></i>
                     <div class="vaccine-client-text">
                         <span class="label">ชื่อ-สกุล</span>
-                        <span class="value">{{ $client->fullname ?? '-' }}</span>
+                        <span class="value">{{ $clientDisplayName }}</span>
                     </div>
                 </div>
 
@@ -299,12 +323,13 @@
                     <i class="bi bi-calendar-heart"></i>
                     <div class="vaccine-client-text">
                         <span class="label">อายุ</span>
-                        <span class="value">{{ $client->age ?? '-' }} ปี</span>
+                        <span class="value">{{ $clientAgeDisplay }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
+        @if($showVaccineFilter)
         <form method="GET" action="{{ route('vaccine.index', ['client_id' => $client->id]) }}" class="vaccine-filter-panel">
             <div class="vaccine-filter-head">
                 <div>
@@ -322,9 +347,13 @@
                         type="date"
                         name="start_date"
                         id="vaccine_date_from"
-                        class="form-control"
+                        class="form-control @error('start_date') is-invalid @enderror"
                         value="{{ request('start_date') }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                     >
+                    @error('start_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="vaccine-filter-group">
@@ -333,9 +362,13 @@
                         type="date"
                         name="end_date"
                         id="vaccine_date_to"
-                        class="form-control"
+                        class="form-control @error('end_date') is-invalid @enderror"
                         value="{{ request('end_date') }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                     >
+                    @error('end_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="vaccine-filter-actions">
@@ -346,7 +379,7 @@
                     ]) }}"
                        class="vaccine-btn vaccine-btn-report">
                         <i class="bi bi-file-earmark-text"></i>
-                        <span>รายงานทั้งหมด</span>
+                        <span>{{ request()->filled('start_date') || request()->filled('end_date') ? 'รายงานตามช่วงวันที่' : 'รายงานทั้งหมด' }}</span>
                     </a>
 
                     <button type="submit" class="vaccine-btn vaccine-btn-search">
@@ -362,7 +395,7 @@
                 </div>
             </div>
         </form>
+        @endif
 
     </div>
 </div>
-@endif

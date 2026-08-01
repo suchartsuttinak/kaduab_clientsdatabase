@@ -197,7 +197,7 @@
                              aria-hidden="{{ $oldDevelopment === 'ไม่สมวัย' ? 'false' : 'true' }}">
                             <div class="cb-field">
                                 <label for="{{ $formPrefix }}_detail" class="cb-label">
-                                    รายละเอียดกรณีพัฒนาการไม่สมวัย
+                                    รายละเอียดกรณีพัฒนาการไม่สมวัย <span class="cb-required">*</span>
                                 </label>
                                 <textarea id="{{ $formPrefix }}_detail"
                                           name="detail"
@@ -278,7 +278,7 @@
                                 <div class="col-12 col-lg-8">
                                     <div class="cb-field">
                                         <label for="{{ $formPrefix }}_special_support_type" class="cb-label">
-                                            ประเภทการสนับสนุน
+                                            ประเภทการสนับสนุน <span class="cb-required">*</span>
                                         </label>
                                         <select id="{{ $formPrefix }}_special_support_type"
                                                 name="special_support_type"
@@ -319,7 +319,7 @@
                                      data-special-support-other-wrap>
                                     <div class="cb-field">
                                         <label for="{{ $formPrefix }}_special_support_other" class="cb-label">
-                                            อื่น ๆ (ระบุ)
+                                            อื่น ๆ (ระบุ) <span class="cb-required">*</span>
                                         </label>
                                         <input type="text"
                                                id="{{ $formPrefix }}_special_support_other"
@@ -362,6 +362,7 @@
                                                class="form-control @error('weight') is-invalid @enderror"
                                                step="0.01"
                                                min="0"
+                                               max="500"
                                                placeholder="เช่น 25.50"
                                                inputmode="decimal"
                                                aria-invalid="{{ $errors->has('weight') ? 'true' : 'false' }}">
@@ -381,6 +382,7 @@
                                                class="form-control @error('height') is-invalid @enderror"
                                                step="0.01"
                                                min="0"
+                                               max="300"
                                                placeholder="เช่น 120.00"
                                                inputmode="decimal"
                                                aria-invalid="{{ $errors->has('height') ? 'true' : 'false' }}">

@@ -203,12 +203,16 @@
     <div class="client-info">
         <span>
             <span class="label">ชื่อผู้รับบริการ:</span>
-            {{ $client->fullname ?? $client->name ?? '-' }}
+            {{ ($client->fullname ?? $client->name ?? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''))) ?: '-' }}
         </span>
 
         <span>
             <span class="label">อายุ:</span>
-            {{ $client->age ?? '-' }} ปี
+            @if(isset($client->age) && $client->age !== '' && $client->age !== null)
+                {{ $client->age }} ปี
+            @else
+                -
+            @endif
         </span>
     </div>
 

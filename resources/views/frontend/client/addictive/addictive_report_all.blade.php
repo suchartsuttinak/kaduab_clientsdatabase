@@ -33,12 +33,22 @@
         }
     }
 
-    $clientName = trim(($client->prefix ?? '') . ($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+    $clientName = trim(($client->prefix ?? '') . ' ' . ($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
     if ($clientName === '') {
-        $clientName = $client->fullname ?? $client->full_name ?? '-';
+        $clientName = $client->fullname ?? $client->full_name ?? $client->name ?? '-';
     }
 
     $totalRows = $addictives->count();
+
+    if (!empty($dateFrom) && !empty($dateTo)) {
+        $dateRangeText = thaiDateAddictiveAllReport($dateFrom) . ' ถึง ' . thaiDateAddictiveAllReport($dateTo);
+    } elseif (!empty($dateFrom)) {
+        $dateRangeText = 'ตั้งแต่ ' . thaiDateAddictiveAllReport($dateFrom);
+    } elseif (!empty($dateTo)) {
+        $dateRangeText = 'ถึง ' . thaiDateAddictiveAllReport($dateTo);
+    } else {
+        $dateRangeText = 'ทุกช่วงวันที่';
+    }
 @endphp
 
 <style>
@@ -101,7 +111,7 @@
 
     .addictive-report-meta{
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 12px;
         margin: 20px 0;
     }
@@ -201,21 +211,24 @@
         padding-top: 8px;
     }
 
-   @page{
-    size: A4 landscape;
-    margin: 8mm 10mm;
+@media (max-width: 991.98px){
+    .addictive-report-meta{
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px){
+    .addictive-report-meta{
+        grid-template-columns: 1fr;
+    }
 }
 
 @page{
     size: A4 landscape;
-    margin: 10mm 14mm;
+    margin: 8mm 10mm;
 }
 
 @media print{
-    @page{
-        size:A4 landscape;
-        margin:6mm;
-    }
 
     html,
     body{
@@ -466,6 +479,11 @@
             <div class="addictive-report-meta-item">
                 <div class="addictive-report-meta-label">จำนวนรายการ</div>
                 <div class="addictive-report-meta-value">{{ $totalRows }} รายการ</div>
+            </div>
+
+            <div class="addictive-report-meta-item">
+                <div class="addictive-report-meta-label">ช่วงวันที่รายงาน</div>
+                <div class="addictive-report-meta-value">{{ $dateRangeText }}</div>
             </div>
 
             <div class="addictive-report-meta-item">

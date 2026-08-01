@@ -3,312 +3,369 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\CaseActivity;
 use App\Models\Client;
 use App\Models\Medical;
-use Illuminate\Support\Facades\Validator; // ✅ ใช้ namespace ที่ถูกต้อง
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use App\Models\CaseActivity;
 
 class MedicalController extends Controller
 {
-    // แสดงฟอร์มเพิ่มข้อมูลใหม่
+    /**
+     * แสดงรายการและตัวกรองข้อมูลการรักษาพยาบาล
+     */
     public function MedicalAdd(Request $request, $client_id)
-{
-    // =========================
-    // PATCH: กันเดา URL เข้าถึง client ที่ไม่มีสิทธิ์
-    // =========================
-    $client = Client::forUser(auth()->user())->findOrFail($client_id);
+    {
+        $client = Client::forUser(auth()->user())->findOrFail($client_id);
+        $filters = $this->validateDateFilters($request);
 
-    $request->validate([
-        'start_date' => ['nullable', 'date'],
-        'end_date'   => ['nullable', 'date', 'after_or_equal:start_date'],
-    ], [
-        'end_date.after_or_equal' => 'วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น',
-    ]);
+        $baseQuery = Medical::query()
+            ->where('client_id', $client->id);
 
-    $query = Medical::where('client_id', $client->id)
-        ->orderByDesc('medical_date')
-        ->orderByDesc('id');
+        // ใช้แยกกรณี “ยังไม่มีข้อมูลเลย” กับ “กรองแล้วไม่พบข้อมูล”
+        $hasMedicalRecords = (clone $baseQuery)->exists();
 
-    if ($request->filled('start_date')) {
-        $query->whereDate('medical_date', '>=', $request->start_date);
+        $medicals = $baseQuery
+            ->when(
+                !empty($filters['start_date']),
+                fn ($query) => $query->where('medical_date', '>=', $filters['start_date'])
+            )
+            ->when(
+                !empty($filters['end_date']),
+                fn ($query) => $query->where('medical_date', '<=', $filters['end_date'])
+            )
+            ->orderByDesc('medical_date')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('frontend.client.medical.medical_create', [
+            'client'            => $client,
+            'client_id'         => $client->id,
+            'medicals'          => $medicals,
+            'hasMedicalRecords' => $hasMedicalRecords,
+        ]);
     }
 
-    if ($request->filled('end_date')) {
-        $query->whereDate('medical_date', '<=', $request->end_date);
+    /**
+     * บันทึกข้อมูลใหม่
+     */
+    public function MedicalStore(Request $request)
+    {
+        $clientInput = $request->validate([
+            'client_id' => ['required', 'integer', 'exists:clients,id'],
+        ], $this->validationMessages());
+
+        $client = Client::forUser(auth()->user())
+            ->findOrFail($clientInput['client_id']);
+
+        $request->merge(['client_id' => $client->id]);
+        $this->normalizeMedicalInput($request);
+
+        $data = $request->validate(
+            $this->medicalRules($client->id),
+            $this->validationMessages()
+        );
+
+        $data = $this->cleanConditionalFields($data);
+
+        DB::transaction(function () use ($data, $client): void {
+            Medical::create($data);
+            $this->syncLatestMedicalActivity($client->id);
+        });
+
+        return redirect()
+            ->route('medical.add', $client->id)
+            ->with([
+                'message'    => 'บันทึกข้อมูลเรียบร้อยแล้ว',
+                'alert-type' => 'success',
+            ]);
     }
 
-    $medicals = $query->get();
+    /**
+     * โหลดข้อมูลสำหรับ Modal แก้ไข
+     */
+    public function editMedicalJson($id)
+    {
+        $medical = $this->findAuthorizedMedical($id);
 
-    return view('frontend.client.medical.medical_create', compact('client', 'client_id', 'medicals'));
-}
+        return response()->json([
+            'id'           => $medical->id,
+            'medical_date' => $this->formatDateForInput($medical->medical_date),
+            'disease_name' => $medical->disease_name,
+            'illness'      => $medical->illness,
+            'treatment'    => $medical->treatment,
+            'refer'        => $medical->refer,
+            'diagnosis'    => $medical->diagnosis,
+            'appt_date'    => $this->formatDateForInput($medical->appt_date),
+            'teacher'      => $medical->teacher,
+            'remark'       => $medical->remark,
+            'client_id'    => $medical->client_id,
+        ]);
+    }
 
-    // บันทึกข้อมูลใหม่
-  public function MedicalStore(Request $request)
-        {
-            $data = $request->validate([
-                'medical_date' => [
-                    'required',
-                    'date',
-                    Rule::unique('medicals')->where(function ($query) use ($request) {
-                        return $query->where('client_id', $request->client_id);
-                    }),
-                ],
-                'disease_name' => 'required|string|max:255',
-                'illness'      => 'required|string',
-                'treatment'    => 'nullable|string',
-                'refer'        => 'required|in:พบแพทย์,ไม่พบแพทย์',
-                'diagnosis'    => 'nullable|string',
-                'appt_date'    => 'nullable|date',
-                'teacher'      => 'nullable|string|max:255',
-                'remark'       => 'nullable|string',
-                'client_id'    => 'required|exists:clients,id',
-            ], [
-                'medical_date.required' => 'กรุณาระบุวันที่รักษา',
-                'medical_date.date'     => 'วันที่รักษาไม่ถูกต้อง',
-                'medical_date.unique'   => 'มีการบันทึกวันที่รักษานี้แล้ว',
-                'disease_name.required' => 'กรุณาระบุชื่อโรค',
-                'illness.required'      => 'กรุณาระบุอาการเจ็บป่วย',
-                'refer.required'        => 'กรุณาเลือกการส่งต่อ',
-            ]);
+    /**
+     * อัปเดตข้อมูล
+     */
+    public function MedicalUpdate(Request $request, $id)
+    {
+        $medical = $this->findAuthorizedMedical($id);
 
-            // =========================
-            // PATCH: กันยิง request เปลี่ยน client_id
-            // =========================
-            $client = Client::forUser(auth()->user())->findOrFail($data['client_id']);
+        // ห้ามเปลี่ยนเจ้าของรายการด้วยการแก้ hidden input
+        $request->merge(['client_id' => $medical->client_id]);
+        $this->normalizeMedicalInput($request);
 
-            // =========================
-            // PATCH: บังคับ client_id จากสิทธิ์ที่ตรวจแล้ว
-            // =========================
-            $data['client_id'] = $client->id;
+        $validator = Validator::make(
+            $request->all(),
+            $this->medicalRules($medical->client_id, $medical->id),
+            $this->validationMessages()
+        );
 
-            if ($data['refer'] === 'ไม่พบแพทย์') {
-                $data['diagnosis'] = null;
-                $data['appt_date'] = null;
-            }
-
-            $medical = Medical::create($data);
-
-           CaseActivity::where('client_id', $client->id)
-                ->where('module', 'medical')
-                ->delete();
-
-            CaseActivity::record([
-                'client_id'   => $client->id,
-                'module'      => 'medical',
-                'type'        => 'success',
-                'title'       => 'บันทึกการรักษาพยาบาล',
-                'description' => 'วันที่รักษา: ' . ($data['medical_date'] ?? '-') .
-                                ' | โรค/อาการ: ' . ($data['disease_name'] ?? '-') .
-                                ' | การส่งต่อ: ' . ($data['refer'] ?? '-'),
-                'occurred_at' => $data['medical_date'] ?? now('Asia/Bangkok'),
-                'icon'        => 'bi-heart-pulse',
-                'url'         => route('medical.add', $client->id),
-            ]);
-
-            $notification = [
-                'message' => 'บันทึกข้อมูลเรียบร้อย',
-                'alert-type' => 'success'
-            ];
-
-            return redirect()->back()->with($notification);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with([
+                    'edit_mode' => true,
+                    'edit_id'   => $medical->id,
+                ]);
         }
 
-    // โหลดข้อมูลสำหรับแก้ไข (JSON)
-    public function editMedicalJson($id)
-{
-    // =========================
-    // PATCH: กันเดา URL เรียก JSON ของ client คนอื่นตั้งแต่ query แรก
-    // เดิม: $medical = Medical::findOrFail($id);
-    // =========================
-    $medical = Medical::whereHas('client', function ($q) {
-            $q->forUser(auth()->user());
-        })
-        ->findOrFail($id);
+        $data = $this->cleanConditionalFields($validator->validated());
 
-    // =========================
-    // PATCH: กันเดา URL เรียก JSON ของ client คนอื่น
-    // =========================
-    Client::forUser(auth()->user())->findOrFail($medical->client_id);
+        DB::transaction(function () use ($medical, $data): void {
+            $medical->update($data);
+            $this->syncLatestMedicalActivity($medical->client_id);
+        });
 
-    return response()->json([
-        'id'           => $medical->id,
-        'medical_date' => $medical->medical_date ? \Carbon\Carbon::parse($medical->medical_date)->format('Y-m-d') : null,
-        'disease_name' => $medical->disease_name,
-        'illness'      => $medical->illness,
-        'treatment'    => $medical->treatment,
-        'refer'        => $medical->refer,
-        'diagnosis'    => $medical->diagnosis,
-        'appt_date'    => $medical->appt_date ? \Carbon\Carbon::parse($medical->appt_date)->format('Y-m-d') : null,
-        'teacher'      => $medical->teacher,
-        'remark'       => $medical->remark,
-        'client_id'    => $medical->client_id,
-    ]);
-}
-
-// ✅ อัปเดตข้อมูล
-public function MedicalUpdate(Request $request, $id)
-{
-   // =========================
-   // PATCH: กันเดา URL มา update record คนอื่นตั้งแต่ query แรก
-   // เดิม: $medical = Medical::findOrFail($id);
-   // =========================
-   $medical = Medical::whereHas('client', function ($q) {
-        $q->forUser(auth()->user());
-    })
-    ->findOrFail($id);
-
-    // =========================
-    // PATCH: กันเดา URL มา update record คนอื่น
-    // =========================
-    Client::forUser(auth()->user())->findOrFail($medical->client_id);
-
-    $validator = Validator::make($request->all(), [
-        'medical_date' => [
-            'required',
-            'date',
-            Rule::unique('medicals')
-                ->where(function ($query) use ($medical) {
-                    return $query->where('client_id', $medical->client_id);
-                })
-                ->ignore($medical->id), // ✅ ยกเว้น record ที่กำลังแก้ไข
-        ],
-        'disease_name' => 'required|string|max:255',
-        'illness'      => 'required|string',
-        'treatment'    => 'nullable|string',
-        'refer'        => 'required|in:พบแพทย์,ไม่พบแพทย์',
-        'diagnosis'    => 'nullable|string',
-        'appt_date'    => 'nullable|date',
-        'teacher'      => 'nullable|string|max:255',
-        'remark'       => 'nullable|string',
-        'client_id'    => 'required|exists:clients,id',
-    ], [
-        'medical_date.required' => 'กรุณาระบุวันที่รักษา',
-        'medical_date.date'     => 'วันที่รักษาไม่ถูกต้อง',
-        'medical_date.unique'   => 'มีการบันทึกวันที่รักษานี้แล้ว',
-        'disease_name.required' => 'ชื่อโรคต้องไม่เป็นค่าว่าง',
-        'illness.required'      => 'อาการเจ็บป่วยต้องไม่เป็นค่าว่าง',
-        'refer.required'        => 'กรุณาเลือกการส่งต่อ',
-    ]);
-
-    if ($validator->fails()) {
-        return back()
-            ->withErrors($validator)
-            ->withInput()
+        return redirect()
+            ->route('medical.add', $medical->client_id)
             ->with([
-                'edit_mode' => true,
-                'edit_id'   => $id,
+                'message'    => 'อัปเดตข้อมูลเรียบร้อยแล้ว',
+                'alert-type' => 'success',
             ]);
     }
 
-    $data = $validator->validated();
-
-    // =========================
-    // PATCH: กันเปลี่ยน client_id ไป client อื่น
-    // บังคับให้ใช้ client_id เดิมของ record นี้เท่านั้น
-    // =========================
-    $data['client_id'] = $medical->client_id;
-
-    // =========================
-    // PATCH: ตรวจสิทธิ์ client_id หลังบังคับค่าแล้ว
-    // =========================
-    Client::forUser(auth()->user())->findOrFail($data['client_id']);
-
-    if ($data['refer'] === 'ไม่พบแพทย์') {
-        $data['diagnosis'] = null;
-        $data['appt_date'] = null;
-    }
-
-    $medical->update($data);
-
-    CaseActivity::where('client_id', $medical->client_id)
-    ->where('module', 'medical')
-    ->delete();
-
-    CaseActivity::record([
-        'client_id'   => $medical->client_id,
-        'module'      => 'medical',
-        'type'        => 'success',
-        'title'       => 'แก้ไขการรักษาพยาบาล',
-        'description' => 'วันที่รักษา: ' . ($data['medical_date'] ?? '-') .
-                        ' | โรค/อาการ: ' . ($data['disease_name'] ?? '-') .
-                        ' | การส่งต่อ: ' . ($data['refer'] ?? '-'),
-        'occurred_at' => $data['medical_date'] ?? now('Asia/Bangkok'),
-        'icon'        => 'bi-heart-pulse',
-        'url'         => route('medical.add', $medical->client_id),
-    ]);
-
-     $notification = [
-            'message' => 'อัปเดตข้อมูลเรียบร้อย',
-            'alert-type' => 'success'
-        ];
-
-    return redirect()
-        ->route('medical.add', $medical->client_id)
-        ->with($notification);
-}
-    // ลบข้อมูล
+    /**
+     * ลบข้อมูล
+     */
     public function MedicalDelete($id)
     {
-      // =========================
-      // PATCH: กันเดา URL มาลบข้อมูลของ client คนอื่นตั้งแต่ query แรก
-      // เดิม: $medical = Medical::findOrFail($id);
-      // =========================
-      $medical = Medical::whereHas('client', function ($q) {
-        $q->forUser(auth()->user());
-    })
-    ->findOrFail($id);
+        $medical = $this->findAuthorizedMedical($id);
+        $clientId = $medical->client_id;
 
-        // =========================
-        // PATCH: กันเดา URL มาลบข้อมูลของ client คนอื่น
-        // =========================
-        Client::forUser(auth()->user())->findOrFail($medical->client_id);
+        DB::transaction(function () use ($medical, $clientId): void {
+            $medical->delete();
+            $this->syncLatestMedicalActivity($clientId);
+        });
 
-        $clientId  = $medical->client_id;
-
-        CaseActivity::where('client_id', $clientId)
-        ->where('module', 'medical')
-        ->delete();
-        
-        $medical->delete();
-
-        return redirect()->route('medical.add', $clientId)
-                         ->with(['message' => 'ลบข้อมูลเรียบร้อยแล้ว', 'alert-type' => 'success']);
+        return redirect()
+            ->route('medical.add', $clientId)
+            ->with([
+                'message'    => 'ลบข้อมูลเรียบร้อยแล้ว',
+                'alert-type' => 'success',
+            ]);
     }
 
-    // ✅ หน้ารายงานการรักษาพยาบาล
-        public function MedicalReport(Request $request, $client_id)
-        {
-            // =========================
-            // PATCH: กันเดา URL เข้าถึง client ที่ไม่มีสิทธิ์
-            // =========================
-            $client = Client::forUser(auth()->user())->findOrFail($client_id);
+    /**
+     * รายงานตามช่วงวันที่
+     */
+    public function MedicalReport(Request $request, $client_id)
+    {
+        $client = Client::forUser(auth()->user())->findOrFail($client_id);
+        $filters = $this->validateDateFilters($request);
 
-            $request->validate([
-                'start_date' => ['nullable', 'date'],
-                'end_date'   => ['nullable', 'date', 'after_or_equal:start_date'],
-            ], [
-                'end_date.after_or_equal' => 'วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น',
-            ]);
+        $medicals = Medical::query()
+            ->where('client_id', $client->id)
+            ->when(
+                !empty($filters['start_date']),
+                fn ($query) => $query->where('medical_date', '>=', $filters['start_date'])
+            )
+            ->when(
+                !empty($filters['end_date']),
+                fn ($query) => $query->where('medical_date', '<=', $filters['end_date'])
+            )
+            ->orderByDesc('medical_date')
+            ->orderByDesc('id')
+            ->get();
 
-            $query = Medical::where('client_id', $client->id)
-                ->orderByDesc('medical_date')
-                ->orderByDesc('id');
+        return view('frontend.client.medical.report', [
+            'client'   => $client,
+            'medicals' => $medicals,
+        ]);
+    }
 
-            if ($request->filled('start_date')) {
-                $query->whereDate('medical_date', '>=', $request->start_date);
-            }
+    private function findAuthorizedMedical($id): Medical
+    {
+        return Medical::query()
+            ->whereKey($id)
+            ->whereHas('client', function ($query): void {
+                $query->forUser(auth()->user());
+            })
+            ->firstOrFail();
+    }
 
-            if ($request->filled('end_date')) {
-                $query->whereDate('medical_date', '<=', $request->end_date);
-            }
+    private function validateDateFilters(Request $request): array
+    {
+        $today = now('Asia/Bangkok')->toDateString();
 
-            $medicals = $query->get();
+        $endDateRules = [
+            'nullable',
+            'date',
+            'before_or_equal:' . $today,
+        ];
 
-            return view('frontend.client.medical.report', compact(
-                'client',
-                'medicals'
-            ));
+        if ($request->filled('start_date')) {
+            $endDateRules[] = 'after_or_equal:start_date';
         }
+
+        return $request->validate([
+            'start_date' => ['nullable', 'date', 'before_or_equal:' . $today],
+            'end_date'   => $endDateRules,
+        ], [
+            'start_date.date'            => 'วันที่เริ่มต้นไม่ถูกต้อง',
+            'start_date.before_or_equal' => 'วันที่เริ่มต้นต้องไม่เกินวันปัจจุบัน',
+            'end_date.date'              => 'วันที่สิ้นสุดไม่ถูกต้อง',
+            'end_date.before_or_equal'   => 'วันที่สิ้นสุดต้องไม่เกินวันปัจจุบัน',
+            'end_date.after_or_equal'    => 'วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น',
+        ]);
+    }
+
+    private function medicalRules(int $clientId, ?int $ignoreId = null): array
+    {
+        $today = now('Asia/Bangkok')->toDateString();
+
+        $uniqueMedicalDate = Rule::unique('medicals', 'medical_date')
+            ->where(fn ($query) => $query->where('client_id', $clientId));
+
+        if ($ignoreId !== null) {
+            $uniqueMedicalDate->ignore($ignoreId);
+        }
+
+        return [
+            'client_id' => ['required', 'integer', 'exists:clients,id'],
+            'medical_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . $today,
+                $uniqueMedicalDate,
+            ],
+            'disease_name' => ['required', 'string', 'max:255'],
+            'illness'      => ['required', 'string', 'max:3000'],
+            'treatment'    => ['nullable', 'string', 'max:3000'],
+            'refer'        => ['required', Rule::in(['พบแพทย์', 'ไม่พบแพทย์'])],
+            'diagnosis'    => ['required_if:refer,พบแพทย์', 'nullable', 'string', 'max:3000'],
+            'appt_date'    => ['nullable', 'date', 'after_or_equal:medical_date'],
+            'teacher'      => ['nullable', 'string', 'max:255'],
+            'remark'       => ['nullable', 'string', 'max:3000'],
+        ];
+    }
+
+    private function validationMessages(): array
+    {
+        return [
+            'client_id.required'              => 'กรุณาเลือกผู้รับบริการ',
+            'client_id.integer'               => 'ข้อมูลผู้รับบริการไม่ถูกต้อง',
+            'client_id.exists'                => 'ไม่พบข้อมูลผู้รับบริการที่เลือก',
+            'medical_date.required'           => 'กรุณาระบุวันที่รักษา',
+            'medical_date.date'               => 'วันที่รักษาไม่ถูกต้อง',
+            'medical_date.before_or_equal'    => 'วันที่รักษาต้องไม่เกินวันปัจจุบัน',
+            'medical_date.unique'             => 'มีการบันทึกวันที่รักษานี้แล้วสำหรับผู้รับบริการรายนี้',
+            'disease_name.required'           => 'กรุณาระบุชื่อโรคหรืออาการสำคัญ',
+            'disease_name.max'                => 'ชื่อโรคต้องไม่เกิน 255 ตัวอักษร',
+            'illness.required'                => 'กรุณาระบุอาการเจ็บป่วย',
+            'illness.max'                     => 'อาการเจ็บป่วยต้องไม่เกิน 3,000 ตัวอักษร',
+            'treatment.max'                   => 'ข้อมูลการรักษาต้องไม่เกิน 3,000 ตัวอักษร',
+            'refer.required'                  => 'กรุณาเลือกสถานะการพบแพทย์',
+            'refer.in'                        => 'สถานะการพบแพทย์ไม่ถูกต้อง',
+            'diagnosis.required_if'           => 'กรุณาระบุการวินิจฉัยของแพทย์เมื่อเลือกว่าพบแพทย์',
+            'diagnosis.max'                   => 'ข้อมูลการวินิจฉัยต้องไม่เกิน 3,000 ตัวอักษร',
+            'appt_date.date'                  => 'วันที่แพทย์นัดไม่ถูกต้อง',
+            'appt_date.after_or_equal'        => 'วันที่แพทย์นัดต้องไม่น้อยกว่าวันที่รักษา',
+            'teacher.max'                     => 'ชื่อผู้ดูแลต้องไม่เกิน 255 ตัวอักษร',
+            'remark.max'                      => 'หมายเหตุต้องไม่เกิน 3,000 ตัวอักษร',
+        ];
+    }
+
+    private function normalizeMedicalInput(Request $request): void
+    {
+        $fields = [
+            'disease_name',
+            'illness',
+            'treatment',
+            'diagnosis',
+            'teacher',
+            'remark',
+        ];
+
+        $normalized = [];
+
+        foreach ($fields as $field) {
+            $value = $request->input($field);
+
+            if (!is_string($value)) {
+                continue;
+            }
+
+            $value = trim($value);
+            $normalized[$field] = $value === '' ? null : $value;
+        }
+
+        $request->merge($normalized);
+    }
+
+    private function cleanConditionalFields(array $data): array
+    {
+        if (($data['refer'] ?? null) !== 'พบแพทย์') {
+            $data['diagnosis'] = null;
+            $data['appt_date'] = null;
+        }
+
+        return $data;
+    }
+
+    /**
+     * เก็บกิจกรรมของโมดูลไว้เพียงรายการล่าสุดที่ยังมีอยู่จริง
+     */
+    private function syncLatestMedicalActivity(int $clientId): void
+    {
+        CaseActivity::query()
+            ->where('client_id', $clientId)
+            ->where('module', 'medical')
+            ->delete();
+
+        $latest = Medical::query()
+            ->where('client_id', $clientId)
+            ->orderByDesc('medical_date')
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$latest) {
+            return;
+        }
+
+        CaseActivity::record([
+            'client_id'   => $clientId,
+            'module'      => 'medical',
+            'type'        => 'success',
+            'title'       => 'บันทึกการรักษาพยาบาล',
+            'description' => 'วันที่รักษา: ' . ($latest->medical_date ?: '-') .
+                ' | โรค/อาการ: ' . ($latest->disease_name ?: '-') .
+                ' | การพบแพทย์: ' . ($latest->refer ?: '-'),
+            'occurred_at' => $latest->medical_date ?: now('Asia/Bangkok'),
+            'icon'        => 'bi-heart-pulse',
+            'url'         => route('medical.add', $clientId),
+        ]);
+    }
+
+    private function formatDateForInput($date): ?string
+    {
+        if (!$date) {
+            return null;
+        }
+
+        return Carbon::parse($date)->format('Y-m-d');
+    }
 }

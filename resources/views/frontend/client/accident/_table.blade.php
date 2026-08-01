@@ -97,10 +97,15 @@
                                         <i class="bi bi-hospital" aria-hidden="true"></i>
                                         พบแพทย์
                                     </span>
-                                @else
+                                @elseif(($row->treat_no ?? '') === 'ไม่พบแพทย์')
                                     <span class="acc-status acc-status-home">
                                         <i class="bi bi-house-heart" aria-hidden="true"></i>
-                                        {{ $row->treat_no ?: 'ไม่พบแพทย์' }}
+                                        ไม่พบแพทย์
+                                    </span>
+                                @else
+                                    <span class="acc-status acc-status-home">
+                                        <i class="bi bi-question-circle" aria-hidden="true"></i>
+                                        ไม่ระบุ
                                     </span>
                                 @endif
                             </td>

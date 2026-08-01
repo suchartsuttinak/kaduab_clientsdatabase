@@ -16,7 +16,7 @@
                 </div>
             </div>
 
-            @if($medicals->isNotEmpty())
+            @if($hasMedicalRecords ?? $medicals->isNotEmpty())
             <div class="medical-hero__actions">
                 <button type="button"
                         class="btn btn-primary medical-btn medical-btn-primary"

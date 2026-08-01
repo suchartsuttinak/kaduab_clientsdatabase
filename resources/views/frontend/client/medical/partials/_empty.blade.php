@@ -4,10 +4,17 @@
             <div class="medical-empty-state-icon mb-3">
                 <i class="bi bi-clipboard-x"></i>
             </div>
-            <h6 class="fw-bold mb-2">ยังไม่มีข้อมูลการรักษาพยาบาล</h6>
-            <p class="text-muted mb-3 small">
-                เริ่มต้นเพิ่มข้อมูลการรักษาเพื่อให้ระบบติดตามสุขภาพได้ครบถ้วน
-            </p>
+            @if(request()->filled('start_date') || request()->filled('end_date') || old('start_date') || old('end_date'))
+                <h6 class="fw-bold mb-2">ไม่พบข้อมูลในช่วงวันที่ที่เลือก</h6>
+                <p class="text-muted mb-3 small">
+                    ลองเปลี่ยนช่วงวันที่ หรือล้างค่าตัวกรองเพื่อดูข้อมูลทั้งหมด
+                </p>
+            @else
+                <h6 class="fw-bold mb-2">ยังไม่มีข้อมูลการรักษาพยาบาล</h6>
+                <p class="text-muted mb-3 small">
+                    เริ่มต้นเพิ่มข้อมูลการรักษาเพื่อให้ระบบติดตามสุขภาพได้ครบถ้วน
+                </p>
+            @endif
             <button type="button"
                     class="btn btn-primary medical-btn medical-btn-primary"
                     data-bs-toggle="modal"

@@ -7,6 +7,15 @@
     $totalAccidents = $hasAccidentRows ? $accidents->count() : 0;
     $doctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'พบแพทย์')->count() : 0;
     $nonDoctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'ไม่พบแพทย์')->count() : 0;
+    $clientDisplayName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+
+    if ($clientDisplayName === '') {
+        $clientDisplayName = $client->name ?? $client->fullname ?? '-';
+    }
+
+    $clientAgeDisplay = filled($client->age ?? null)
+        ? ($client->age . ' ปี')
+        : '-';
 @endphp
 
 <style>
@@ -416,29 +425,52 @@
         min-width: 140px !important;
     }
 
+    /*
+    | คอลัมน์จัดการเลื่อนไปพร้อมกับตาราง
+    | ไม่ใช้ sticky เพื่อป้องกันช่องว่าง/คอลัมน์ซ้อนบนจอขนาดใหญ่
+    */
     .accident-page .acc-col-actions {
-        position: sticky;
-        right: 0;
+        position: static !important;
+        right: auto !important;
         width: 150px !important;
         min-width: 150px !important;
         max-width: 150px !important;
         border-left: 1px solid var(--acc-border-soft) !important;
+        box-shadow: none !important;
     }
 
     .accident-page .acc-table thead .acc-col-actions {
-        z-index: 5;
+        z-index: auto;
         background: #f8fafc;
-        box-shadow: -10px 0 18px -18px rgba(15, 23, 42, .75);
     }
 
     .accident-page .acc-table tbody .acc-col-actions {
-        z-index: 3;
+        z-index: auto;
         background: #ffffff;
-        box-shadow: -10px 0 18px -18px rgba(15, 23, 42, .55);
     }
 
     .accident-page .acc-table tbody tr:hover .acc-col-actions {
         background: #fbfdff;
+    }
+
+    /*
+    | DataTables บางครั้งปัดเศษความกว้างเกิน 1-12px บนจอใหญ่
+    | JavaScript จะเพิ่มคลาสนี้เฉพาะเมื่อเป็นส่วนเกินเล็กน้อยจริง
+    */
+    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .dataTables_scrollBody {
+        overflow-x: hidden !important;
+    }
+
+    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .dataTables_scrollHeadInner,
+    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .dataTables_scrollHeadInner > table,
+    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .dataTables_scrollBody > table {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
+
+    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .acc-table th,
+    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .acc-table td {
+        min-width: 0 !important;
     }
 
     .accident-page .acc-text-block {
@@ -1078,8 +1110,8 @@
     }
 
     #accidentFormModal .acc-modal-btn:disabled {
-        cursor: wait;
-        opacity: .75;
+        cursor: not-allowed;
+        opacity: 1;
         transform: none;
     }
 
@@ -1257,7 +1289,7 @@
                             <span class="acc-meta-chip">
                                 <i class="bi bi-person"></i>
                                 <span>ผู้รับบริการ:</span>
-                                <strong>{{ $client->name ?? $client->fullname ?? '-' }}</strong>
+                                <strong>{{ $clientDisplayName }}</strong>
                             </span>
 
                             @if(!empty($client->cid))
@@ -1269,31 +1301,41 @@
                             @endif
 
                             <span class="acc-meta-chip">
-                                <i class="bi bi-journal-medical"></i>
-                                <span>จำนวนบันทึก:</span>
-                                <strong>{{ number_format($totalAccidents) }} รายการ</strong>
+                                <i class="bi bi-calendar-heart"></i>
+                                <span>อายุ:</span>
+                                <strong>{{ $clientAgeDisplay }}</strong>
                             </span>
+
+                            @if($hasAccidentRows)
+                                <span class="acc-meta-chip">
+                                    <i class="bi bi-journal-medical"></i>
+                                    <span>จำนวนบันทึก:</span>
+                                    <strong>{{ number_format($totalAccidents) }} รายการ</strong>
+                                </span>
+                            @endif
                         </div>
                     </div>
                 </div>
 
-                <div class="acc-actions">
-                    @if($isEdit)
-                        <a href="{{ route('accident.add', $client->id) }}"
-                           class="acc-btn acc-btn-secondary">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                            <span>ยกเลิกการแก้ไข</span>
-                        </a>
-                    @endif
+                @if($hasAccidentRows)
+                    <div class="acc-actions">
+                        @if($isEdit)
+                            <a href="{{ route('accident.add', $client->id) }}"
+                               class="acc-btn acc-btn-secondary">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                                <span>ยกเลิกการแก้ไข</span>
+                            </a>
+                        @endif
 
-                    <button type="button"
-                            class="btn acc-btn acc-btn-primary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#accidentFormModal">
-                        <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
-                        <span>{{ $isEdit ? 'เปิดฟอร์มแก้ไข' : 'เพิ่มข้อมูลการบาดเจ็บ' }}</span>
-                    </button>
-                </div>
+                        <button type="button"
+                                class="btn acc-btn acc-btn-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#accidentFormModal">
+                            <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
+                            <span>{{ $isEdit ? 'เปิดฟอร์มแก้ไข' : 'เพิ่มข้อมูลการบาดเจ็บ' }}</span>
+                        </button>
+                    </div>
+                @endif
             </div>
         </header>
 
@@ -1383,7 +1425,9 @@
         const treatWrap = modalElement.querySelector('[data-treat-wrap]');
         const treatClientError = modalElement.querySelector('[data-treat-client-error]');
         const submitButton = form.querySelector('button[type="submit"]');
-        const initialSubmitHtml = submitButton ? submitButton.innerHTML : '';
+        const incidentDateInput = form.querySelector('input[name="incident_date"]');
+        const appointmentDateInput = form.querySelector('input[name="appointment"]');
+        const recordDateInput = form.querySelector('input[name="record_date"]');
         const shouldAutoOpen = @json(
             $isEdit || ($errors->any() && old('_form_context') === 'accident_form')
         );
@@ -1403,6 +1447,22 @@
 
             medicalFields.forEach(function (field) {
                 field.disabled = !showMedical;
+            });
+        }
+
+        function syncRelatedDateLimits() {
+            const incidentDate = incidentDateInput ? incidentDateInput.value : '';
+
+            [appointmentDateInput, recordDateInput].forEach(function (field) {
+                if (!field) {
+                    return;
+                }
+
+                if (incidentDate) {
+                    field.min = incidentDate;
+                } else {
+                    field.removeAttribute('min');
+                }
             });
         }
 
@@ -1428,6 +1488,11 @@
             if (feedback && feedback.dataset.serverError === 'true') {
                 feedback.style.display = 'none';
             }
+        }
+
+        if (incidentDateInput) {
+            incidentDateInput.addEventListener('input', syncRelatedDateLimits);
+            incidentDateInput.addEventListener('change', syncRelatedDateLimits);
         }
 
         treatInputs.forEach(function (input) {
@@ -1478,11 +1543,8 @@
             }
 
             if (submitButton) {
+                // ป้องกันการกดซ้ำ โดยคงไอคอนและข้อความเดิมของปุ่มไว้
                 submitButton.disabled = true;
-                submitButton.innerHTML = `
-                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                    <span>กำลังบันทึก...</span>
-                `;
             }
         });
 
@@ -1519,10 +1581,10 @@
 
             if (submitButton) {
                 submitButton.disabled = false;
-                submitButton.innerHTML = initialSubmitHtml;
             }
         });
 
+        syncRelatedDateLimits();
         toggleMedicalPanel();
 
         if (shouldAutoOpen && window.bootstrap && bootstrap.Modal) {
@@ -1557,6 +1619,7 @@
 
                         window.requestAnimationFrame(function () {
                             api.columns.adjust();
+                            window.requestAnimationFrame(syncAccidentTableOverflow);
                         });
                     },
                     language: {
@@ -1578,6 +1641,35 @@
                     }
                 });
 
+                function syncAccidentTableOverflow() {
+                    const tableNode = accidentDataTable.table().node();
+                    const wrapper = tableNode.closest('.dataTables_wrapper');
+
+                    if (!wrapper) {
+                        return;
+                    }
+
+                    const scrollBody = wrapper.querySelector('.dataTables_scrollBody');
+
+                    if (!scrollBody) {
+                        return;
+                    }
+
+                    /*
+                    | ใช้เฉพาะจอใหญ่ และแก้เฉพาะส่วนเกินจากการปัดเศษเล็กน้อย
+                    | หากตารางกว้างเกินพื้นที่จริง จอขนาดกลาง/เล็กยังเลื่อนได้ตามปกติ
+                    */
+                    const isLargeScreen = window.matchMedia('(min-width: 1400px)').matches;
+                    const overflowAmount = Math.ceil(scrollBody.scrollWidth - scrollBody.clientWidth);
+                    const isTrivialOverflow = isLargeScreen && overflowAmount >= 0 && overflowAmount <= 12;
+
+                    wrapper.classList.toggle('acc-no-trivial-overflow', isTrivialOverflow);
+
+                    if (isTrivialOverflow) {
+                        scrollBody.scrollLeft = 0;
+                    }
+                }
+
                 let accidentTableResizeTimer = null;
 
                 window.addEventListener('resize', function () {
@@ -1585,8 +1677,14 @@
 
                     accidentTableResizeTimer = window.setTimeout(function () {
                         accidentDataTable.columns.adjust();
+                        window.requestAnimationFrame(syncAccidentTableOverflow);
                     }, 120);
                 });
+
+                window.addEventListener('load', function () {
+                    accidentDataTable.columns.adjust();
+                    window.requestAnimationFrame(syncAccidentTableOverflow);
+                }, { once: true });
             }
         }
     });

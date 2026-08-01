@@ -120,7 +120,7 @@
 
                 <div class="psy-header-pro-text">
                     <h6 class="psy-header-pro-title">
-                        ข้อมูลการตรวจวินิจฉัยทางจิตวิทยา
+                        ข้อมูลการตรวจวินิจฉัยทางจิตเวช
                     </h6>
                     <div class="psy-header-pro-sub">
                         บันทึกผลการตรวจ วินิจฉัย และการติดตามผู้รับบริการ

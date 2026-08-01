@@ -224,7 +224,7 @@
 
             .psychiatric-page .psy-inline-table {
                 width: 100%;
-                min-width: 1120px;
+                min-width: 1180px;
                 margin-bottom: 0;
                 border-collapse: separate;
                 border-spacing: 0;
@@ -285,9 +285,7 @@
                 justify-content: center;
                 gap: 0.45rem;
                 flex-wrap: nowrap;
-                overflow-x: auto;
-                overflow-y: hidden;
-                -webkit-overflow-scrolling: touch;
+                overflow: visible;
                 padding-bottom: 0.1rem;
             }
 
@@ -492,11 +490,11 @@
                             {{-- <th style="min-width: 40px;">#</th> --}}
                             <th style="min-width: 130px;">วันที่ส่งตรวจ</th>
                             <th style="min-width: 220px;">สถานพยาบาล</th>
-                            <th style="min-width: 280px;">ผลการตรวจ</th>
+                            <th style="min-width: 300px;">ผลการตรวจ / การวินิจฉัย</th>
                             <th style="min-width: 130px;">นัดครั้งต่อไป</th>
-                            <th style="min-width: 120px;">การรักษา</th>
+                            <th style="min-width: 160px;">การรักษา</th>
                             <th style="min-width: 140px;">การขึ้นทะเบียน</th>
-                            <th style="min-width: 300px;">จัดการ</th>
+                            <th class="psy-col-actions" style="min-width: 185px;">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -504,8 +502,8 @@
                             <tr>
                                 {{-- <td class="text-center">{{ $index + 1 }}</td> --}}
 
-                                <td class="text-center">
-                                    {{ $psychiatric->sent_date ? \Carbon\Carbon::parse($psychiatric->sent_date)->format('d/m/Y') : '-' }}
+                                <td class="text-center" data-order="{{ $psychiatric->sent_date ? \Carbon\Carbon::parse($psychiatric->sent_date)->format('Y-m-d') : '' }}">
+                                    {{ $psychiatric->sent_date ? \Carbon\Carbon::parse($psychiatric->sent_date)->addYears(543)->format('d/m/Y') : '-' }}
                                 </td>
 
                                 <td class="text-wrap">
@@ -513,16 +511,22 @@
                                 </td>
 
                                 <td class="text-wrap">
-                                    {{ $psychiatric->psycho->psycho_name ?? '-' }}
+                                    <div class="fw-semibold">{{ $psychiatric->psycho->psycho_name ?? '-' }}</div>
+                                    @if(filled($psychiatric->diagnose))
+                                        <small class="text-muted d-block mt-1">{{ $psychiatric->diagnose }}</small>
+                                    @endif
                                 </td>
 
-                                <td class="text-center">
-                                    {{ $psychiatric->appoin_date ? \Carbon\Carbon::parse($psychiatric->appoin_date)->format('d/m/Y') : '-' }}
+                                <td class="text-center" data-order="{{ $psychiatric->appoin_date ? \Carbon\Carbon::parse($psychiatric->appoin_date)->format('Y-m-d') : '' }}">
+                                    {{ $psychiatric->appoin_date ? \Carbon\Carbon::parse($psychiatric->appoin_date)->addYears(543)->format('d/m/Y') : '-' }}
                                 </td>
 
                                 <td class="text-center">
                                     @if($psychiatric->drug_no === 'yes')
                                         <span class="badge rounded-pill text-bg-success">รับยา</span>
+                                        @if(filled($psychiatric->drug_name))
+                                            <small class="text-muted d-block mt-1">{{ $psychiatric->drug_name }}</small>
+                                        @endif
                                     @else
                                         <span class="badge rounded-pill text-bg-secondary">ไม่รับยา</span>
                                     @endif
@@ -536,18 +540,20 @@
                                     @endif
                                 </td>
 
-                                <td class="text-center">
+                                <td class="text-center psy-col-actions">
                                     <div class="psy-inline-action-group">
                                         <button type="button"
-                                                class="btn btn-warning btn-sm psy-inline-btn-action"
-                                                onclick="openEditPsychiatric({{ $psychiatric->id }})">
+                                                class="btn btn-warning btn-sm psy-inline-btn-action js-psychiatric-edit"
+                                                data-id="{{ $psychiatric->id }}"
+                                                data-edit-url="{{ url('/psychiatric/edit-json/' . $psychiatric->id) }}"
+                                                data-update-url="{{ url('/psychiatric/' . $psychiatric->id) }}">
                                             <i class="bi bi-pencil-square"></i>
                                             <span>แก้ไข</span>
                                         </button>
 
                                         <button type="button"
-                                                class="btn btn-danger btn-sm psy-inline-btn-action"
-                                                onclick="confirmDelete('delete-form-psychiatric-{{ $psychiatric->id }}', 'คุณต้องการลบข้อมูลจิตเวชนี้ใช่หรือไม่')">
+                                                class="btn btn-danger btn-sm psy-inline-btn-action js-psychiatric-delete"
+                                                data-form-id="delete-form-psychiatric-{{ $psychiatric->id }}">
                                             <i class="bi bi-trash"></i>
                                             <span>ลบ</span>
                                         </button>
@@ -589,7 +595,7 @@
 
         <div class="psy-inline-empty mt-2">
             <i class="bi bi-info-circle me-1"></i>
-            ยังไม่มีข้อมูลการตรวจจิตเวช
+            {{ filled($startDate) || filled($endDate) ? 'ไม่พบข้อมูลตามช่วงวันที่ที่เลือก' : 'ยังไม่มีข้อมูลการตรวจจิตเวช' }}
         </div>
     </div>
 @endif
