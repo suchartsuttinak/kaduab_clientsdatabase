@@ -2,398 +2,436 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>รายงานติดตามเด็กที่อยู่นอกสถานสงเคราะห์</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานติดตามเด็กที่พักอาศัยภายนอก</title>
 
-   <style>
-    @page{
-        size: A4 landscape;
-        margin: 12mm 14mm;
-    }
-
-    html, body{
-        margin: 0;
-        padding: 0;
-    }
-
-    body{
-        font-family: "TH Sarabun New", "Sarabun", sans-serif;
-        font-size: 17px;
-        line-height: 1.45;
-        color:#1f2937;
-        background:#f4f7fb;
-    }
-
-    .report-page{
-        width: min(96vw, 1400px);
-        margin: 24px auto;
-        background:#ffffff;
-        border:1px solid #e5e7eb;
-        border-radius: 20px;
-        padding: 28px 30px 24px;
-        box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
-    }
-
-    .report-toolbar{
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        flex-wrap:wrap;
-        gap:12px;
-        margin-bottom:20px;
-    }
-
-    .report-toolbar-left,
-    .report-toolbar-right{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        flex-wrap:wrap;
-    }
-
-    .btn{
-        appearance:none;
-        border:none;
-        text-decoration:none;
-        padding:10px 16px;
-        border-radius:14px;
-        font-size:16px;
-        font-weight:700;
-        cursor:pointer;
-        display:inline-flex;
-        align-items:center;
-        gap:8px;
-        transition:all .2s ease;
-    }
-
-    .btn:hover{
-        transform:translateY(-1px);
-    }
-
-    .btn-back{
-        background:#ffffff;
-        color:#0f172a;
-        border:1px solid #dbe3ef;
-        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
-    }
-
-    .btn-back .btn-icon{
-        width:28px;
-        height:28px;
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        border-radius:999px;
-        background:#eff6ff;
-        color:#2563eb;
-        font-size:15px;
-        font-weight:700;
-        flex:0 0 28px;
-    }
-
-    .btn-print{
-        background:#16a34a;
-        color:#ffffff;
-        box-shadow: 0 8px 18px rgba(22, 163, 74, 0.22);
-    }
-
-    .report-header{
-        text-align:center;
-        margin-bottom:20px;
-        padding-bottom:12px;
-        border-bottom:1px solid #e5e7eb;
-    }
-
-    .report-title{
-        font-size:26px;
-        font-weight:800;
-        color:#111827;
-        letter-spacing:.2px;
-        margin-bottom:4px;
-    }
-
-    .report-sub{
-        font-size:19px;
-        font-weight:700;
-        color:#334155;
-    }
-
-    .report-table-wrap{
-        overflow-x:auto;
-    }
-
-    table{
-        width:100%;
-        border-collapse:collapse;
-        table-layout:fixed;
-    }
-
-    th, td{
-        border:1px solid #374151;
-        padding:8px 9px;
-        vertical-align:top;
-        word-wrap:break-word;
-        overflow-wrap:break-word;
-    }
-
-    th{
-        background:#f8fafc;
-        text-align:center;
-        font-size:17px;
-        font-weight:800;
-        color:#111827;
-    }
-
-    td{
-        font-size:17px;
-        color:#1f2937;
-    }
-
-    .text-center{
-        text-align:center;
-    }
-
-    .no-data{
-        text-align:center;
-        padding:20px;
-        border:1px solid #374151;
-        border-radius:12px;
-        font-size:18px;
-        background:#fafafa;
-    }
-
-    .report-footer{
-        margin-top:12px;
-        display:flex;
-        justify-content:flex-end;
-    }
-
-    .report-print-date{
-        font-size:15px;
-        color:#475569;
-        text-align:right;
-    }
-
-    @media (max-width: 1024px){
-        .report-page{
-            width: calc(100vw - 24px);
-            margin: 12px auto;
-            padding: 20px 18px 18px;
-            border-radius:16px;
-        }
-    }
-
-    @media (max-width: 768px){
-        .report-page{
-            width: calc(100vw - 24px);
-            margin: 12px auto;
-            padding: 18px 16px 16px;
-            border-radius:16px;
-        }
-
-        .report-title{
-            font-size:22px;
-        }
-
-        .report-sub{
-            font-size:17px;
-        }
-
-        .btn{
-            width:100%;
-            justify-content:center;
-            font-size:15px;
-        }
-
-        .report-toolbar-left,
-        .report-toolbar-right{
-            width:100%;
-        }
-
-        th{
-            font-size:15px;
-        }
-
-        td{
-            font-size:15px;
-        }
-
-        .report-footer{
-            justify-content:flex-start;
-        }
-
-        .report-print-date{
-            text-align:left;
-            font-size:14px;
-        }
-    }
-
-    @media print{
-        @page{
+    <style>
+        @page {
             size: A4 landscape;
-            margin: 12mm 14mm;
+            margin: 11mm 12mm;
         }
 
-        html, body{
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f4f7fb;
+            color: #111827;
+            font-family: "TH Sarabun New", "Sarabun", sans-serif;
+            font-size: 17px;
+            line-height: 1.35;
+        }
+
+        .report-page {
+            width: min(96vw, 1450px);
+            margin: 22px auto;
+            padding: 24px 26px;
+            border: 1px solid #dbe3ef;
+            border-radius: 18px;
+            background: #fff;
+            box-shadow: 0 12px 34px rgba(15, 23, 42, .08);
+        }
+
+        .report-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+
+        .report-toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .report-button {
+            display: inline-flex;
+            min-height: 42px;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 8px 14px;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            text-decoration: none;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .report-button-back {
+            border-color: #cbd5e1;
+            background: #fff;
+            color: #334155;
+        }
+
+        .report-button-print {
+            border-color: #15803d;
+            background: #16a34a;
+            color: #fff;
+        }
+
+        .report-header {
+            margin-bottom: 13px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #cbd5e1;
+            text-align: center;
+        }
+
+        .report-title {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .report-subtitle {
+            margin: 4px 0 0;
+            color: #334155;
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 8px 18px;
+            margin-top: 5px;
+            color: #475569;
+            font-size: 15px;
+            flex-wrap: wrap;
+        }
+
+        .report-table-wrap {
             width: 100%;
-            margin: 0 !important;
-            padding: 0 !important;
-            background:#ffffff !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            overflow-x: auto;
         }
 
-        body{
-            font-size:16px;
-            line-height:1.35;
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
         }
 
-        .report-page{
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-            background: #ffffff !important;
+        .report-table th,
+        .report-table td {
+            border: 1px solid #475569;
+            padding: 6px 7px;
+            vertical-align: top;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
-        .report-toolbar{
-            display:none !important;
+        .report-table th {
+            background: #f1f5f9;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 800;
+            line-height: 1.25;
+            text-align: center;
         }
 
-        .report-header{
-            margin-bottom:12px !important;
-            padding-bottom:8px !important;
+        .report-table td {
+            color: #1f2937;
+            font-size: 15px;
+            line-height: 1.3;
         }
 
-        .report-title{
-            font-size:24px !important;
-            line-height:1.2 !important;
+        .text-center {
+            text-align: center;
         }
 
-        .report-sub{
-            font-size:18px !important;
-            line-height:1.3 !important;
+        .report-empty {
+            padding: 28px 18px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: #475569;
+            text-align: center;
+            font-size: 18px;
         }
 
-        .report-table-wrap{
-            overflow: visible !important;
+        .report-footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 10px;
+            color: #475569;
+            font-size: 14px;
         }
 
-        table{
-            width:100% !important;
-            table-layout: fixed !important;
+        .report-footer-right {
+            text-align: right;
         }
 
-        th, td{
-            font-size:15px !important;
-            padding:6px 7px !important;
-            line-height:1.2 !important;
+        @media (max-width: 900px) {
+            .report-page {
+                width: calc(100vw - 20px);
+                margin: 10px auto;
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .report-button {
+                flex: 1 1 auto;
+            }
+
+            .report-table {
+                min-width: 1150px;
+            }
         }
 
-        .report-print-date{
-            font-size:14px !important;
-        }
+        @media print {
+            html,
+            body {
+                width: 100%;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
 
-        .no-data{
-            font-size:16px !important;
-            padding:16px !important;
-        }
+            body {
+                font-size: 15px;
+                line-height: 1.25;
+            }
 
-        tr, td, th{
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
+            .report-page {
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+
+            .report-toolbar {
+                display: none !important;
+            }
+
+            .report-header {
+                margin-bottom: 9px;
+                padding-bottom: 7px;
+            }
+
+            .report-title {
+                font-size: 23px;
+            }
+
+            .report-subtitle {
+                font-size: 17px;
+            }
+
+            .report-meta {
+                font-size: 13px;
+            }
+
+            .report-table-wrap {
+                overflow: visible !important;
+            }
+
+            .report-table {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            .report-table thead {
+                display: table-header-group;
+            }
+
+            .report-table tfoot {
+                display: table-footer-group;
+            }
+
+            .report-table tr {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .report-table th,
+            .report-table td {
+                padding: 4.5px 5px;
+            }
+
+            .report-table th {
+                font-size: 13.5px;
+            }
+
+            .report-table td {
+                font-size: 13.5px;
+                line-height: 1.2;
+            }
+
+            .report-footer {
+                font-size: 12px;
+            }
+
+            .report-empty {
+                border-radius: 0;
+                font-size: 16px;
+            }
         }
-    }
-</style>
+    </style>
 </head>
 <body>
-
 @php
-    $printedDate = \Carbon\Carbon::now();
-    $printedDateThai = $printedDate->format('d/m/') . ($printedDate->year + 543);
+    $now = now('Asia/Bangkok');
+    $printDateThai = $now->format('d/m/') . ($now->year + 543);
+
+    $formatThaiDate = static function ($value) {
+        if (blank($value)) {
+            return '-';
+        }
+
+        $date = \Carbon\Carbon::parse($value);
+
+        return $date->format('d/m/') . ($date->year + 543);
+    };
+
+    $filterParts = [];
+
+    if (!empty($filters['date_start'])) {
+        $filterParts[] = 'ตั้งแต่ ' . $formatThaiDate($filters['date_start']);
+    }
+
+    if (!empty($filters['date_end'])) {
+        $filterParts[] = 'ถึง ' . $formatThaiDate($filters['date_end']);
+    }
+
+    if (!empty($filters['outside_id']) && filled($filterOutsideName)) {
+        $filterParts[] = 'สาเหตุ: ' . $filterOutsideName;
+    }
+
+    if (!empty($filters['follo_no'])) {
+        $filterParts[] = 'การดำเนินงาน: ' . $filters['follo_no'];
+    }
 @endphp
 
 <div class="report-page">
-
     <div class="report-toolbar">
-        <div class="report-toolbar-left">
-            <a href="{{ route('case_outside.show', $client->id) }}" class="btn btn-back">
-                <span class="btn-icon">←</span>
+        <div class="report-toolbar-group">
+            <a href="{{ route('case_outside.show', $client->id) }}"
+               class="report-button report-button-back">
+                <span aria-hidden="true">←</span>
                 <span>กลับหน้าหลัก</span>
             </a>
         </div>
 
-        <div class="report-toolbar-right">
-            <button type="button" onclick="window.print()" class="btn btn-print">
-                <span>🖨️</span>
+        <div class="report-toolbar-group">
+            <button type="button"
+                    onclick="window.print()"
+                    class="report-button report-button-print">
+                <span aria-hidden="true">🖨️</span>
                 <span>พิมพ์รายงาน</span>
             </button>
         </div>
     </div>
 
-    <div class="report-header">
-        <div class="report-title">
-            รายงานติดตามเด็กที่อยู่นอกสถานสงเคราะห์
-        </div>
+    <header class="report-header">
+        <h1 class="report-title">
+            รายงานติดตามเด็กที่พักอาศัยภายนอก
+        </h1>
 
-        <div class="report-sub">
-            ผู้รับบริการ:
-            {{ $client->fullname ?? $client->name ?? ('ID '.$client->id) }}
-        </div>
-    </div>
+        <p class="report-subtitle">
+            ผู้รับบริการ: {{ $client->fullname ?? $client->name ?? ('ID ' . $client->id) }}
+        </p>
 
-    @if($caseoutsides->count())
+        <div class="report-meta">
+            <span>จำนวน {{ number_format($caseoutsides->count()) }} รายการ</span>
+
+            @if($filterParts)
+                <span>{{ implode(' | ', $filterParts) }}</span>
+            @endif
+        </div>
+    </header>
+
+    @if($caseoutsides->isNotEmpty())
         <div class="report-table-wrap">
-            <table>
+            <table class="report-table">
+                <colgroup>
+                    <col style="width: 5%;">
+                    <col style="width: 9%;">
+                    <col style="width: 14%;">
+                    <col style="width: 13%;">
+                    <col style="width: 10%;">
+                    <col style="width: 22%;">
+                    <col style="width: 10%;">
+                    <col style="width: 17%;">
+                </colgroup>
+
                 <thead>
                     <tr>
-                        {{-- <th style="width:8%;">ลำดับ</th> --}}
-                        <th style="width:12%;">วันที่</th>
-                        <th style="width:18%;">สาเหตุ</th>
-                        <th style="width:16%;">สถานที่พัก</th>
-                        <th style="width:14%;">การดำเนินงาน</th>
+                        <th>ครั้งที่</th>
+                        <th>วันที่ติดตาม</th>
+                        <th>สาเหตุที่พักภายนอก</th>
+                        <th>สถานที่พัก</th>
+                        <th>การดำเนินงาน</th>
                         <th>ผลการติดตาม</th>
+                        <th>ผู้ติดตาม</th>
+                        <th>หมายเหตุ</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     @foreach($caseoutsides as $case)
-                        @php
-                            $caseDate = \Carbon\Carbon::parse($case->date);
-                            $caseDateThai = $caseDate->format('d/m/') . ($caseDate->year + 543);
-                        @endphp
                         <tr>
-                            {{-- <td class="text-center">{{ $case->count }}</td> --}}
-                            <td class="text-center">{{ $caseDateThai }}</td>
-                            <td>{{ $case->outside->outside_name ?? '-' }}</td>
-                            <td>{{ $case->dormitory ?? '-' }}</td>
-                            <td>{{ $case->follo_no ?? '-' }}</td>
-                            <td>{{ $case->results ?? '-' }}</td>
+                            <td class="text-center">
+                                {{ $case->count ?? $loop->iteration }}
+                            </td>
+                            <td class="text-center">
+                                {{ $formatThaiDate($case->date) }}
+                            </td>
+                            <td>
+                                {{ $case->outside->outside_name ?? '-' }}
+                            </td>
+                            <td>
+                                {{ $case->dormitory ?: '-' }}
+                            </td>
+                            <td class="text-center">
+                                {{ $case->follo_no ?: '-' }}
+                            </td>
+                            <td>
+                                {{ $case->results ?: '-' }}
+                            </td>
+                            <td>
+                                {{ $case->teacher ?: '-' }}
+                            </td>
+                            <td>
+                                {{ $case->remerk ?: '-' }}
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
-
-        <div class="report-footer">
-            <div class="report-print-date">
-                วันที่พิมพ์ {{ $printedDateThai }}
-            </div>
-        </div>
     @else
-        <div class="no-data">
-            ไม่พบข้อมูลตามเงื่อนไข
-        </div>
-
-        <div class="report-footer">
-            <div class="report-print-date">
-                วันที่พิมพ์ {{ $printedDateThai }}
-            </div>
+        <div class="report-empty">
+            ไม่พบข้อมูลตามเงื่อนไขที่กำหนด
         </div>
     @endif
 
+    <footer class="report-footer">
+        <div>
+            รายงานติดตามเด็กที่พักอาศัยภายนอก
+        </div>
+        <div class="report-footer-right">
+            วันที่พิมพ์ {{ $printDateThai }}
+        </div>
+    </footer>
 </div>
-
 </body>
 </html>

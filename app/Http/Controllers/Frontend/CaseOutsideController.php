@@ -3,238 +3,186 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\CaseActivity;
+use App\Models\CaseOutside;
+use App\Models\Client;
+use App\Models\Outside;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Validator;
-use App\Models\Client;
-use App\Models\CaseOutside;
-use App\Models\Outside;
-use App\Models\CaseActivity;
+use Illuminate\Validation\ValidationException;
 
 class CaseOutsideController extends Controller
 {
+    /**
+     * แสดงข้อมูลการติดตามเด็กที่พักอาศัยภายนอก
+     */
     public function ShowCaseOutside($client_id)
     {
-        $outside = Outside::all();
-
-        // =========================
-        // PATCH: กันเดา URL เข้า client
-        // =========================
         $client = Client::forUser(auth()->user())->findOrFail($client_id);
 
-        $caseoutsides = CaseOutside::where('client_id', $client->id)
-            ->orderBy('date', 'asc')
-            ->orderBy('count', 'asc')
+        $caseoutsides = CaseOutside::with('outside')
+            ->where('client_id', $client->id)
+            ->orderBy('date')
+            ->orderBy('id')
             ->get();
 
-        return view('frontend.client.case_outside.case_outside_create',
-            compact('client', 'client_id', 'caseoutsides', 'outside'));
+        $outside = $this->outsideOptions();
+
+        return view('frontend.client.case_outside.case_outside_create', compact(
+            'client',
+            'client_id',
+            'caseoutsides',
+            'outside'
+        ));
     }
 
-   public function StoreCaseOutside(Request $request)
-        {
-            $validated = $request->validate([
-                'date' => [
-                    'required',
-                    'date',
-                    Rule::unique('case_outsides')->where(function ($query) use ($request) {
-                        return $query->where('client_id', $request->client_id);
-                    }),
-                ],
-                'outside_id' => 'required|exists:outsides,id',
-                'follo_no'   => 'required',
-                'results'    => 'required|string',
-                'teacher'    => 'nullable|string',
-                'remerk'     => 'nullable|string',
-                'dormitory'  => 'required|string',
-                'client_id'  => 'required|exists:clients,id',
-            ], [
-                'date.required'       => 'กรุณากรอกวันที่',
-                'date.date'           => 'รูปแบบวันที่ไม่ถูกต้อง',
-                'date.unique'         => 'วันที่ติดตามนี้มีอยู่แล้ว ห้ามซ้ำ',
-                'outside_id.required' => 'กรุณาเลือกข้อมูลภายนอก',
-                'outside_id.exists'   => 'ข้อมูลภายนอกไม่ถูกต้อง',
-                'follo_no.required'   => 'กรุณากรอกเลขที่ติดตาม',
-                'results.string'      => 'ผลการติดตามต้องเป็นข้อความ',
-                'results.required'    => 'กรุณากรอกผลการติดตาม',
-                'teacher.string'      => 'ชื่อครูต้องเป็นข้อความ',
-                'remerk.string'       => 'หมายเหตุต้องเป็นข้อความ',
-                'dormitory.required'  => 'กรุณากรอกหอพัก',
-                'dormitory.string'    => 'หอพักต้องเป็นข้อความ',
-                'client_id.required'  => 'กรุณาเลือกผู้รับบริการ',
-                'client_id.exists'    => 'ผู้รับบริการไม่ถูกต้อง',
-            ]);
-
-            $client = Client::forUser(auth()->user())->findOrFail($validated['client_id']);
-            $validated['client_id'] = $client->id;
-
-            DB::transaction(function () use ($validated, $client) {
-                unset($validated['count']);
-
-                $case = CaseOutside::create($validated);
-
-                $this->reindexCounts($case->client_id);
-
-               CaseActivity::where('client_id', $client->id)
-                ->where('module', 'case_outside')
-                ->delete();
-
-            CaseActivity::record([
-                'client_id'   => $client->id,
-                'module'      => 'case_outside',
-                'type'        => 'success',
-                'title'       => 'บันทึกการติดตามเด็กที่อยู่ภายนอก',
-                'description' => 'วันที่ติดตาม: ' . ($validated['date'] ?? '-') .
-                                ' | หอพัก/ที่อยู่: ' . ($validated['dormitory'] ?? '-') .
-                                ' | ผลการติดตาม: ' . ($validated['results'] ?? '-'),
-                'occurred_at' => now(),
-                'icon'        => 'bi-geo-alt',
-                'url'         => route('case_outside.show', $client->id),
-            ]);
-            });
-
-            return redirect()->route('case_outside.show', $client->id)
-                ->with('success', 'บันทึกข้อมูลเรียบร้อย');
-        }
-
-    public function UpdateCaseOutside(Request $request, $id)
+    /**
+     * บันทึกข้อมูลการติดตามใหม่
+     */
+    public function StoreCaseOutside(Request $request)
     {
-       $case = CaseOutside::where('id', $id)
-        ->whereHas('client', function ($q) {
-            $q->forUser(auth()->user());
-        })
-        ->firstOrFail();
-
-        $validator = Validator::make($request->all(), [
-            'date' => [
-                'required',
-                'date',
-                Rule::unique('case_outsides', 'date')
-                    ->where(fn($query) => $query->where('client_id', $case->client_id))
-                    ->ignore($case->id),
-            ],
-            'outside_id' => 'required|exists:outsides,id',
-            'follo_no'   => 'required',
-            'results'    => 'required|string',
-            'teacher'    => 'nullable|string',
-            'remerk'     => 'nullable|string',
-            'dormitory'  => 'required|string',
-            'client_id'  => 'required|exists:clients,id',
+        $request->validate([
+            'client_id' => ['required', 'integer'],
         ], [
-            'date.required'       => 'กรุณากรอกวันที่',
-            'date.date'           => 'รูปแบบวันที่ไม่ถูกต้อง',
-            'date.unique'         => 'วันที่ติดตามนี้มีอยู่แล้ว ห้ามซ้ำ',
-            'outside_id.required' => 'กรุณาเลือกข้อมูลภายนอก',
-            'outside_id.exists'   => 'ข้อมูลภายนอกไม่ถูกต้อง',
-            'follo_no.required'   => 'กรุณาเลือกการดำเนินงาน',
-            'results.string'      => 'ผลการติดตามต้องเป็นข้อความ',
-            'results.required'    => 'ผลการติดตามต้องไม่เป็นค่าว่าง',
-            'teacher.string'      => 'ชื่อครูต้องเป็นข้อความ',
-            'remerk.string'       => 'หมายเหตุต้องเป็นข้อความ',
-            'dormitory.required'  => 'สถานที่พักต้องมีข้อมูล',
-            'dormitory.string'    => 'สถานที่พักต้องมีข้อมูล',
-            'client_id.required'  => 'กรุณาเลือกผู้รับบริการ',
-            'client_id.exists'    => 'ผู้รับบริการไม่ถูกต้อง',
+            'client_id.required' => 'ไม่พบข้อมูลผู้รับบริการ',
+            'client_id.integer' => 'ข้อมูลผู้รับบริการไม่ถูกต้อง',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()
-                ->back()
-                ->withErrors($validator)
-                ->withInput($request->all() + ['case_id' => $id]);
-        }
+        $client = Client::forUser(auth()->user())
+            ->findOrFail((int) $request->input('client_id'));
 
-        $data = $validator->validated();
+        $this->normalizeTextInputs($request);
 
-        // =========================
-        // PATCH: กันเปลี่ยน client_id ไป client อื่น
-        // =========================
-        Client::forUser(auth()->user())->findOrFail($data['client_id']);
+        $validated = $this->validateCaseOutside($request);
 
-        DB::transaction(function () use ($case, $data) {
-            // =========================
-            // PATCH: ไม่รับ count จากฟอร์ม ให้ระบบจัดใหม่ตาม date เท่านั้น
-            // =========================
-            unset($data['count']);
+        DB::transaction(function () use ($client, $validated) {
+            // ใช้แถว client เป็นจุดล็อกกลาง ป้องกันการบันทึกวันเดียวกันพร้อมกัน
+            Client::whereKey($client->id)->lockForUpdate()->firstOrFail();
 
-            $case->update($data);
+            $duplicate = CaseOutside::where('client_id', $client->id)
+                ->whereDate('date', $validated['date'])
+                ->exists();
 
-            // =========================
-            // AUTO: เรียง count ใหม่ตามวันที่เสมอ
-            // =========================
-            $this->reindexCounts($case->client_id);
+            if ($duplicate) {
+                throw ValidationException::withMessages([
+                    'date' => 'วันที่ติดตามนี้มีอยู่แล้วสำหรับผู้รับบริการรายนี้',
+                ]);
+            }
 
-            CaseActivity::where('client_id', $case->client_id)
-                ->where('module', 'case_outside')
-                ->delete();
-
-            CaseActivity::record([
-                'client_id'   => $case->client_id,
-                'module'      => 'case_outside',
-                'type'        => 'success',
-                'title'       => 'แก้ไขการติดตามเด็กที่อยู่ภายนอก',
-                'description' => 'วันที่ติดตาม: ' . ($data['date'] ?? '-') .
-                                ' | หอพัก/ที่อยู่: ' . ($data['dormitory'] ?? '-') .
-                                ' | ผลการติดตาม: ' . ($data['results'] ?? '-'),
-                'occurred_at' => now(),
-                'icon'        => 'bi-geo-alt',
-                'url'         => route('case_outside.show', $case->client_id),
+            CaseOutside::create([
+                'client_id' => $client->id,
+                'date' => $validated['date'],
+                'outside_id' => $validated['outside_id'],
+                'follo_no' => $validated['follo_no'],
+                'results' => $validated['results'],
+                'teacher' => $validated['teacher'] ?? null,
+                'remerk' => $validated['remerk'] ?? null,
+                'dormitory' => $validated['dormitory'],
             ]);
+
+            $this->reindexCounts($client->id);
+            $this->syncLatestActivity($client->id);
+        });
+
+        return redirect()
+            ->route('case_outside.show', $client->id)
+            ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+    }
+
+    /**
+     * แก้ไขข้อมูลการติดตาม
+     */
+    public function UpdateCaseOutside(Request $request, $id)
+    {
+        $case = CaseOutside::whereKey($id)
+            ->whereHas('client', function ($query) {
+                $query->forUser(auth()->user());
+            })
+            ->firstOrFail();
+
+        // ไม่รับ client_id จากฟอร์ม เพื่อป้องกันการย้ายข้อมูลไปยังผู้รับบริการรายอื่น
+        $this->normalizeTextInputs($request);
+
+        $validated = $this->validateCaseOutside($request, $case->id, $case->client_id);
+
+        DB::transaction(function () use ($case, $validated) {
+            Client::whereKey($case->client_id)->lockForUpdate()->firstOrFail();
+
+            $lockedCase = CaseOutside::whereKey($case->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $duplicate = CaseOutside::where('client_id', $lockedCase->client_id)
+                ->whereDate('date', $validated['date'])
+                ->where('id', '<>', $lockedCase->id)
+                ->exists();
+
+            if ($duplicate) {
+                throw ValidationException::withMessages([
+                    'date' => 'วันที่ติดตามนี้มีอยู่แล้วสำหรับผู้รับบริการรายนี้',
+                ]);
+            }
+
+            $lockedCase->update([
+                'date' => $validated['date'],
+                'outside_id' => $validated['outside_id'],
+                'follo_no' => $validated['follo_no'],
+                'results' => $validated['results'],
+                'teacher' => $validated['teacher'] ?? null,
+                'remerk' => $validated['remerk'] ?? null,
+                'dormitory' => $validated['dormitory'],
+            ]);
+
+            $this->reindexCounts($lockedCase->client_id);
+            $this->syncLatestActivity($lockedCase->client_id);
         });
 
         return redirect()
             ->route('case_outside.show', $case->client_id)
-            ->with('success', 'แก้ไขข้อมูลเรียบร้อย');
-    }
-
-    public function DeleteCaseOutside($id)
-    {
-        $case = CaseOutside::where('id', $id)
-            ->whereHas('client', function ($q) {
-                $q->forUser(auth()->user());
-            })
-            ->firstOrFail();
-
-        $client_id = $case->client_id;
-
-        DB::transaction(function () use ($case) {
-            $client_id = $case->client_id;
-
-              CaseActivity::where('client_id', $client_id)
-            ->where('module', 'case_outside')
-            ->delete();
-
-            $case->delete();
-
-            $this->reindexCounts($client_id);
-        });
-
-        return redirect()->route('case_outside.show', $client_id)
-            ->with('success', 'ลบข้อมูลเรียบร้อย');
+            ->with('success', 'แก้ไขข้อมูลเรียบร้อยแล้ว');
     }
 
     /**
-     * Reindex count ตามวันที่ (asc) ให้ต่อเนื่อง 1..n
+     * ลบข้อมูลการติดตาม
      */
-    private function reindexCounts($client_id)
+    public function DeleteCaseOutside($id)
     {
-        $items = CaseOutside::where('client_id', $client_id)
-            ->orderBy('date', 'asc')
-            ->orderBy('id', 'asc')
-            ->get();
+        $case = CaseOutside::whereKey($id)
+            ->whereHas('client', function ($query) {
+                $query->forUser(auth()->user());
+            })
+            ->firstOrFail();
 
-        $counter = 1;
-        foreach ($items as $item) {
-            $item->update(['count' => $counter]);
-            $counter++;
-        }
+        $clientId = $case->client_id;
+
+        DB::transaction(function () use ($case, $clientId) {
+            Client::whereKey($clientId)->lockForUpdate()->firstOrFail();
+
+            $lockedCase = CaseOutside::whereKey($case->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $lockedCase->delete();
+
+            $this->reindexCounts($clientId);
+            $this->syncLatestActivity($clientId);
+        });
+
+        return redirect()
+            ->route('case_outside.show', $clientId)
+            ->with('success', 'ลบข้อมูลเรียบร้อยแล้ว');
     }
 
+    /**
+     * หน้ากำหนดเงื่อนไขรายงาน
+     */
     public function FilterCaseOutside($client_id)
     {
         $client = Client::forUser(auth()->user())->findOrFail($client_id);
-        $outside = Outside::all();
+        $outside = $this->outsideOptions();
 
         return view('frontend.client.case_outside.case_outside_filter', compact(
             'client',
@@ -242,35 +190,229 @@ class CaseOutsideController extends Controller
         ));
     }
 
+    /**
+     * รายงานข้อมูลการติดตาม
+     */
     public function ReportCaseOutside(Request $request, $client_id)
     {
         $client = Client::forUser(auth()->user())->findOrFail($client_id);
 
-        $query = CaseOutside::where('client_id', $client->id)->with('outside');
+        $today = now('Asia/Bangkok')->toDateString();
 
-        if ($request->filled('date_start')) {
-            $query->whereDate('date', '>=', $request->date_start);
+        $filters = $request->validate([
+            'date_start' => ['nullable', 'date', 'before_or_equal:' . $today],
+            'date_end' => [
+                'nullable',
+                'date',
+                'after_or_equal:date_start',
+                'before_or_equal:' . $today,
+            ],
+            'outside_id' => ['nullable', 'integer', 'exists:outsides,id'],
+            'follo_no' => ['nullable', Rule::in($this->followMethods())],
+        ], [
+            'date_start.date' => 'วันที่เริ่มต้นไม่ถูกต้อง',
+            'date_start.before_or_equal' => 'วันที่เริ่มต้นต้องไม่เกินวันที่ปัจจุบัน',
+            'date_end.date' => 'วันที่สิ้นสุดไม่ถูกต้อง',
+            'date_end.after_or_equal' => 'วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น',
+            'date_end.before_or_equal' => 'วันที่สิ้นสุดต้องไม่เกินวันที่ปัจจุบัน',
+            'outside_id.exists' => 'สาเหตุที่เลือกไม่ถูกต้อง',
+            'follo_no.in' => 'รูปแบบการดำเนินงานไม่ถูกต้อง',
+        ]);
+
+        $query = CaseOutside::with('outside')
+            ->where('client_id', $client->id);
+
+        if (!empty($filters['date_start'])) {
+            $query->whereDate('date', '>=', $filters['date_start']);
         }
 
-        if ($request->filled('date_end')) {
-            $query->whereDate('date', '<=', $request->date_end);
+        if (!empty($filters['date_end'])) {
+            $query->whereDate('date', '<=', $filters['date_end']);
         }
 
-        if ($request->filled('outside_id')) {
-            $query->where('outside_id', $request->outside_id);
+        if (!empty($filters['outside_id'])) {
+            $query->where('outside_id', $filters['outside_id']);
         }
 
-        if ($request->filled('follo_no')) {
-            $query->where('follo_no', $request->follo_no);
+        if (!empty($filters['follo_no'])) {
+            $query->where('follo_no', $filters['follo_no']);
         }
 
-        $caseoutsides = $query->orderBy('date', 'asc')
-            ->orderBy('count', 'asc')
+        $caseoutsides = $query
+            ->orderBy('date')
+            ->orderBy('id')
             ->get();
+
+        $filterOutsideName = !empty($filters['outside_id'])
+            ? Outside::whereKey($filters['outside_id'])->value('outside_name')
+            : null;
 
         return view('frontend.client.case_outside.case_outside_report', compact(
             'client',
-            'caseoutsides'
+            'caseoutsides',
+            'filters',
+            'filterOutsideName'
         ));
+    }
+
+    /**
+     * กฎตรวจสอบข้อมูล เพิ่ม/แก้ไข
+     */
+    private function validateCaseOutside(
+        Request $request,
+        ?int $ignoreId = null,
+        ?int $clientId = null
+    ): array {
+        $today = now('Asia/Bangkok')->toDateString();
+
+        $dateRule = Rule::unique('case_outsides', 'date')
+            ->where(function ($query) use ($request, $clientId) {
+                return $query->where(
+                    'client_id',
+                    $clientId ?? (int) $request->input('client_id')
+                );
+            });
+
+        if ($ignoreId !== null) {
+            $dateRule->ignore($ignoreId);
+        }
+
+        return $request->validate([
+            'date' => [
+                'required',
+                'date',
+                'before_or_equal:' . $today,
+                $dateRule,
+            ],
+            'outside_id' => ['required', 'integer', 'exists:outsides,id'],
+            'follo_no' => ['required', Rule::in($this->followMethods())],
+            'results' => ['required', 'string', 'max:5000'],
+            'teacher' => ['nullable', 'string', 'max:255'],
+            'remerk' => ['nullable', 'string', 'max:5000'],
+            'dormitory' => ['required', 'string', 'max:255'],
+        ], [
+            'date.required' => 'กรุณาระบุวันที่ติดตาม',
+            'date.date' => 'รูปแบบวันที่ติดตามไม่ถูกต้อง',
+            'date.before_or_equal' => 'วันที่ติดตามต้องไม่เกินวันที่ปัจจุบัน',
+            'date.unique' => 'วันที่ติดตามนี้มีอยู่แล้วสำหรับผู้รับบริการรายนี้',
+
+            'outside_id.required' => 'กรุณาเลือกสาเหตุที่พักอาศัยอยู่ภายนอก',
+            'outside_id.integer' => 'ข้อมูลสาเหตุไม่ถูกต้อง',
+            'outside_id.exists' => 'ไม่พบข้อมูลสาเหตุที่เลือก',
+
+            'follo_no.required' => 'กรุณาเลือกการดำเนินงาน',
+            'follo_no.in' => 'รูปแบบการดำเนินงานไม่ถูกต้อง',
+
+            'results.required' => 'กรุณาระบุผลการติดตาม',
+            'results.string' => 'ผลการติดตามต้องเป็นข้อความ',
+            'results.max' => 'ผลการติดตามต้องไม่เกิน 5,000 ตัวอักษร',
+
+            'teacher.string' => 'ชื่อผู้ติดตามต้องเป็นข้อความ',
+            'teacher.max' => 'ชื่อผู้ติดตามต้องไม่เกิน 255 ตัวอักษร',
+
+            'remerk.string' => 'หมายเหตุต้องเป็นข้อความ',
+            'remerk.max' => 'หมายเหตุต้องไม่เกิน 5,000 ตัวอักษร',
+
+            'dormitory.required' => 'กรุณาระบุสถานที่พัก',
+            'dormitory.string' => 'สถานที่พักต้องเป็นข้อความ',
+            'dormitory.max' => 'สถานที่พักต้องไม่เกิน 255 ตัวอักษร',
+        ]);
+    }
+
+    /**
+     * ตัดช่องว่าง และแปลงข้อความว่างเป็น null
+     */
+    private function normalizeTextInputs(Request $request): void
+    {
+        $request->merge([
+            'dormitory' => trim((string) $request->input('dormitory')),
+            'results' => trim((string) $request->input('results')),
+            'teacher' => $this->nullableTrim($request->input('teacher')),
+            'remerk' => $this->nullableTrim($request->input('remerk')),
+        ]);
+    }
+
+    private function nullableTrim($value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    /**
+     * เรียงเลขครั้งใหม่ตามวันที่ โดยอัปเดตเฉพาะรายการที่เลขเปลี่ยน
+     */
+    private function reindexCounts(int $clientId): void
+    {
+        $items = CaseOutside::where('client_id', $clientId)
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get(['id', 'count']);
+
+        foreach ($items as $index => $item) {
+            $newCount = $index + 1;
+
+            if ((int) $item->count !== $newCount) {
+                DB::table('case_outsides')
+                    ->where('id', $item->id)
+                    ->update(['count' => $newCount]);
+            }
+        }
+    }
+
+    /**
+     * ให้ CaseActivity สะท้อนรายการล่าสุดเสมอ แม้มีการแก้ไขหรือลบรายการ
+     */
+    private function syncLatestActivity(int $clientId): void
+    {
+        CaseActivity::where('client_id', $clientId)
+            ->where('module', 'case_outside')
+            ->delete();
+
+        $latest = CaseOutside::with('outside')
+            ->where('client_id', $clientId)
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$latest) {
+            return;
+        }
+
+        $occurredAt = Carbon::parse(
+            $latest->date,
+            'Asia/Bangkok'
+        )->startOfDay();
+
+        CaseActivity::record([
+            'client_id' => $clientId,
+            'module' => 'case_outside',
+            'type' => 'success',
+            'title' => 'ติดตามเด็กที่พักอาศัยภายนอก',
+            'description' => 'ครั้งที่ ' . ($latest->count ?? '-') .
+                ' | วันที่ติดตาม: ' . ($latest->date ?? '-') .
+                ' | สถานที่พัก: ' . Str::limit($latest->dormitory ?: '-', 80) .
+                ' | ผลการติดตาม: ' . Str::limit($latest->results ?: '-', 160),
+            'occurred_at' => $occurredAt,
+            'icon' => 'bi-geo-alt',
+            'url' => route('case_outside.show', $clientId),
+        ]);
+    }
+
+    private function outsideOptions()
+    {
+        return Outside::query()
+            ->orderBy('outside_name')
+            ->orderBy('id')
+            ->get(['id', 'outside_name']);
+    }
+
+    private function followMethods(): array
+    {
+        return [
+            'หน่วยงานไปเอง',
+            'โทรศัพท์',
+            'จดหมาย',
+        ];
     }
 }

@@ -209,26 +209,22 @@
                name="age_text"
                value="{{ $client->birth_date ? \Carbon\Carbon::parse($client->birth_date)->age . ' ปี' : '-' }}">
 
-    </div>
+         </div>
 
-    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-3 mb-3">
 
-        <label class="form-label fw-bold">
-            ชั้นเรียน
-        </label>
+                        <label class="form-label fw-bold">
+                            ชั้นเรียน
+                        </label>
 
-        <input type="text"
-               class="form-control bg-light"
-               value="{{ optional($client->educationRecords->sortByDesc('record_date')->first()?->education)->education_name ?? '-' }}"
-               readonly>
+                        <input type="text"
+                            class="form-control bg-light"
+                            value="{{ $classLevel ?: '-' }}"
+                            readonly>
 
-        <input type="hidden"
-               name="class_level"
-               value="{{ optional($client->educationRecords->sortByDesc('record_date')->first()?->education)->education_name ?? '-' }}">
+                    </div>
 
-    </div>
-
-</div>
+                    </div>
 
                 @php
                     $sectionClasses = [

@@ -45,31 +45,33 @@ class EducationRecordController extends Controller
 
         if ($this->hasDuplicateRecord(
             $client->id,
-            (int) $validated['education_id'],
-            (int) $validated['semester_id']
+            (int) $validated['semester_id'],
+            (string) $validated['school_name']
         )) {
             return back()
                 ->withInput()
-                ->with('error', 'มีการบันทึกผลการเรียนในระดับการศึกษาและภาคเรียนนี้แล้ว');
+                ->with('error', 'ผู้รับบริการรายนี้มีผลการเรียนของสถานศึกษาและภาคเรียน/ปีการศึกษานี้แล้ว ไม่สามารถบันทึกซ้ำได้');
         }
 
         $record = DB::transaction(function () use ($validated, $client) {
             // ล็อกผู้รับบริการ ป้องกันคำขอบันทึกพร้อมกันสร้างรายการซ้ำ
             Client::query()->whereKey($client->id)->lockForUpdate()->first();
 
-            if ($this->hasDuplicateRecord(
-                $client->id,
-                (int) $validated['education_id'],
-                (int) $validated['semester_id']
-            )) {
-                throw ValidationException::withMessages([
-                    'semester_id' => 'มีการบันทึกผลการเรียนในระดับการศึกษาและภาคเรียนนี้แล้ว',
-                ]);
-            }
-
             $institution = Institution::firstOrCreate([
                 'institution_name' => $validated['school_name'],
             ]);
+
+            if ($this->hasDuplicateRecord(
+                $client->id,
+                (int) $validated['semester_id'],
+                (string) $validated['school_name'],
+                null,
+                (int) $institution->id
+            )) {
+                throw ValidationException::withMessages([
+                    'semester_id' => 'ผู้รับบริการรายนี้มีผลการเรียนของสถานศึกษาและภาคเรียน/ปีการศึกษานี้แล้ว ไม่สามารถบันทึกซ้ำได้',
+                ]);
+            }
 
             $record = EducationRecord::create([
                 'client_id'      => $client->id,
@@ -129,13 +131,13 @@ class EducationRecordController extends Controller
 
         if ($this->hasDuplicateRecord(
             $record->client_id,
-            (int) $validated['education_id'],
             (int) $validated['semester_id'],
+            (string) $validated['school_name'],
             $record->id
         )) {
             return back()
                 ->withInput()
-                ->with('error', 'มีการบันทึกผลการเรียนในระดับการศึกษาและภาคเรียนนี้แล้ว');
+                ->with('error', 'ผู้รับบริการรายนี้มีผลการเรียนของสถานศึกษาและภาคเรียน/ปีการศึกษานี้แล้ว ไม่สามารถแก้ไขให้ซ้ำกันได้');
         }
 
         DB::transaction(function () use ($validated, $record) {
@@ -149,20 +151,21 @@ class EducationRecordController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            if ($this->hasDuplicateRecord(
-                $lockedRecord->client_id,
-                (int) $validated['education_id'],
-                (int) $validated['semester_id'],
-                $lockedRecord->id
-            )) {
-                throw ValidationException::withMessages([
-                    'semester_id' => 'มีการบันทึกผลการเรียนในระดับการศึกษาและภาคเรียนนี้แล้ว',
-                ]);
-            }
-
             $institution = Institution::firstOrCreate([
                 'institution_name' => $validated['school_name'],
             ]);
+
+            if ($this->hasDuplicateRecord(
+                $lockedRecord->client_id,
+                (int) $validated['semester_id'],
+                (string) $validated['school_name'],
+                $lockedRecord->id,
+                (int) $institution->id
+            )) {
+                throw ValidationException::withMessages([
+                    'semester_id' => 'ผู้รับบริการรายนี้มีผลการเรียนของสถานศึกษาและภาคเรียน/ปีการศึกษานี้แล้ว ไม่สามารถแก้ไขให้ซ้ำกันได้',
+                ]);
+            }
 
             // ไม่อัปเดต client_id เพื่อป้องกันย้ายรายการไปยังผู้รับบริการคนอื่น
             $lockedRecord->update([
@@ -418,10 +421,8 @@ class EducationRecordController extends Controller
 
     private function normalizeRequest(Request $request): void
     {
-        $schoolName = preg_replace(
-            '/\s+/u',
-            ' ',
-            trim((string) $request->input('school_name'))
+        $schoolName = $this->normalizeSchoolName(
+            (string) $request->input('school_name')
         );
 
         $subjects = collect($request->input('subjects', []))
@@ -464,18 +465,59 @@ class EducationRecordController extends Controller
         return $syncData;
     }
 
+    /**
+     * ป้องกันการบันทึกซ้ำตามเงื่อนไข:
+     * ผู้รับบริการคนเดิม + สถานศึกษาเดิม + ภาคเรียน/ปีการศึกษาเดิม
+     *
+     * ไม่ใช้ระดับการศึกษาเป็นส่วนหนึ่งของเงื่อนไข เพราะการเปลี่ยนระดับชั้น
+     * ต้องไม่ทำให้สามารถสร้างรายการซ้ำในสถานศึกษาและภาคเรียนเดิมได้
+     */
     private function hasDuplicateRecord(
         int $clientId,
-        int $educationId,
         int $semesterId,
-        ?int $ignoreId = null
+        string $schoolName,
+        ?int $ignoreId = null,
+        ?int $institutionId = null
     ): bool {
+        $schoolKey = $this->schoolNameKey($schoolName);
+
         return EducationRecord::query()
             ->where('client_id', $clientId)
-            ->where('education_id', $educationId)
             ->where('semester_id', $semesterId)
-            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
-            ->exists();
+            ->when(
+                $ignoreId !== null,
+                fn ($query) => $query->where('id', '!=', $ignoreId)
+            )
+            ->get(['id', 'institution_id', 'school_name'])
+            ->contains(function (EducationRecord $candidate) use (
+                $institutionId,
+                $schoolKey
+            ): bool {
+                if (
+                    $institutionId !== null
+                    && $candidate->institution_id !== null
+                    && (int) $candidate->institution_id === $institutionId
+                ) {
+                    return true;
+                }
+
+                return $this->schoolNameKey(
+                    (string) $candidate->school_name
+                ) === $schoolKey;
+            });
+    }
+
+    private function normalizeSchoolName(string $schoolName): string
+    {
+        return preg_replace('/\s+/u', ' ', trim($schoolName)) ?? '';
+    }
+
+    private function schoolNameKey(string $schoolName): string
+    {
+        return mb_strtolower(
+            $this->normalizeSchoolName($schoolName),
+            'UTF-8'
+        );
     }
 
     private function normalizeGpa($gpa): ?string

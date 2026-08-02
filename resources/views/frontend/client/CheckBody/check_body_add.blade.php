@@ -556,6 +556,184 @@
         border-radius: 8px !important;
     }
 
+
+
+    /* =========================================================
+       HEADER สำหรับกรณียังไม่มีข้อมูล
+       รูปแบบเดียวกับหน้า idstation / addictive
+    ========================================================= */
+    .checkbody-page .cb-empty-header {
+        position: relative;
+        overflow: hidden;
+        min-height: 142px;
+        margin-bottom: 1.75rem;
+        padding: 1.45rem 1.5rem;
+        border: 1px solid var(--cb-primary-border);
+        border-radius: 18px;
+        background:
+            linear-gradient(135deg, #f0fdf9 0%, #f8fffc 58%, #ffffff 100%);
+        box-shadow: 0 10px 28px rgba(15, 111, 97, .08);
+    }
+
+    .checkbody-page .cb-empty-header::after {
+        content: "";
+        position: absolute;
+        right: -58px;
+        top: -72px;
+        width: 190px;
+        height: 190px;
+        border: 26px solid rgba(15, 111, 97, .045);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .checkbody-page .cb-empty-header-inner {
+        position: relative;
+        z-index: 1;
+        min-height: 92px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .checkbody-page .cb-empty-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .checkbody-page .cb-empty-header-icon {
+        display: inline-flex;
+        width: 60px;
+        height: 60px;
+        flex: 0 0 60px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--cb-primary-border);
+        border-radius: 18px;
+        background: linear-gradient(145deg, #dcfdf5, #f0fdf9);
+        color: var(--cb-primary);
+        font-size: 1.45rem;
+        box-shadow: 0 8px 18px rgba(15, 111, 97, .12);
+    }
+
+    .checkbody-page .cb-empty-header-text {
+        min-width: 0;
+    }
+
+    .checkbody-page .cb-empty-header-title {
+        margin: 0;
+        color: #143b38;
+        font-size: 1.18rem;
+        font-weight: 800;
+        line-height: 1.35;
+        letter-spacing: -.01em;
+    }
+
+    .checkbody-page .cb-empty-header-client {
+        margin-top: .28rem;
+        color: var(--cb-muted);
+        font-size: .84rem;
+        line-height: 1.5;
+    }
+
+    .checkbody-page .cb-empty-header-client strong {
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .checkbody-page .cb-empty-back-btn {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        gap: .42rem;
+        padding: .55rem .95rem;
+        border: 1px solid #8b5cf6;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, .92);
+        color: #7c3aed;
+        font-size: .86rem;
+        font-weight: 700;
+        line-height: 1.2;
+        text-decoration: none;
+        white-space: nowrap;
+        box-shadow: 0 5px 12px rgba(124, 58, 237, .08);
+        transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+    }
+
+    .checkbody-page .cb-empty-back-btn:hover,
+    .checkbody-page .cb-empty-back-btn:focus {
+        color: #6d28d9;
+        background: #faf5ff;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 16px rgba(124, 58, 237, .12);
+    }
+
+    .checkbody-page .cb-empty-state {
+        min-height: 320px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @media (max-width: 767.98px) {
+        .checkbody-page .cb-empty-header {
+            min-height: 168px;
+            margin-bottom: 1rem;
+            padding: 1.35rem 1rem !important;
+            border-radius: 16px;
+        }
+
+        .checkbody-page .cb-empty-header-inner {
+            min-height: 124px;
+            align-content: center;
+            row-gap: 1rem;
+        }
+
+        .checkbody-page .cb-empty-header-inner,
+        .checkbody-page .cb-empty-header-left {
+            width: 100%;
+        }
+
+        .checkbody-page .cb-empty-back-btn {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .checkbody-page .cb-empty-header {
+            min-height: 176px;
+            padding-top: 1.5rem !important;
+            padding-bottom: 1.5rem !important;
+        }
+
+        .checkbody-page .cb-empty-header-left {
+            align-items: center;
+            gap: .8rem;
+        }
+
+        .checkbody-page .cb-empty-header-icon {
+            width: 52px;
+            height: 52px;
+            flex-basis: 52px;
+            border-radius: 15px;
+            font-size: 1.25rem;
+        }
+
+        .checkbody-page .cb-empty-header-title {
+            font-size: 1.02rem;
+        }
+
+        .checkbody-page .cb-empty-header-client {
+            font-size: .78rem;
+        }
+    }
+
     body.checkbody-modal-open #checkBodyFormModal { z-index: 20000 !important; }
     body.checkbody-modal-open .modal-backdrop { z-index: 19990 !important; }
 
@@ -1058,67 +1236,95 @@
 
 <div class="container-fluid px-2 px-lg-3 checkbody-page">
     <div class="cb-shell">
-        <section class="cb-hero" aria-labelledby="checkBodyPageTitle">
-            <div class="cb-hero-grid">
-                <div class="cb-heading-row">
-                    <div class="cb-heading-icon" aria-hidden="true">
-                        <i class="bi bi-heart-pulse"></i>
-                    </div>
+        @if($hasRows)
+            <section class="cb-hero" aria-labelledby="checkBodyPageTitle">
+                <div class="cb-hero-grid">
+                    <div class="cb-heading-row">
+                        <div class="cb-heading-icon" aria-hidden="true">
+                            <i class="bi bi-heart-pulse"></i>
+                        </div>
 
-                    <div class="cb-heading-content">
-                        <h1 class="cb-page-title" id="checkBodyPageTitle">
-                            บันทึกการตรวจสุขภาพเบื้องต้น
-                        </h1>
+                        <div class="cb-heading-content">
+                            <h1 class="cb-page-title" id="checkBodyPageTitle">
+                                บันทึกการตรวจสุขภาพเบื้องต้น
+                            </h1>
 
-                        <p class="cb-page-subtitle">
-                            จัดเก็บผลการตรวจร่างกาย พัฒนาการ การส่งเสริม และข้อมูลสุขภาพของผู้รับบริการอย่างเป็นระบบ
-                        </p>
+                            <p class="cb-page-subtitle">
+                                จัดเก็บผลการตรวจร่างกาย พัฒนาการ การส่งเสริม และข้อมูลสุขภาพของผู้รับบริการอย่างเป็นระบบ
+                            </p>
 
-                        <div class="cb-client-meta">
-                            <span class="cb-meta-chip">
-                                <i class="bi bi-person"></i>
-                                ผู้รับบริการ:
-                                <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
-                            </span>
-
-                            @if(!empty($client->age))
+                            <div class="cb-client-meta">
                                 <span class="cb-meta-chip">
-                                    <i class="bi bi-calendar-heart"></i>
-                                    อายุ:
-                                    <strong>{{ $client->age }} ปี</strong>
+                                    <i class="bi bi-person"></i>
+                                    ผู้รับบริการ:
+                                    <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
                                 </span>
-                            @endif
 
-                            <span class="cb-meta-chip">
-                                <i class="bi bi-clipboard2-pulse"></i>
-                                จำนวนบันทึก:
-                                <strong>{{ number_format($totalRows) }} รายการ</strong>
-                            </span>
+                                @if(!empty($client->age))
+                                    <span class="cb-meta-chip">
+                                        <i class="bi bi-calendar-heart"></i>
+                                        อายุ:
+                                        <strong>{{ $client->age }} ปี</strong>
+                                    </span>
+                                @endif
+
+                                <span class="cb-meta-chip">
+                                    <i class="bi bi-clipboard2-pulse"></i>
+                                    จำนวนบันทึก:
+                                    <strong>{{ number_format($totalRows) }} รายการ</strong>
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="cb-actions">
-                    @if($isEdit)
-                        <a href="{{ route('check_body.add', $client->id) }}"
-                           class="btn cb-btn cb-btn-secondary">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                            ยกเลิกการแก้ไข
-                        </a>
-                    @endif
+                    <div class="cb-actions">
+                        @if($isEdit)
+                            <a href="{{ route('check_body.add', $client->id) }}"
+                               class="btn cb-btn cb-btn-secondary">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                                ยกเลิกการแก้ไข
+                            </a>
+                        @endif
 
-              @if(isset($checkbodies) && $checkbodies->isNotEmpty())
-    <button type="button"
-            class="btn cb-btn cb-btn-primary"
-            data-bs-toggle="modal"
-            data-bs-target="#checkBodyFormModal">
-        <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
-        {{ $isEdit ? 'เปิดฟอร์มแก้ไข' : 'เพิ่มผลการตรวจ' }}
-    </button>
-@endif
+                        <button type="button"
+                                class="btn cb-btn cb-btn-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#checkBodyFormModal">
+                            <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
+                            {{ $isEdit ? 'เปิดฟอร์มแก้ไข' : 'เพิ่มผลการตรวจ' }}
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        @else
+            <section class="cb-empty-header" aria-labelledby="checkBodyPageTitle">
+                <div class="cb-empty-header-inner">
+                    <div class="cb-empty-header-left">
+                        <div class="cb-empty-header-icon" aria-hidden="true">
+                            <i class="bi bi-heart-pulse"></i>
+                        </div>
+
+                        <div class="cb-empty-header-text">
+                            <h1 class="cb-empty-header-title" id="checkBodyPageTitle">
+                                บันทึกการตรวจสุขภาพเบื้องต้น
+                            </h1>
+
+                            <div class="cb-empty-header-client">
+                                ผู้รับบริการ:
+                                <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="{{ route('admin.index', $client->id) }}"
+                       class="cb-empty-back-btn"
+                       aria-label="กลับหน้าหลักผู้รับบริการ">
+                        <i class="bi bi-arrow-left-circle"></i>
+                        <span>กลับ</span>
+                    </a>
+                </div>
+            </section>
+        @endif
 
         @if($hasRows)
             <section class="cb-stats" aria-label="สรุปข้อมูลการตรวจสุขภาพ">

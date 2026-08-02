@@ -1,0 +1,507 @@
+/*
+ | Escape responsive / modal fix
+ | โหลดหลัง escape.css เพื่อใช้ override เฉพาะโมดูลนี้
+ */
+
+:root{
+    --escape-top-offset: var(--topbar-height, 76px);
+}
+
+/* ---------- Page ---------- */
+.escape-page,
+.escape-edit-page,
+.escape-create-page,
+.escape-report-page{
+    min-width:0;
+}
+
+.escape-page .escape-shell,
+.escape-edit-page,
+.escape-create-page{
+    width:100%;
+    min-width:0;
+}
+
+.escape-page .escape-table-wrapper,
+.escape-edit-page .table-responsive{
+    width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+}
+
+.escape-page .escape-action-group,
+.escape-edit-page .escape-action-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:nowrap;
+    gap:6px;
+    white-space:nowrap;
+}
+
+.escape-page .escape-action-group form,
+.escape-edit-page .escape-action-wrap form{
+    margin:0;
+}
+
+.escape-page .escape-action-btn,
+.escape-edit-page .escape-action-wrap .btn{
+    flex:0 0 auto;
+}
+
+.escape-page .escape-table__remark{
+    white-space:normal;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+}
+
+/* ---------- Modal layer ---------- */
+.escape-module-modal.modal,
+.escape-modal.modal{
+    z-index:2055 !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+}
+
+.modal-backdrop.escape-module-backdrop,
+body:has(.escape-module-modal.show) .modal-backdrop,
+body:has(.escape-modal.show) .modal-backdrop{
+    z-index:2050 !important;
+}
+
+.escape-module-modal .modal-dialog,
+.escape-modal .modal-dialog{
+    width:min(1120px, calc(100vw - 32px));
+    max-width:1120px;
+    margin:calc(var(--escape-top-offset) + 12px) auto 16px;
+    height:calc(100dvh - var(--escape-top-offset) - 28px);
+    max-height:calc(100dvh - var(--escape-top-offset) - 28px);
+    display:flex;
+    align-items:stretch;
+}
+
+.escape-module-modal .modal-content,
+.escape-modal .modal-content{
+    width:100%;
+    max-height:100%;
+    overflow:hidden;
+    border:0;
+    border-radius:20px;
+    box-shadow:0 24px 70px rgba(15, 23, 42, .24);
+}
+
+.escape-module-modal .modal-content > form,
+.escape-modal .modal-content > form{
+    min-height:0;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+}
+
+.escape-module-modal .modal-header,
+.escape-modal .modal-header{
+    flex:0 0 auto;
+    min-height:70px;
+    padding:14px 20px;
+}
+
+.escape-module-modal .modal-title,
+.escape-modal .modal-title{
+    font-size:1.05rem;
+    line-height:1.35;
+}
+
+.escape-module-modal .modal-body,
+.escape-modal .modal-body{
+    min-height:0;
+    flex:1 1 auto;
+    overflow-y:auto !important;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding:20px;
+    scrollbar-gutter:stable;
+}
+
+.escape-module-modal .modal-footer,
+.escape-modal .modal-footer{
+    flex:0 0 auto;
+    position:relative;
+    z-index:2;
+    padding:12px 20px;
+    margin:0;
+    background:#fff;
+    border-top:1px solid #e5e7eb;
+    box-shadow:0 -6px 18px rgba(15, 23, 42, .04);
+}
+
+.escape-module-modal .modal-body .row,
+.escape-modal .modal-body .row{
+    --bs-gutter-x:1rem;
+    --bs-gutter-y:1rem;
+}
+
+.escape-module-modal .form-label,
+.escape-modal .form-label{
+    margin-bottom:6px;
+    color:#1f2937;
+    font-weight:700;
+}
+
+.escape-module-modal .form-control,
+.escape-module-modal .form-select,
+.escape-modal .form-control,
+.escape-modal .form-select{
+    min-height:44px;
+    border-radius:11px;
+}
+
+.escape-module-modal textarea.form-control,
+.escape-modal textarea.form-control{
+    min-height:100px;
+    resize:vertical;
+}
+
+.escape-module-modal .escape-modal-section{
+    padding:18px;
+    border:1px solid #e2e8f0;
+    border-radius:16px;
+    background:#fff;
+}
+
+.escape-module-modal .escape-modal-section + .escape-modal-section{
+    margin-top:14px;
+}
+
+.escape-module-modal .escape-modal-section-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0 0 14px;
+    color:#0f172a;
+    font-size:.98rem;
+    font-weight:800;
+}
+
+.escape-module-modal .escape-auto-count-display{
+    display:flex;
+    align-items:center;
+    min-height:44px;
+    color:#64748b;
+    background:#f8fafc;
+    font-weight:600;
+}
+
+.escape-module-modal .escape-modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    width:100%;
+}
+
+.escape-module-modal .escape-modal-actions .btn,
+.escape-modal .modal-footer .btn{
+    min-width:118px;
+    min-height:42px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    border-radius:11px;
+    font-weight:700;
+}
+
+.escape-module-modal .is-invalid,
+.escape-modal .is-invalid{
+    padding-right:calc(1.5em + .75rem);
+}
+
+/* ---------- Full-page create/edit ---------- */
+.escape-create-page{
+    padding:22px 12px 34px;
+}
+
+.escape-create-page .escape-create-shell{
+    max-width:1080px;
+    margin:0 auto;
+}
+
+.escape-create-page .escape-create-card{
+    overflow:hidden;
+    border:1px solid #e3eaf3;
+    border-radius:20px;
+    background:#fff;
+    box-shadow:0 12px 34px rgba(15, 23, 42, .06);
+}
+
+.escape-create-page .escape-create-head{
+    display:flex;
+    align-items:center;
+    gap:13px;
+    padding:18px 22px;
+    border-bottom:1px solid #e8eef5;
+    background:linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%);
+}
+
+.escape-create-page .escape-create-head__icon{
+    width:46px;
+    height:46px;
+    flex:0 0 46px;
+    display:grid;
+    place-items:center;
+    border-radius:14px;
+    color:#fff;
+    background:linear-gradient(135deg, #2563eb, #4f46e5);
+    box-shadow:0 8px 18px rgba(37, 99, 235, .22);
+}
+
+.escape-create-page .escape-create-title{
+    margin:0;
+    color:#0f172a;
+    font-size:1.15rem;
+    font-weight:800;
+}
+
+.escape-create-page .escape-create-subtitle{
+    margin-top:3px;
+    color:#64748b;
+    font-size:.9rem;
+}
+
+.escape-create-page .escape-create-body{
+    padding:22px;
+}
+
+.escape-create-page .escape-create-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    padding:14px 22px;
+    border-top:1px solid #e8eef5;
+    background:#fbfdff;
+}
+
+.escape-create-page .escape-create-footer .btn{
+    min-width:132px;
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    border-radius:12px;
+    font-weight:700;
+}
+
+.escape-edit-page{
+    padding:18px 12px 34px;
+}
+
+.escape-edit-page .escape-edit-shell{
+    max-width:1200px;
+    margin:0 auto;
+}
+
+.escape-edit-page .escape-page-card{
+    overflow:hidden;
+    border:1px solid #e2e8f0;
+    border-radius:18px;
+}
+
+.escape-edit-page .escape-summary-table{
+    min-width:700px;
+}
+
+.escape-edit-page .escape-follow-table{
+    min-width:850px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1199.98px){
+    .escape-module-modal .modal-dialog,
+    .escape-modal .modal-dialog{
+        width:calc(100vw - 24px);
+        margin:calc(var(--escape-top-offset) + 8px) auto 12px;
+        height:calc(100dvh - var(--escape-top-offset) - 20px);
+        max-height:calc(100dvh - var(--escape-top-offset) - 20px);
+    }
+
+    .escape-module-modal .modal-body,
+    .escape-modal .modal-body{
+        padding:16px;
+    }
+
+    .escape-module-modal .escape-modal-section{
+        padding:15px;
+    }
+}
+
+@media (max-width:767.98px){
+    .escape-page{
+        padding-left:8px !important;
+        padding-right:8px !important;
+    }
+
+    .escape-page .escape-page-header,
+    .escape-page .escape-table-card__header{
+        align-items:flex-start;
+    }
+
+    .escape-page .escape-page-header__right,
+    .escape-page .escape-page-header__right .btn{
+        width:100%;
+    }
+
+    .escape-page .escape-page-header__right .btn{
+        justify-content:center;
+    }
+
+    .escape-page .escape-info-card__body{
+        padding:14px;
+    }
+
+    .escape-page .escape-table-card__count{
+        display:none;
+    }
+
+    .escape-module-modal .modal-dialog,
+    .escape-modal .modal-dialog{
+        width:100%;
+        max-width:none;
+        height:calc(100dvh - var(--escape-top-offset));
+        max-height:calc(100dvh - var(--escape-top-offset));
+        margin:var(--escape-top-offset) 0 0;
+    }
+
+    .escape-module-modal .modal-content,
+    .escape-modal .modal-content{
+        border-radius:18px 18px 0 0;
+    }
+
+    .escape-module-modal .modal-header,
+    .escape-modal .modal-header{
+        min-height:62px;
+        padding:12px 14px;
+    }
+
+    .escape-module-modal .modal-body,
+    .escape-modal .modal-body{
+        padding:13px;
+    }
+
+    .escape-module-modal .modal-footer,
+    .escape-modal .modal-footer{
+        padding:10px 13px calc(10px + env(safe-area-inset-bottom));
+    }
+
+    .escape-module-modal .escape-modal-section{
+        padding:13px;
+        border-radius:14px;
+    }
+
+    .escape-module-modal .escape-modal-actions,
+    .escape-modal .modal-footer{
+        flex-direction:column-reverse;
+    }
+
+    .escape-module-modal .escape-modal-actions .btn,
+    .escape-modal .modal-footer .btn{
+        width:100%;
+        min-width:0;
+    }
+
+    .escape-create-page{
+        padding:12px 8px 24px;
+    }
+
+    .escape-create-page .escape-create-card{
+        border-radius:16px;
+    }
+
+    .escape-create-page .escape-create-head,
+    .escape-create-page .escape-create-body,
+    .escape-create-page .escape-create-footer{
+        padding-left:15px;
+        padding-right:15px;
+    }
+
+    .escape-create-page .escape-create-footer{
+        flex-direction:column-reverse;
+    }
+
+    .escape-create-page .escape-create-footer .btn{
+        width:100%;
+    }
+
+    .escape-edit-page{
+        padding:10px 8px 24px;
+    }
+
+    .escape-edit-page .card-header{
+        align-items:flex-start !important;
+    }
+}
+
+@media (max-width:575.98px){
+    .escape-module-modal .modal-header__icon,
+    .escape-modal .escape-modal-header__icon,
+    .escape-module-modal .escape-modal-subtitle,
+    .escape-modal .escape-modal-subtitle{
+        display:none !important;
+    }
+
+    .escape-module-modal .modal-title,
+    .escape-modal .modal-title{
+        font-size:.98rem;
+    }
+}
+
+/* ---------- Print safety ---------- */
+@media print{
+    .escape-module-modal,
+    .escape-modal,
+    .modal-backdrop{
+        display:none !important;
+    }
+}
+
+/* ---------- Conditional punishment field ---------- */
+.escape-module-modal .escape-punishment-field{
+    padding-top:2px;
+}
+
+.escape-module-modal .escape-punishment-field:not(.d-none){
+    animation:escapePunishmentReveal .18s ease-out;
+}
+
+.escape-module-modal .escape-punishment-field .form-label{
+    color:#9a3412;
+}
+
+.escape-module-modal .escape-punishment-field textarea{
+    border-color:#fdba74;
+    background:#fffaf5;
+}
+
+.escape-module-modal .escape-punishment-field textarea:focus{
+    border-color:#f97316;
+    box-shadow:0 0 0 .2rem rgba(249, 115, 22, .13);
+}
+
+.escape-module-modal .escape-punishment-help{
+    line-height:1.35;
+}
+
+@keyframes escapePunishmentReveal{
+    from{opacity:0;transform:translateY(-4px);}
+    to{opacity:1;transform:translateY(0);}
+}
+
+@media (prefers-reduced-motion:reduce){
+    .escape-module-modal .escape-punishment-field:not(.d-none){
+        animation:none;
+    }
+}

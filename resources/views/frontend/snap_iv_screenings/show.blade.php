@@ -139,6 +139,27 @@
     overflow:auto;
 }
 
+/* ส่วนลงชื่อผู้ประเมิน: แสดงทั้งหน้ารายงานและการพิมพ์ */
+.snap-report-signature{
+    display:block;
+    width:100%;
+    margin-top:26px;
+    padding-top:8px;
+    clear:both;
+    page-break-inside:avoid;
+    break-inside:avoid;
+}
+
+.snap-report-signature-box{
+    display:block;
+    width:280px;
+    margin-left:auto;
+    text-align:center;
+    color:#111827;
+    font-size:.95rem;
+    line-height:1.75;
+}
+
 @media print{
 
     .snap-toolbar,
@@ -157,6 +178,38 @@
     .snap-report-card{
         box-shadow:none !important;
         border:none !important;
+    }
+
+    .wrapper,
+    .content-wrapper,
+    .main-content,
+    .container-fluid,
+    .snap-report-page,
+    .snap-report-shell,
+    .snap-report-card,
+    .snap-report-body{
+        height:auto !important;
+        min-height:0 !important;
+        max-height:none !important;
+        overflow:visible !important;
+    }
+
+    .snap-report-signature{
+        display:block !important;
+        width:100% !important;
+        margin-top:20px !important;
+        padding-top:8px !important;
+        clear:both !important;
+        page-break-inside:avoid !important;
+        break-inside:avoid-page !important;
+    }
+
+    .snap-report-signature-box{
+        display:block !important;
+        width:245px !important;
+        margin-left:auto !important;
+        font-size:14px !important;
+        line-height:1.6 !important;
     }
 
 }
@@ -178,6 +231,12 @@
             </a>
 
            <div class="d-flex gap-2 flex-wrap">
+
+                    <a href="{{ route('snap-iv.edit', $screening->id) }}"
+                       class="btn btn-outline-warning">
+                        <i class="bi bi-pencil-square"></i>
+                        แก้ไข
+                    </a>
 
                     <a href="{{ route('snap-iv.official-report', $screening->id) }}"
                     class="btn btn-outline-primary">
@@ -270,6 +329,26 @@
 
                         <div class="snap-info-value">
                             {{ $screening->class_level ?: '-' }}
+                        </div>
+                    </div>
+
+                    <div class="snap-info-box">
+                        <div class="snap-info-label">
+                            ภาคเรียน
+                        </div>
+
+                        <div class="snap-info-value">
+                            {{ $screening->term ?: (data_get($latestEducationRecord, 'semester_label') ?: data_get($latestEducationRecord, 'semester.semester_name', '-')) }}
+                        </div>
+                    </div>
+
+                    <div class="snap-info-box">
+                        <div class="snap-info-label">
+                            ผลการเรียนเฉลี่ย
+                        </div>
+
+                        <div class="snap-info-value">
+                            {{ $screening->grade_average !== null && $screening->grade_average !== '' ? $screening->grade_average : (data_get($latestEducationRecord, 'grade_average') ?? '-') }}
                         </div>
                     </div>
 
@@ -423,6 +502,14 @@
 
                     </div>
 
+                </div>
+
+                <div class="snap-report-signature">
+                    <div class="snap-report-signature-box">
+                        ลงชื่อ........................................ผู้ประเมิน<br>
+                        (................................................)<br>
+                        วันที่........../........../..........
+                    </div>
                 </div>
 
             </div>

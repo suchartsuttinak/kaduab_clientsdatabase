@@ -508,4 +508,13 @@
 
 </div>
 
+
+@if(request()->boolean('print'))
+    <script>
+        window.addEventListener('load', function () {
+            window.print();
+        });
+    </script>
+@endif
+
 @endsection

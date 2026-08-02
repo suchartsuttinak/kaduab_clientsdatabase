@@ -1,15 +1,54 @@
 @extends('admin_client.admin_client')
 
 @section('content')
-<div class="container-fluid mt-2 psychiatric-page">
-    <div class="card shadow-sm border-0 psychiatric-card">
-        @include('frontend.client.psychiatric.partials.header')
+@php
+    /*
+     * สถานะว่างครั้งแรกจะแสดงเฉพาะเมื่อยังไม่มีข้อมูลจริง
+     * และผู้ใช้ไม่ได้กำลังค้นหาด้วยช่วงวันที่
+     */
+    $hasPsychiatricRows = isset($psychiatrics) && $psychiatrics->isNotEmpty();
+    $hasActivePsychiatricFilter = request()->filled('start_date') || request()->filled('end_date');
+    $showPsychiatricFirstEmptyState = !$hasPsychiatricRows && !$hasActivePsychiatricFilter;
+@endphp
 
-        <div class="card-body p-2 p-md-3">
-            @include('frontend.client.psychiatric.partials._client_info')
-            @include('frontend.client.psychiatric.partials._table')
-        </div>
+<div class="container-fluid mt-2 psychiatric-page">
+    <div class="card shadow-sm border-0 psychiatric-card psychiatric-header-card mb-3">
+        @include('frontend.client.psychiatric.partials.header')
     </div>
+
+    @if($showPsychiatricFirstEmptyState)
+        <section class="psychiatric-empty-card" aria-labelledby="psychiatricEmptyTitle">
+            <div class="psychiatric-empty-content">
+                <div class="psychiatric-empty-icon" aria-hidden="true">
+                    <i class="bi bi-clipboard2-pulse"></i>
+                </div>
+
+                <h5 class="psychiatric-empty-title" id="psychiatricEmptyTitle">
+                    ยังไม่มีข้อมูลการตรวจวินิจฉัยทางจิตเวช
+                </h5>
+
+                <p class="psychiatric-empty-description">
+                    เริ่มต้นบันทึกผลการส่งตรวจ การวินิจฉัย การรักษา และการติดตามของผู้รับบริการรายนี้
+                </p>
+
+                <button type="button"
+                        class="btn psychiatric-empty-add-btn"
+                        data-bs-toggle="modal"
+                        data-bs-target="#createPsychiatricModal"
+                        id="btn-create-psychiatric">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>เพิ่มข้อมูลการตรวจจิตเวชครั้งแรก</span>
+                </button>
+            </div>
+        </section>
+    @else
+        <div class="card shadow-sm border-0 psychiatric-card">
+            <div class="card-body p-2 p-md-3">
+                @include('frontend.client.psychiatric.partials._client_info')
+                @include('frontend.client.psychiatric.partials._table')
+            </div>
+        </div>
+    @endif
 </div>
 
 @include('frontend.client.psychiatric.partials._create_modal')
@@ -19,6 +58,87 @@
 @push('styles')
 <link rel="stylesheet" href="{{ asset('backend/assets/css/psychiatric.css') }}">
 <style>
+    .psychiatric-page {
+        padding-bottom: 2rem;
+    }
+
+    .psychiatric-page .psychiatric-header-card,
+    .psychiatric-page .psychiatric-empty-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 18px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045) !important;
+        overflow: hidden;
+    }
+
+    .psychiatric-page .psychiatric-empty-card {
+        min-height: 320px;
+        display: grid;
+        place-items: center;
+        padding: 42px 24px;
+    }
+
+    .psychiatric-page .psychiatric-empty-content {
+        width: min(680px, 100%);
+        text-align: center;
+    }
+
+    .psychiatric-page .psychiatric-empty-icon {
+        width: 82px;
+        height: 82px;
+        margin: 0 auto 18px;
+        display: grid;
+        place-items: center;
+        color: #2563eb;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 50%;
+        font-size: 34px;
+    }
+
+    .psychiatric-page .psychiatric-empty-title {
+        margin: 0 0 8px;
+        color: #0f172a;
+        font-size: 19px;
+        font-weight: 900;
+        line-height: 1.45;
+    }
+
+    .psychiatric-page .psychiatric-empty-description {
+        max-width: 650px;
+        margin: 0 auto 22px;
+        color: #64748b;
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+    .psychiatric-page .psychiatric-empty-add-btn {
+        min-height: 44px;
+        padding: 10px 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: #ffffff;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        border: 0;
+        border-radius: 12px;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+        font-weight: 800;
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .psychiatric-page .psychiatric-empty-add-btn:hover,
+    .psychiatric-page .psychiatric-empty-add-btn:focus {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 11px 22px rgba(37, 99, 235, 0.28);
+    }
+
+    .psychiatric-page .psychiatric-empty-add-btn:active {
+        transform: translateY(0);
+    }
+
     /* Modal ต้องอยู่เหนือ header/sidebar และเลื่อนภายในได้ */
     #createPsychiatricModal,
     #editPsychiatricModal {
@@ -100,6 +220,26 @@
     }
 
     @media (max-width: 767.98px) {
+        .psychiatric-page .psychiatric-empty-card {
+            min-height: 290px;
+            padding: 34px 18px;
+        }
+
+        .psychiatric-page .psychiatric-empty-icon {
+            width: 72px;
+            height: 72px;
+            font-size: 30px;
+        }
+
+        .psychiatric-page .psychiatric-empty-title {
+            font-size: 17px;
+        }
+
+        .psychiatric-page .psychiatric-empty-add-btn {
+            width: 100%;
+            max-width: 340px;
+        }
+
         #createPsychiatricModal,
         #editPsychiatricModal {
             padding: 0 !important;

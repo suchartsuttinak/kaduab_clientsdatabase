@@ -369,7 +369,7 @@
                        รูปแบบรายงาน
                     </a>
 
-                    <a href="{{ route('depression-screenings.official-report', $screening->id) }}"
+                    <a href="{{ route('depression-screenings.official-report', $screening->id) . '?print=1' }}"
                     class="btn btn-danger">
                         <i class="bi bi-printer"></i>
                         พิมพ์รายงาน

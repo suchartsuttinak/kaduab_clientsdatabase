@@ -1,4 +1,4 @@
-        <?php
+ <?php
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\backend\IdstationCentralController;
@@ -343,36 +343,55 @@ use Illuminate\Support\Facades\Route;
             });
 
 
-        /*
+         /*
         |--------------------------------------------------------------------------
         | SNAP-IV Screening
         |--------------------------------------------------------------------------
         */
-            Route::prefix('snap-iv')
+        Route::prefix('snap-iv')
             ->middleware(['auth', 'role:admin,executive,social_worker'])
             ->name('snap-iv.')
             ->controller(SnapIvScreeningController::class)
             ->group(function () {
-
                 Route::get('/{client}', 'index')
+                    ->whereNumber('client')
                     ->name('index');
 
                 Route::get('/{client}/create', 'create')
+                    ->whereNumber('client')
                     ->name('create');
 
                 Route::post('/{client}', 'store')
+                    ->whereNumber('client')
                     ->name('store');
 
+                Route::get('/edit/{screening}', 'edit')
+                    ->whereNumber('screening')
+                    ->name('edit');
+
+                Route::put('/update/{screening}', 'update')
+                    ->whereNumber('screening')
+                    ->name('update');
+
                 Route::get('/show/{screening}', 'show')
+                    ->whereNumber('screening')
                     ->name('show');
 
                 Route::get('/official-report/{screening}', 'officialReport')
+                    ->whereNumber('screening')
                     ->name('official-report');
 
                 Route::delete('/{screening}', 'destroy')
+                    ->whereNumber('screening')
                     ->name('destroy');
             });
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | แบบคัดกรองภาวะซึมเศร้าในวัยรุ่น
+        |--------------------------------------------------------------------------
+        */
 
 
         /*

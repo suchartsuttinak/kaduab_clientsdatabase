@@ -15,16 +15,44 @@
         'record' => old('record'),
         'recorder' => old('recorder'),
     ];
+
+    $hasAddictiveData = $addictives->isNotEmpty();
 @endphp
 
 <div class="container-fluid mt-2 addictive-page">
     <div class="card shadow-sm border-0 addictive-card">
-        @include('frontend.client.addictive.partials.header')
+        @include('frontend.client.addictive.partials.header', [
+            'hasAddictiveData' => $hasAddictiveData
+        ])
 
-        <div class="card-body p-2 p-md-3">
-            @include('frontend.client.addictive.partials._client_info')
-            @include('frontend.client.addictive.partials._table')
-        </div>
+        @if($hasAddictiveData)
+            <div class="card-body p-2 p-md-3">
+                @include('frontend.client.addictive.partials._client_info')
+                @include('frontend.client.addictive.partials._table')
+            </div>
+        @else
+            <div class="addictive-empty-state">
+                <div class="addictive-empty-icon" aria-hidden="true">
+                    <i class="bi bi-clipboard2-pulse"></i>
+                </div>
+
+                <h2 class="addictive-empty-title">
+                    ยังไม่มีข้อมูลการตรวจสารเสพติด
+                </h2>
+
+                <p class="addictive-empty-description">
+                    เริ่มต้นบันทึกผลการตรวจสารเสพติดและรายละเอียดการติดตามของผู้รับบริการรายนี้
+                </p>
+
+                <button type="button"
+                        class="btn btn-primary addictive-empty-button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#createAddictiveModal">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>เพิ่มข้อมูลการตรวจสารเสพติดครั้งแรก</span>
+                </button>
+            </div>
+        @endif
     </div>
 </div>
 

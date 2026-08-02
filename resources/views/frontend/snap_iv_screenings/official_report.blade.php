@@ -24,8 +24,8 @@
     background:#fff;
     padding:12mm;
     font-family:"TH Sarabun New","Sarabun",sans-serif;
-    font-size:18px;
-    line-height:1.35;
+    font-size:16px;
+    line-height:1.32;
     color:#111827;
     box-shadow:0 10px 30px rgba(0,0,0,.08);
 }
@@ -36,28 +36,32 @@
 }
 
 .snap-official-title{
-    font-size:24px;
+    font-size:22px;
     font-weight:700;
     line-height:1.15;
 }
 
 .snap-official-subtitle{
-    font-size:19px;
+    font-size:16px;
     margin-top:2px;
 }
 
 .snap-official-info{
     display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:6px 20px;
-    margin-bottom:14px;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:3px 18px;
+    margin-bottom:12px;
+    font-size:15px;
+    line-height:1.28;
 }
 
 .snap-line{
     border-bottom:1px dotted #111;
     display:inline-block;
-    min-width:120px;
-    padding:0 6px;
+    min-width:105px;
+    padding:0 4px;
+    font-size:15px;
+    line-height:1.25;
 }
 
 .snap-table{
@@ -115,14 +119,23 @@
 }
 
 .snap-sign{
-    margin-top:28px;
-    display:flex;
-    justify-content:flex-end;
+    display:block;
+    width:100%;
+    margin-top:22px;
+    padding-top:8px;
+    min-height:96px;
+    clear:both;
+    page-break-inside:avoid;
+    break-inside:avoid;
 }
 
 .snap-sign-box{
-    width:260px;
+    display:block;
+    width:250px;
+    margin-left:auto;
     text-align:center;
+    font-size:15px;
+    line-height:1.65;
 }
 
 @media print{
@@ -153,14 +166,92 @@
         background:#fff !important;
     }
 
+    .wrapper,
+    .content-wrapper,
+    .main-content,
+    .container-fluid,
+    .snap-official-page,
+    .snap-official-sheet{
+        height:auto !important;
+        min-height:0 !important;
+        max-height:none !important;
+        overflow:visible !important;
+    }
+
     .snap-official-sheet{
         width:100% !important;
-        min-height:auto !important;
         margin:0 !important;
         padding:0 !important;
         box-shadow:none !important;
         border:none !important;
-        font-size:17px;
+        font-size:15px !important;
+        line-height:1.28 !important;
+    }
+
+    .snap-official-title{
+        font-size:20px !important;
+    }
+
+    .snap-official-subtitle{
+        font-size:15px !important;
+    }
+
+    .snap-official-info,
+    .snap-official-info > div,
+    .snap-line{
+        font-size:14px !important;
+        line-height:1.22 !important;
+    }
+
+    .snap-official-info{
+        gap:2px 16px !important;
+        margin-bottom:10px !important;
+    }
+
+    .snap-sign{
+        display:block !important;
+        width:100% !important;
+        margin-top:18px !important;
+        padding-top:8px !important;
+        min-height:92px !important;
+        clear:both !important;
+        page-break-inside:avoid !important;
+        break-inside:avoid-page !important;
+    }
+
+    .snap-sign-box{
+        display:block !important;
+        width:235px !important;
+        margin-left:auto !important;
+        text-align:center !important;
+        font-size:14px !important;
+        line-height:1.6 !important;
+    }
+
+
+    .snap-table th,
+    .snap-table td,
+    .snap-score-table th,
+    .snap-score-table td{
+        padding:3px 5px !important;
+        font-size:14px !important;
+        line-height:1.2 !important;
+    }
+
+    .snap-box{
+        margin-top:9px !important;
+    }
+
+    .snap-box-head{
+        padding:4px 6px !important;
+        font-size:14px !important;
+    }
+
+    .snap-box-body{
+        padding:6px !important;
+        min-height:36px !important;
+        font-size:14px !important;
+        line-height:1.25 !important;
     }
 
     @page{
@@ -249,6 +340,20 @@
                 ความสัมพันธ์
                 <span class="snap-line">
                     {{ $screening->relationship ?: '-' }}
+                </span>
+            </div>
+
+            <div>
+                ภาคเรียน
+                <span class="snap-line">
+                    {{ $screening->term ?: (data_get($latestEducationRecord, 'semester_label') ?: data_get($latestEducationRecord, 'semester.semester_name', '-')) }}
+                </span>
+            </div>
+
+            <div>
+                ผลการเรียนเฉลี่ย
+                <span class="snap-line">
+                    {{ $screening->grade_average !== null && $screening->grade_average !== '' ? $screening->grade_average : (data_get($latestEducationRecord, 'grade_average') ?? '-') }}
                 </span>
             </div>
 
@@ -418,7 +523,7 @@
 
             <div class="snap-sign-box">
 
-                ลงชื่อ........................................ผู้ประเมิน
+                ลงชื่อ........................................
                 <br>
 
                 (................................................)

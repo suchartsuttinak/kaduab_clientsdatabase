@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ClientAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Accident;
 use App\Models\Client;
+use App\Models\EducationRecord;
 use App\Models\Medical;
 use App\Models\Observe;
 // use App\Models\Problem;
@@ -37,12 +38,9 @@ class AdminClientController extends Controller
 
     public function Index($id)
     {
-        $today = Carbon::today();
+        $today = Carbon::today('Asia/Bangkok');
 
         $client = $this->findAuthorizedClient((int) $id, [
-            'educationRecords',
-            'educationRecords.education',
-            'educationRecords.institution',
             'problems',
             'house',
             'title',
@@ -71,6 +69,21 @@ class AdminClientController extends Controller
             'vaccinations',
             'refers',
         ]);
+
+        // =========================
+        // การศึกษาภาคเรียนล่าสุด
+        // =========================
+        // เลือกจากค่าปีการศึกษาและเลขภาคเรียน ไม่ใช้วันที่บันทึก
+        // ตัวอย่าง: 2/2569 ต้องมาก่อน 1/2569 แม้วันที่บันทึกจะเก่ากว่า
+        $currentEducationRecord = $this->getLatestEducationRecord($client->id);
+
+        // คงชื่อตัวแปรเดิมไว้ เพื่อไม่ให้หน้า Blade และส่วนอื่นกระทบ
+        $currentSemesterName = data_get($currentEducationRecord, 'semester_label')
+            ?: data_get($currentEducationRecord, 'semester.semester_name');
+
+        [$currentSemester, $currentAcademicYear] = $this->parseSemesterName(
+            $currentSemesterName
+        );
 
         // =========================
         // นัดหมาย
@@ -234,6 +247,10 @@ $latestActivityDate = $latestActivity?->occurred_at;
 
         return view('admin_client.index.client_index', compact(
             'client',
+            'currentEducationRecord',
+            'currentAcademicYear',
+            'currentSemester',
+            'currentSemesterName',
             'appointmentCount',
             'appointments',
             'observeLatest',
@@ -359,7 +376,7 @@ $latestActivityDate = $latestActivity?->occurred_at;
         'refers',
     ]);
 
-    $educationRecord = optional($client->educationRecords)->sortByDesc('id')->first();
+    $educationRecord = $this->getLatestEducationRecord($client->id);
 
     $memberCount = method_exists($client, 'members') ? $client->members()->count() : 0;
     $fileCount = method_exists($client, 'files') ? $client->files()->count() : 0;
@@ -700,11 +717,81 @@ protected function buildOverviewServiceCards(int $clientId): array
  */
 protected function getCurrentAcademicYear(): int
 {
-    $today = Carbon::today();
+    $today = Carbon::today('Asia/Bangkok');
 
     return $today->month >= 5
         ? $today->year + 543
         : $today->year + 542;
+}
+
+/**
+ * ภาคเรียนปัจจุบันตามรอบปีการศึกษาของไทย
+ * พ.ค.-ต.ค. = ภาคเรียนที่ 1, พ.ย.-เม.ย. = ภาคเรียนที่ 2
+ */
+protected function getCurrentSemester(): int
+{
+    $month = Carbon::today('Asia/Bangkok')->month;
+
+    return ($month >= 5 && $month <= 10) ? 1 : 2;
+}
+
+/**
+ * ดึงประวัติการศึกษาล่าสุดตามลำดับปีการศึกษาและภาคเรียน
+ *
+ * ไม่ใช้ record_date เป็นตัวตัดสิน เพราะวันที่บันทึกอาจไม่ตรงกับ
+ * ลำดับภาคเรียน เช่น 2/2569 ต้องมาก่อน 1/2569
+ */
+protected function getLatestEducationRecord(int $clientId): ?EducationRecord
+{
+    return EducationRecord::query()
+        ->with([
+            'education',
+            'institution',
+            'semester',
+        ])
+        ->leftJoin(
+            'semesters',
+            'education_records.semester_id',
+            '=',
+            'semesters.id'
+        )
+        ->where('education_records.client_id', $clientId)
+        // รูปแบบชื่อภาคเรียนของระบบ เช่น 1/2569 และ 2/2569
+        // เรียงปีการศึกษาก่อน แล้วจึงเรียงเลขภาคเรียน
+        ->orderByRaw(
+            "CAST(SUBSTRING_INDEX(semesters.semester_name, '/', -1) AS UNSIGNED) DESC"
+        )
+        ->orderByRaw(
+            "CAST(SUBSTRING_INDEX(semesters.semester_name, '/', 1) AS UNSIGNED) DESC"
+        )
+        // ใช้ id เฉพาะกรณีที่ปีการศึกษาและภาคเรียนเท่ากัน
+        ->orderByDesc('education_records.id')
+        ->select([
+            'education_records.*',
+            'semesters.semester_name as semester_label',
+        ])
+        ->first();
+}
+
+/**
+ * แยกชื่อภาคเรียนรูปแบบ 2/2569 ออกเป็น [2, 2569]
+ * คืนค่า null เมื่อยังไม่มีประวัติการศึกษา หรือรูปแบบข้อมูลไม่ถูกต้อง
+ */
+protected function parseSemesterName(?string $semesterName): array
+{
+    if (!$semesterName) {
+        return [null, null];
+    }
+
+    $parts = array_map('trim', explode('/', $semesterName, 2));
+
+    if (count($parts) !== 2
+        || !ctype_digit($parts[0])
+        || !ctype_digit($parts[1])) {
+        return [null, null];
+    }
+
+    return [(int) $parts[0], (int) $parts[1]];
 }
 
 /**

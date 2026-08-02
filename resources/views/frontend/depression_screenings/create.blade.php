@@ -170,6 +170,21 @@
             border-radius: 12px;
             padding: 12px 26px;
             font-weight: 700;
+            min-width: 210px;
+        }
+
+        .ds-save-btn:disabled {
+            opacity: 1;
+            cursor: wait;
+        }
+
+        .ds-question-row-error td {
+            background: #fff7f7;
+        }
+
+        .ds-question-row-error .ds-question-no,
+        .ds-question-row-error .ds-question-text {
+            color: #b91c1c;
         }
 
         @media (max-width:768px) {
@@ -242,13 +257,13 @@
                                 <span>
                                     <i class="bi bi-calendar-heart"></i>
                                     อายุ
-                                    {{ $client->birth_date ? \Carbon\Carbon::parse($client->birth_date)->age . ' ปี' : '-' }}
+                                    {{ $ageText ?: '-' }}
                                 </span>
 
                                 <span>
                                     <i class="bi bi-mortarboard"></i>
                                     ชั้นเรียน
-                                    {{ optional($client->educationRecords->sortByDesc('record_date')->first()?->education)->education_name ?? '-' }}
+                                    {{ $classLevel ?: '-' }}
                                 </span>
                             </div>
                         </div>
@@ -262,14 +277,16 @@
                         </div>
 
                         <ul class="mb-0">
-                            @foreach ($errors->all() as $error)
+                            @foreach (array_unique($errors->all()) as $error)
                                 <li>{{ $error }}</li>
                             @endforeach
                         </ul>
                     </div>
                 @endif
 
-                <form action="{{ route('depression-screenings.store', $client->id) }}" method="POST">
+                <form id="depressionScreeningForm"
+                      action="{{ route('depression-screenings.store', $client->id) }}"
+                      method="POST">
 
                     @csrf
 
@@ -282,10 +299,14 @@
                                     วันที่คัดกรอง <span class="text-danger">*</span>
                                 </label>
 
-                                <input type="date" name="screening_date"
+                                <input type="date"
+                                    id="screening_date"
+                                    name="screening_date"
                                     value="{{ old('screening_date', now('Asia/Bangkok')->toDateString()) }}"
+                                    min="{{ $client->birth_date ? \Carbon\Carbon::parse($client->birth_date)->toDateString() : '' }}"
                                     max="{{ now('Asia/Bangkok')->toDateString() }}"
-                                    class="form-control @error('screening_date') is-invalid @enderror">
+                                    class="form-control @error('screening_date') is-invalid @enderror"
+                                    required>
 
                                 @error('screening_date')
                                     <div class="invalid-feedback">
@@ -300,15 +321,20 @@
                                     ผู้ประเมิน
                                 </label>
 
-                                <input type="text" name="observer_name"
-                                    value="{{ old('observer_name', auth()->user()->name ?? '') }}" class="form-control">
+                                <input type="text"
+                                    id="observer_name"
+                                    name="observer_name"
+                                    value="{{ old('observer_name', auth()->user()->name ?? '') }}"
+                                    maxlength="255"
+                                    autocomplete="name"
+                                    class="form-control @error('observer_name') is-invalid @enderror">
+
+                                @error('observer_name')
+                                    <div class="invalid-feedback">
+                                        {{ $message }}
+                                    </div>
+                                @enderror
                             </div>
-
-                            <input type="hidden" name="age_text"
-                                value="{{ $client->birth_date ? \Carbon\Carbon::parse($client->birth_date)->age . ' ปี' : '-' }}">
-
-                            <input type="hidden" name="class_level"
-                                value="{{ optional($client->educationRecords->sortByDesc('record_date')->first()?->education)->education_name ?? '-' }}">
 
                         </div>
                     </div>
@@ -335,7 +361,7 @@
 
                                 <tbody>
                                     @foreach ($questions as $itemNo => $question)
-                                        <tr>
+                                        <tr class="@error('answers.' . $itemNo) ds-question-row-error @enderror">
                                             <td class="ds-question-no">
                                                 {{ $itemNo }}
                                             </td>
@@ -353,10 +379,13 @@
                                             @for ($score = 0; $score <= 3; $score++)
                                                 <td class="ds-radio-cell">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="radio"
+                                                        <input class="form-check-input"
+                                                            type="radio"
                                                             name="answers[{{ $itemNo }}]"
                                                             value="{{ $score }}"
                                                             id="answer_{{ $itemNo }}_{{ $score }}"
+                                                            aria-label="ข้อ {{ $itemNo }} คะแนน {{ $score }}"
+                                                            required
                                                             {{ (string) old("answers.$itemNo") === (string) $score ? 'checked' : '' }}>
                                                     </div>
                                                 </td>
@@ -373,7 +402,17 @@
                             หมายเหตุเพิ่มเติม
                         </label>
 
-                        <textarea name="remark" rows="4" class="form-control">{{ old('remark') }}</textarea>
+                        <textarea id="remark"
+                                  name="remark"
+                                  rows="4"
+                                  maxlength="5000"
+                                  class="form-control @error('remark') is-invalid @enderror">{{ old('remark') }}</textarea>
+
+                        @error('remark')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                        @enderror
                     </div>
 
                     <div class="ds-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -383,9 +422,17 @@
                             กลับ
                         </a>
 
-                        <button type="submit" class="btn btn-danger ds-save-btn">
-                            <i class="bi bi-save"></i>
-                            บันทึกแบบคัดกรอง
+                        <button type="submit"
+                                id="depressionSaveButton"
+                                class="btn btn-danger ds-save-btn">
+                            <span class="ds-save-normal">
+                                <i class="bi bi-save"></i>
+                                บันทึกแบบคัดกรอง
+                            </span>
+                            <span class="ds-save-loading d-none">
+                                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                                กำลังบันทึก...
+                            </span>
                         </button>
 
                     </div>
@@ -397,5 +444,22 @@
         </div>
 
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('depressionScreeningForm');
+            const saveButton = document.getElementById('depressionSaveButton');
+
+            if (!form || !saveButton) {
+                return;
+            }
+
+            form.addEventListener('submit', function () {
+                saveButton.disabled = true;
+                saveButton.querySelector('.ds-save-normal')?.classList.add('d-none');
+                saveButton.querySelector('.ds-save-loading')?.classList.remove('d-none');
+            });
+        });
+    </script>
 
 @endsection

@@ -1,6 +1,23 @@
-<div class="observe-body observe-modern-page">
+@php
+    $thaiDate = function ($value) {
+        if (!$value) {
+            return '-';
+        }
 
-    @if ($observes->count() > 0)
+        try {
+            $date = $value instanceof \Carbon\Carbon
+                ? $value
+                : \Carbon\Carbon::parse($value);
+
+            return $date->format('d/m/') . ($date->year + 543);
+        } catch (\Throwable $e) {
+            return '-';
+        }
+    };
+@endphp
+
+<div class="observe-body observe-modern-page">
+    @if ($observes->isNotEmpty())
         <div class="section-card observe-modern-card">
             <div class="section-header observe-modern-header">
                 <div class="observe-modern-title-wrap">
@@ -32,25 +49,19 @@
                     </thead>
 
                     <tbody>
-                        @forelse($observes as $obs)
+                        @foreach ($observes as $obs)
                             @php
-                                $latestFollowup = $obs->followups
-                                    ->sortByDesc(function ($item) {
-                                        return strtotime($item->followup_date ?? '1970-01-01');
-                                    })
-                                    ->first();
+                                $latestFollowup = $obs->followups->last();
                             @endphp
 
                             <tr>
                                 <td>
                                     <div class="observe-date-block">
-                                        <div class="observe-date-main">
-                                            {{ $obs->date ?: '-' }}
-                                        </div>
+                                        <div class="observe-date-main">{{ $thaiDate($obs->date) }}</div>
 
                                         @if (!empty($obs->record_date))
                                             <div class="observe-date-sub">
-                                                บันทึก: {{ $obs->record_date }}
+                                                บันทึก: {{ $thaiDate($obs->record_date) }}
                                             </div>
                                         @endif
                                     </div>
@@ -92,7 +103,7 @@
                                             <div class="observe-follow-summary__top">
                                                 <span class="observe-follow-date-chip">
                                                     <i class="bi bi-calendar-event"></i>
-                                                    {{ $latestFollowup->followup_date }}
+                                                    {{ $thaiDate($latestFollowup->followup_date) }}
                                                 </span>
 
                                                 <span class="observe-follow-count-chip">
@@ -119,135 +130,39 @@
 
                                 <td class="text-center">
                                     <div class="action-stack observe-action-stack">
-
                                         <a href="{{ route('observe.report', $obs->id) }}"
-                                            class="btn-action btn-action-primary text-decoration-none observe-btn-primary">
+                                           class="btn-action btn-action-primary text-decoration-none observe-btn-primary">
                                             <i class="bi bi-file-earmark-text"></i> รายงาน
                                         </a>
 
                                         <a href="{{ route('observe.edit', $obs->id) }}"
-                                            class="btn-action btn-action-warning text-decoration-none observe-btn-warning">
+                                           class="btn-action btn-action-warning text-decoration-none observe-btn-warning">
                                             <i class="bi bi-pencil-square"></i> แก้ไข
                                         </a>
 
                                         <form id="delete-form-observe-{{ $obs->id }}"
-                                            action="{{ route('observe.delete', $obs->id) }}" method="POST"
-                                            class="d-inline">
+                                              action="{{ route('observe.delete', $obs->id) }}"
+                                              method="POST"
+                                              class="d-inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="button"
-                                                class="btn-action btn-action-danger observe-btn-danger"
-                                                onclick="confirmDelete('delete-form-observe-{{ $obs->id }}')">
+                                                    class="btn-action btn-action-danger observe-btn-danger"
+                                                    onclick="confirmDelete('delete-form-observe-{{ $obs->id }}')">
                                                 <i class="bi bi-trash"></i> ลบ
                                             </button>
                                         </form>
 
-                                        <button type="button" class="btn-action btn-action-info observe-btn-info"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#addFollowupModal{{ $obs->id }}">
+                                        <button type="button"
+                                                class="btn-action btn-action-info observe-btn-info"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#addFollowupModal{{ $obs->id }}">
                                             <i class="bi bi-arrow-repeat"></i> ติดตามผล
                                         </button>
                                     </div>
-
-                                    {{-- Modal เพิ่มการติดตามผล --}}
-                                    <div class="modal fade observe-modal" id="addFollowupModal{{ $obs->id }}"
-                                        tabindex="-1" aria-hidden="true">
-                                        <div
-                                            class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-                                            <div class="modal-content observe-modern-modal">
-                                                <div class="modal-header observe-modern-modal-header">
-                                                    <h5 class="modal-title">
-                                                        <i class="bi bi-plus-circle"></i>
-                                                        เพิ่มการติดตามผล (พฤติกรรมวันที่ {{ $obs->date }})
-                                                    </h5>
-                                                    <button type="button" class="btn-close"
-                                                        data-bs-dismiss="modal"></button>
-                                                </div>
-
-                                                <div class="modal-body">
-                                                    <form action="{{ route('observe.followup.store') }}"
-                                                        method="POST">
-                                                        @csrf
-                                                        <input type="hidden" name="observe_id"
-                                                            value="{{ $obs->id }}">
-
-                                                        <div class="form-section observe-modern-form-section">
-                                                            <h6 class="form-section-title">
-                                                                <i class="bi bi-calendar-check"></i>
-                                                                ข้อมูลการติดตาม
-                                                            </h6>
-
-                                                            <div class="row g-3">
-                                                                <div class="col-12 col-md-6">
-                                                                    <label class="form-label-modern text-start d-block">
-                                                                        วันที่ติดตาม <span class="text-danger">*</span>
-                                                                    </label>
-
-                                                                    <input type="date" name="followup_date"
-                                                                        class="form-control form-control-modern @error('followup_date') is-invalid @enderror"
-                                                                        value="{{ old('followup_date', now('Asia/Bangkok')->toDateString()) }}"
-                                                                        max="{{ now('Asia/Bangkok')->toDateString() }}"
-                                                                        required>
-
-                                                                    @error('followup_date')
-                                                                        <div class="invalid-feedback">
-                                                                            {{ $message }}
-                                                                        </div>
-                                                                    @enderror
-                                                                </div>
-
-                                                                <div class="col-12 col-md-6">
-                                                                    <label class="form-label-modern text-start d-block">
-                                                                        ครั้งที่
-                                                                    </label>
-
-                                                                    <div
-                                                                        class="form-control form-control-modern observe-auto-count-box text-start">
-                                                                        ระบบกำหนดอัตโนมัติ
-                                                                    </div>
-                                                                </div>
-
-                                                                <div class="col-12">
-                                                                    <label class="form-label-modern text-start d-block">
-                                                                        การดำเนินการ
-                                                                    </label>
-
-                                                                    <textarea name="followup_action" class="form-control form-control-modern text-start" rows="3"></textarea>
-                                                                </div>
-
-                                                                <div class="col-12">
-                                                                    <label class="form-label-modern text-start d-block">
-                                                                        ผลลัพธ์
-                                                                    </label>
-
-                                                                    <textarea name="followup_result" class="form-control form-control-modern text-start" rows="3"></textarea>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div class="modal-footer-modern">
-                                                            <button type="submit" class="btn-form-primary">
-                                                                <i class="bi bi-save"></i> บันทึกการติดตามผล
-                                                            </button>
-                                                            <button type="button" class="btn-form-secondary"
-                                                                data-bs-dismiss="modal">
-                                                                <i class="bi bi-x-circle"></i> ปิด
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
-                                    ยังไม่มีบันทึกพฤติกรรม
-                                </td>
-                            </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>
@@ -260,8 +175,7 @@
         </div>
     @endif
 
-    {{-- รายการติดตามผลของ observe เดียว --}}
-    @if (isset($observe))
+    @if (isset($observe) && $observe)
         <div class="section-card mt-4 observe-modern-card">
             <div class="section-header observe-modern-header">
                 <div class="observe-modern-title-wrap">
@@ -274,8 +188,10 @@
                     </div>
                 </div>
 
-                <button type="button" class="btn-modern btn-modern-primary" data-bs-toggle="modal"
-                    data-bs-target="#addFollowupModal{{ $observe->id }}">
+                <button type="button"
+                        class="btn-modern btn-modern-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addFollowupModal{{ $observe->id }}">
                     <i class="bi bi-plus-circle"></i>
                     เพิ่มการติดตามผล
                 </button>
@@ -293,27 +209,26 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($observe->followups as $f)
+                        @forelse ($observe->followups as $f)
                             <tr>
                                 <td>
                                     <span class="observe-follow-date-chip">
                                         <i class="bi bi-calendar-event"></i>
-                                        {{ $f->followup_date }}
+                                        {{ $thaiDate($f->followup_date) }}
                                     </span>
                                 </td>
-
                                 <td>
                                     <span class="observe-follow-count-chip">
                                         ครั้งที่ {{ $f->followup_count }}
                                     </span>
                                 </td>
-
                                 <td>{{ $f->followup_action ?: '-' }}</td>
                                 <td>{{ $f->followup_result ?: '-' }}</td>
                                 <td class="text-center">
-                                    <button type="button" class="btn-action btn-action-warning observe-btn-warning"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#editFollowupModal{{ $f->id }}">
+                                    <button type="button"
+                                            class="btn-action btn-action-warning observe-btn-warning"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editFollowupModal{{ $f->id }}">
                                         <i class="bi bi-pencil-square"></i> แก้ไข
                                     </button>
                                 </td>
@@ -331,6 +246,108 @@
         </div>
     @endif
 </div>
+
+{{-- วาง Modal ไว้นอกตาราง ป้องกัน overflow/backdrop และปุ่มปิดทำงานผิดปกติ --}}
+@foreach ($observes as $obs)
+    @php
+        $followupBag = 'followupStore' . $obs->id;
+        $hasFollowupErrors = $errors->getBag($followupBag)->any();
+    @endphp
+
+    <div class="modal fade observe-modal"
+         id="addFollowupModal{{ $obs->id }}"
+         tabindex="-1"
+         aria-labelledby="addFollowupModalLabel{{ $obs->id }}"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content observe-modern-modal">
+                <div class="modal-header observe-modern-modal-header">
+                    <h5 class="modal-title" id="addFollowupModalLabel{{ $obs->id }}">
+                        <i class="bi bi-plus-circle"></i>
+                        เพิ่มการติดตามผล (พฤติกรรมวันที่ {{ $thaiDate($obs->date) }})
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                </div>
+
+                <div class="modal-body">
+                    <form action="{{ route('observe.followup.store') }}"
+                          method="POST"
+                          class="observe-submit-form">
+                        @csrf
+                        <input type="hidden" name="observe_id" value="{{ $obs->id }}">
+
+                        <div class="form-section observe-modern-form-section">
+                            <h6 class="form-section-title">
+                                <i class="bi bi-calendar-check"></i>
+                                ข้อมูลการติดตาม
+                            </h6>
+
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label-modern text-start d-block">
+                                        วันที่ติดตาม <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date"
+                                           name="followup_date"
+                                           class="form-control form-control-modern @error('followup_date', $followupBag) is-invalid @enderror"
+                                           value="{{ $hasFollowupErrors ? old('followup_date') : now('Asia/Bangkok')->toDateString() }}"
+                                           min="{{ $obs->date }}"
+                                           max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                           required>
+                                    @error('followup_date', $followupBag)
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label-modern text-start d-block">ครั้งที่</label>
+                                    <div class="form-control form-control-modern observe-auto-count-box text-start">
+                                        ระบบกำหนดอัตโนมัติ
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label-modern text-start d-block">การดำเนินการ</label>
+                                    <textarea name="followup_action"
+                                              class="form-control form-control-modern text-start @error('followup_action', $followupBag) is-invalid @enderror"
+                                              rows="3"
+                                              maxlength="5000">{{ $hasFollowupErrors ? old('followup_action') : '' }}</textarea>
+                                    @error('followup_action', $followupBag)
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label-modern text-start d-block">ผลลัพธ์</label>
+                                    <textarea name="followup_result"
+                                              class="form-control form-control-modern text-start @error('followup_result', $followupBag) is-invalid @enderror"
+                                              rows="3"
+                                              maxlength="5000">{{ $hasFollowupErrors ? old('followup_result') : '' }}</textarea>
+                                    @error('followup_result', $followupBag)
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer-modern">
+                            <button type="submit"
+                                    class="btn-form-primary"
+                                    data-submit-button
+                                    data-loading-text="กำลังบันทึก...">
+                                <i class="bi bi-save"></i>
+                                <span data-submit-label>บันทึกการติดตามผล</span>
+                            </button>
+                            <button type="button" class="btn-form-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> ปิด
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@endforeach
 
 <style>
     /* =========================================================

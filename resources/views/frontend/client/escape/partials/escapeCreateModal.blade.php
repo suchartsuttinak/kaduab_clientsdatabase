@@ -1,110 +1,109 @@
- <div class="modal fade escape-modal" id="escapeCreateModal" tabindex="-1" aria-labelledby="escapeCreateModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down escape-modal-dialog">
-            <div class="modal-content escape-modal-content">
-                <form action="{{ route('escape.store') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="client_id" value="{{ $client->id }}">
+@php
+    $isCreateContext = old('form_context') === 'escape-create';
+@endphp
 
-                    <div class="modal-header escape-modal-header">
-                        <div class="escape-modal-header__inner">
-                            <div class="escape-modal-header__icon">
-                                <i class="bi bi-plus-circle"></i>
-                            </div>
-                            <div>
-                                <h5 class="modal-title escape-modal-title mb-1" id="escapeCreateModalLabel">
-                                    เพิ่มข้อมูลการออกจากสถานสงเคราะห์
-                                </h5>
-                                <div class="escape-modal-subtitle">
-                                    กรอกข้อมูลการออกจากหน่วยงานให้ครบถ้วนและเป็นมาตรฐานเดียวกัน
-                                </div>
-                            </div>
+<div class="modal fade escape-module-modal escape-modal"
+     id="escapeCreateModal"
+     tabindex="-1"
+     aria-labelledby="escapeCreateModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable escape-modal-dialog">
+        <div class="modal-content escape-modal-content">
+            <form action="{{ route('escape.store') }}" method="POST" class="escape-submit-form" novalidate>
+                @csrf
+                <input type="hidden" name="client_id" value="{{ $client->id }}">
+                <input type="hidden" name="form_context" value="escape-create">
+
+                <div class="modal-header escape-modal-header bg-primary text-white">
+                    <div class="d-flex align-items-center gap-3 min-w-0">
+                        <div class="escape-modal-header__icon flex-shrink-0">
+                            <i class="bi bi-plus-circle"></i>
                         </div>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="ปิด"></button>
-                    </div>
-
-                    <div class="modal-body escape-modal-body">
-                        <div class="escape-form-card">
-                            <div class="escape-form-card__head">
-                                <div class="escape-form-card__eyebrow">ESCAPE RECORD</div>
-                                <h6 class="escape-form-card__title">รายละเอียดการออกจากสถานสงเคราะห์</h6>
-                                <p class="escape-form-card__desc mb-0">
-                                    บันทึกวันที่ออก ประเภทการออก และพฤติการณ์หรือสาเหตุที่เกี่ยวข้อง
-                                </p>
-                            </div>
-
-                            <div class="row g-4">
-                              <div class="col-12 col-md-4">
-                                    <label class="form-label escape-label escape-label--required">
-                                        วันที่ออก
-                                    </label>
-
-                                    <div class="escape-field">
-                                        <span class="escape-field__icon">
-                                            <i class="bi bi-calendar-event"></i>
-                                        </span>
-
-                                        <input type="date"
-                                            name="retire_date"
-                                            class="form-control escape-input escape-input--with-icon @error('retire_date') is-invalid @enderror"
-                                            value="{{ old('retire_date', now('Asia/Bangkok')->toDateString()) }}"
-                                            max="{{ now('Asia/Bangkok')->toDateString() }}"
-                                            required>
-
-                                        @error('retire_date')
-                                            <div class="invalid-feedback">
-                                                {{ $message }}
-                                            </div>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="col-12 col-md-8">
-                                    <label class="form-label escape-label escape-label--required">ประเภทการออกจากหน่วยงาน</label>
-                                    <div class="escape-field">
-                                        <span class="escape-field__icon">
-                                            <i class="bi bi-diagram-3"></i>
-                                        </span>
-                                        <select name="retire_id"
-                                                class="form-select escape-input escape-input--with-icon"
-                                                required>
-                                            <option value="">-- เลือกประเภทการออก --</option>
-                                            @foreach ($retires as $ret)
-                                                <option value="{{ $ret->id }}" {{ old('retire_id') == $ret->id ? 'selected' : '' }}>
-                                                    {{ $ret->retire_name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="col-12">
-                                    <label class="form-label escape-label">พฤติการณ์ / สาเหตุ</label>
-                                    <div class="escape-field escape-field--textarea">
-                                        <span class="escape-field__icon escape-field__icon--textarea">
-                                            <i class="bi bi-journal-text"></i>
-                                        </span>
-                                        <textarea name="stories"
-                                                  class="form-control escape-input escape-input--with-icon escape-textarea"
-                                                  rows="5"
-                                                  placeholder="บันทึกรายละเอียดสาเหตุหรือเรื่องราวเพิ่มเติม">{{ old('stories') }}</textarea>
-                                    </div>
-                                </div>
+                        <div class="min-w-0">
+                            <h5 class="modal-title escape-modal-title mb-1" id="escapeCreateModalLabel">
+                                เพิ่มข้อมูลการออกจากสถานสงเคราะห์
+                            </h5>
+                            <div class="escape-modal-subtitle text-white-50">
+                                กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน
                             </div>
                         </div>
                     </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                </div>
 
-                    <div class="modal-footer escape-modal-footer">
-                        <button type="button" class="btn escape-btn escape-btn--light" data-bs-dismiss="modal">
+                <div class="modal-body escape-modal-body">
+                    <div class="escape-modal-section">
+                        <h6 class="escape-modal-section-title">
+                            <i class="bi bi-info-circle text-primary"></i>
+                            ข้อมูลการออก/หลบหนี
+                        </h6>
+
+                        <div class="row">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">วันที่ออก/หลบหนี <span class="text-danger">*</span></label>
+                                <input type="date"
+                                       name="retire_date"
+                                       class="form-control {{ $isCreateContext && $errors->has('retire_date') ? 'is-invalid' : '' }}"
+                                       value="{{ $isCreateContext ? old('retire_date', now('Asia/Bangkok')->toDateString()) : now('Asia/Bangkok')->toDateString() }}"
+                                       max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                       required>
+                                @if ($isCreateContext)
+                                    @error('retire_date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                @endif
+                            </div>
+
+                            <div class="col-12 col-md-8">
+                                <label class="form-label">ประเภทการออก/หลบหนี <span class="text-danger">*</span></label>
+                                <select name="retire_id"
+                                        class="form-select {{ $isCreateContext && $errors->has('retire_id') ? 'is-invalid' : '' }}"
+                                        required>
+                                    <option value="">-- เลือกประเภทการออก/หลบหนี --</option>
+                                    @foreach ($retires as $ret)
+                                        <option value="{{ $ret->id }}"
+                                            {{ ($isCreateContext ? old('retire_id') : null) == $ret->id ? 'selected' : '' }}>
+                                            {{ $ret->retire_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @if ($isCreateContext)
+                                    @error('retire_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                @endif
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">พฤติการณ์ / สาเหตุ</label>
+                                <textarea name="stories"
+                                          class="form-control {{ $isCreateContext && $errors->has('stories') ? 'is-invalid' : '' }}"
+                                          rows="5"
+                                          maxlength="5000"
+                                          placeholder="บันทึกรายละเอียดสาเหตุหรือเรื่องราวเพิ่มเติม">{{ $isCreateContext ? old('stories') : '' }}</textarea>
+                                @if ($isCreateContext)
+                                    @error('stories')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer escape-modal-footer">
+                    <div class="escape-modal-actions">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                             <i class="bi bi-x-circle"></i>
                             <span>ปิด</span>
                         </button>
-
-                        <button type="submit" class="btn escape-btn escape-btn--success">
+                        <button type="submit" class="btn btn-success">
                             <i class="bi bi-save"></i>
                             <span>บันทึกข้อมูล</span>
                         </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
+</div>

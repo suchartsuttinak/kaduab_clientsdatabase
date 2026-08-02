@@ -5,21 +5,21 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\NutritionAssessment;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class NutritionAssessmentController extends Controller
 {
     public function index(Client $client)
     {
-        $client = Client::forUser(auth()->user())
-            ->findOrFail($client->id);
+        $client = $this->findAccessibleClient($client);
 
-      $assessments = NutritionAssessment::where('client_id', $client->id)
-        ->latest('assessment_date')
-        ->latest('id')
-        ->get();
+        $assessments = NutritionAssessment::query()
+            ->where('client_id', $client->id)
+            ->latest('assessment_date')
+            ->latest('id')
+            ->get();
 
         return view('frontend.nutrition_assessments.index', compact(
             'client',
@@ -28,245 +28,229 @@ class NutritionAssessmentController extends Controller
     }
 
     public function create(Client $client)
-{
-    $client = Client::forUser(auth()->user())
-        ->findOrFail($client->id);
+    {
+        $client = $this->findAccessibleClient($client);
 
-    return view(
-        'frontend.nutrition_assessments.create',
-        compact('client')
-    );
-}
-
-public function store(Request $request, Client $client)
-{
-    $client = Client::forUser(auth()->user())
-        ->findOrFail($client->id);
-
-    $validated = $request->validate([
-       'assessment_date' => [
-        'required',
-        'date',
-        'before_or_equal:today',
-        Rule::unique('nutrition_assessments', 'assessment_date')
-            ->where(fn ($query) => $query->where('client_id', $client->id)),
-    ],
-        'height_cm' => 'required|numeric|min:30|max:250',
-        'weight_kg' => 'required|numeric|min:1|max:300',
-        'note' => 'nullable|string',
-    ], [
-         'assessment_date.unique' => 'เด็กคนนี้มีผลประเมินในวันที่เลือกแล้ว กรุณาแก้ไขรายการเดิม',
-         'assessment_date.before_or_equal' => 'ไม่สามารถบันทึกวันที่ในอนาคตได้',
-    ]);
-
-    $birthDate = $client->birth_date
-        ? Carbon::parse($client->birth_date)
-        : null;
-
-    $assessmentDate = Carbon::parse($validated['assessment_date']);
-
-    $ageYear = null;
-    $ageMonth = null;
-
-    if ($birthDate) {
-        $age = $birthDate->diff($assessmentDate);
-        $ageYear = $age->y;
-        $ageMonth = $age->m;
+        return view(
+            'frontend.nutrition_assessments.create',
+            compact('client')
+        );
     }
 
-    $heightCm = (float) $validated['height_cm'];
-    $weightKg = (float) $validated['weight_kg'];
+    public function store(Request $request, Client $client)
+    {
+        $client = $this->findAccessibleClient($client);
 
-    $heightMeter = $heightCm / 100;
+        $validated = $request->validate(
+            $this->validationRules($client),
+            $this->validationMessages()
+        );
 
-    $bmi = $heightMeter > 0
-        ? round($weightKg / ($heightMeter * $heightMeter), 2)
-        : null;
+        NutritionAssessment::create(
+            $this->buildAssessmentData($validated, $client) + [
+                'client_id'  => $client->id,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
+            ]
+        );
 
-    $bmiResult = null;
-
-    if ($bmi !== null) {
-        if ($bmi < 18.5) {
-            $bmiResult = 'น้ำหนักน้อย';
-        } elseif ($bmi < 23) {
-            $bmiResult = 'สมส่วน';
-        } elseif ($bmi < 25) {
-            $bmiResult = 'เริ่มอ้วน';
-        } elseif ($bmi < 30) {
-            $bmiResult = 'อ้วน';
-        } else {
-            $bmiResult = 'อ้วนมาก';
-        }
+        return redirect()
+            ->route('nutrition_assessments.index', $client->id)
+            ->with('success', 'บันทึกผลประเมินภาวะโภชนาการเรียบร้อยแล้ว');
     }
 
-    NutritionAssessment::create([
-        'client_id'          => $client->id,
-        'assessment_date'    => $validated['assessment_date'],
-        'birth_date'         => $client->birth_date,
-        'age_year'           => $ageYear,
-        'age_month'          => $ageMonth,
-        'gender'             => $client->gender,
-        'height_cm'          => $heightCm,
-        'weight_kg'          => $weightKg,
-        'bmi'                => $bmi,
-        'bmi_result'         => $bmiResult,
-        'nutrition_status'   => $bmiResult,
-        'summary_result'     => $bmiResult,
-        'note'               => $validated['note'] ?? null,
-        'created_by'         => auth()->id(),
-        'updated_by'         => auth()->id(),
-    ]);
+    public function edit(Client $client, NutritionAssessment $assessment)
+    {
+        $client = $this->findAccessibleClient($client);
+        $this->ensureAssessmentBelongsToClient($assessment, $client);
 
-    return redirect()
-        ->route('nutrition_assessments.index', $client->id)
-        ->with('success', 'บันทึกผลประเมินภาวะโภชนาการเรียบร้อยแล้ว');
-}
-
-public function edit(
-    Client $client,
-    NutritionAssessment $assessment
-)
-{
-    $client = Client::forUser(auth()->user())
-        ->findOrFail($client->id);
-
-    if ($assessment->client_id !== $client->id) {
-        abort(403);
+        return view(
+            'frontend.nutrition_assessments.edit',
+            compact('client', 'assessment')
+        );
     }
 
-    return view(
-        'frontend.nutrition_assessments.edit',
-        compact('client', 'assessment')
-    );
-}
+    public function update(
+        Request $request,
+        Client $client,
+        NutritionAssessment $assessment
+    ) {
+        $client = $this->findAccessibleClient($client);
+        $this->ensureAssessmentBelongsToClient($assessment, $client);
 
-public function update(Request $request, Client $client, NutritionAssessment $assessment)
-{
-    $client = Client::forUser(auth()->user())
-        ->findOrFail($client->id);
+        $validated = $request->validate(
+            $this->validationRules($client, $assessment->id),
+            $this->validationMessages()
+        );
 
-    abort_if($assessment->client_id !== $client->id, 403);
+        $assessment->update(
+            $this->buildAssessmentData($validated, $client) + [
+                'updated_by' => auth()->id(),
+            ]
+        );
 
-    $validated = $request->validate([
-        'assessment_date' => [
+        return redirect()
+            ->route('nutrition_assessments.show', [$client->id, $assessment->id])
+            ->with('success', 'แก้ไขผลประเมินภาวะโภชนาการเรียบร้อยแล้ว');
+    }
+
+    public function show(Client $client, NutritionAssessment $assessment)
+    {
+        $client = $this->findAccessibleClient($client);
+        $this->ensureAssessmentBelongsToClient($assessment, $client);
+
+        $growthRecords = NutritionAssessment::query()
+            ->where('client_id', $client->id)
+            ->whereNotNull('assessment_date')
+            ->orderBy('assessment_date')
+            ->orderBy('id')
+            ->get([
+                'id',
+                'assessment_date',
+                'height_cm',
+                'weight_kg',
+                'bmi',
+            ]);
+
+        return view('frontend.nutrition_assessments.show', [
+            'client'        => $client,
+            'assessment'    => $assessment,
+            'growthRecords' => $growthRecords,
+        ]);
+    }
+
+    public function destroy(Client $client, NutritionAssessment $assessment)
+    {
+        $client = $this->findAccessibleClient($client);
+        $this->ensureAssessmentBelongsToClient($assessment, $client);
+
+        abort_unless(
+            auth()->user()?->role === 'admin',
+            403,
+            'คุณไม่มีสิทธิ์ลบข้อมูลนี้'
+        );
+
+        $assessment->delete();
+
+        return redirect()
+            ->route('nutrition_assessments.index', $client->id)
+            ->with('success', 'ลบผลประเมินภาวะโภชนาการเรียบร้อยแล้ว');
+    }
+
+    private function findAccessibleClient(Client $client): Client
+    {
+        return Client::forUser(auth()->user())
+            ->findOrFail($client->id);
+    }
+
+    private function ensureAssessmentBelongsToClient(
+        NutritionAssessment $assessment,
+        Client $client
+    ): void {
+        abort_unless((int) $assessment->client_id === (int) $client->id, 403);
+    }
+
+    private function validationRules(Client $client, ?int $ignoreId = null): array
+    {
+        $assessmentDateRules = [
             'required',
             'date',
-            Rule::unique('nutrition_assessments', 'assessment_date')
-                ->where(fn ($query) => $query->where('client_id', $client->id))
-                ->ignore($assessment->id),
-        ],
-        'height_cm' => 'required|numeric|min:30|max:250',
-        'weight_kg' => 'required|numeric|min:1|max:300',
-        'note' => 'nullable|string',
-    ], [
-        'assessment_date.unique' => 'เด็กคนนี้มีผลประเมินในวันที่เลือกแล้ว กรุณาเลือกวันอื่น หรือแก้ไขรายการเดิม',
-        'assessment_date.before_or_equal' => 'ไม่สามารถบันทึกวันที่ในอนาคตได้',
-    ]);
+            'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+        ];
 
-    $birthDate = $client->birth_date
-        ? Carbon::parse($client->birth_date)
-        : null;
-
-    $assessmentDate = Carbon::parse($validated['assessment_date']);
-
-    $ageYear = null;
-    $ageMonth = null;
-
-    if ($birthDate) {
-        $age = $birthDate->diff($assessmentDate);
-        $ageYear = $age->y;
-        $ageMonth = $age->m;
-    }
-
-    $heightCm = (float) $validated['height_cm'];
-    $weightKg = (float) $validated['weight_kg'];
-
-    $heightMeter = $heightCm / 100;
-
-    $bmi = $heightMeter > 0
-        ? round($weightKg / ($heightMeter * $heightMeter), 2)
-        : null;
-
-    $bmiResult = null;
-
-    if ($bmi !== null) {
-        if ($bmi < 18.5) {
-            $bmiResult = 'น้ำหนักน้อย';
-        } elseif ($bmi < 23) {
-            $bmiResult = 'สมส่วน';
-        } elseif ($bmi < 25) {
-            $bmiResult = 'เริ่มอ้วน';
-        } elseif ($bmi < 30) {
-            $bmiResult = 'อ้วน';
-        } else {
-            $bmiResult = 'อ้วนมาก';
+        if ($client->birth_date) {
+            $assessmentDateRules[] = 'after_or_equal:'
+                . Carbon::parse($client->birth_date)->toDateString();
         }
+
+        $uniqueDateRule = Rule::unique(
+            'nutrition_assessments',
+            'assessment_date'
+        )->where(
+            fn ($query) => $query->where('client_id', $client->id)
+        );
+
+        if ($ignoreId !== null) {
+            $uniqueDateRule->ignore($ignoreId);
+        }
+
+        $assessmentDateRules[] = $uniqueDateRule;
+
+        return [
+            'assessment_date' => $assessmentDateRules,
+            'height_cm'       => ['required', 'numeric', 'min:30', 'max:250'],
+            'weight_kg'       => ['required', 'numeric', 'min:1', 'max:300'],
+            'note'            => ['nullable', 'string', 'max:2000'],
+        ];
     }
 
-    $assessment->update([
-        'assessment_date'  => $validated['assessment_date'],
-        'birth_date'       => $client->birth_date,
-        'age_year'         => $ageYear,
-        'age_month'        => $ageMonth,
-        'gender'           => $client->gender,
-        'height_cm'        => $heightCm,
-        'weight_kg'        => $weightKg,
-        'bmi'              => $bmi,
-        'bmi_result'       => $bmiResult,
-        'nutrition_status' => $bmiResult,
-        'summary_result'   => $bmiResult,
-        'note'             => $validated['note'] ?? null,
-        'updated_by'       => auth()->id(),
-    ]);
-
-    return redirect()
-        ->route('nutrition_assessments.show', [$client->id, $assessment->id])
-        ->with('success', 'แก้ไขผลประเมินภาวะโภชนาการเรียบร้อยแล้ว');
-}
-
-public function show(Client $client, NutritionAssessment $assessment)
-{
-    $client = Client::forUser(auth()->user())
-        ->findOrFail($client->id);
-
-    abort_if($assessment->client_id !== $client->id, 403);
-
-    $growthRecords = NutritionAssessment::query()
-        ->where('client_id', $client->id)
-        ->whereNotNull('assessment_date')
-        ->orderBy('assessment_date')
-        ->select([
-            'id',
-            'assessment_date',
-            'height_cm',
-            'weight_kg',
-            'bmi',
-        ])
-        ->get();
-
-    return view('frontend.nutrition_assessments.show', [
-        'client'        => $client,
-        'assessment'    => $assessment,
-        'growthRecords' => $growthRecords,
-    ]);
-}
-public function destroy(Client $client, NutritionAssessment $assessment)
-{
-    $client = Client::forUser(auth()->user())
-        ->findOrFail($client->id);
-
-    if ($assessment->client_id !== $client->id) {
-        abort(403);
+    private function validationMessages(): array
+    {
+        return [
+            'assessment_date.required'        => 'กรุณาเลือกวันที่ชั่งวัด',
+            'assessment_date.date'            => 'รูปแบบวันที่ชั่งวัดไม่ถูกต้อง',
+            'assessment_date.before_or_equal' => 'ไม่สามารถบันทึกวันที่ในอนาคตได้',
+            'assessment_date.after_or_equal'  => 'วันที่ชั่งวัดต้องไม่ก่อนวันเกิดของผู้รับบริการ',
+            'assessment_date.unique'          => 'เด็กคนนี้มีผลประเมินในวันที่เลือกแล้ว กรุณาแก้ไขรายการเดิม',
+            'height_cm.required'              => 'กรุณาระบุส่วนสูง',
+            'height_cm.numeric'               => 'ส่วนสูงต้องเป็นตัวเลข',
+            'height_cm.min'                   => 'ส่วนสูงต้องไม่น้อยกว่า 30 เซนติเมตร',
+            'height_cm.max'                   => 'ส่วนสูงต้องไม่เกิน 250 เซนติเมตร',
+            'weight_kg.required'              => 'กรุณาระบุน้ำหนัก',
+            'weight_kg.numeric'               => 'น้ำหนักต้องเป็นตัวเลข',
+            'weight_kg.min'                   => 'น้ำหนักต้องไม่น้อยกว่า 1 กิโลกรัม',
+            'weight_kg.max'                   => 'น้ำหนักต้องไม่เกิน 300 กิโลกรัม',
+            'note.string'                     => 'หมายเหตุต้องเป็นข้อความ',
+            'note.max'                        => 'หมายเหตุต้องมีความยาวไม่เกิน 2,000 ตัวอักษร',
+        ];
     }
 
-    if (auth()->user()->role !== 'admin') {
-        abort(403, 'คุณไม่มีสิทธิ์ลบข้อมูลนี้');
+    private function buildAssessmentData(array $validated, Client $client): array
+    {
+        $assessmentDate = Carbon::parse($validated['assessment_date'])->startOfDay();
+        $birthDate = $client->birth_date
+            ? Carbon::parse($client->birth_date)->startOfDay()
+            : null;
+
+        $ageYear = null;
+        $ageMonth = null;
+
+        if ($birthDate && $assessmentDate->greaterThanOrEqualTo($birthDate)) {
+            $age = $birthDate->diff($assessmentDate);
+            $ageYear = $age->y;
+            $ageMonth = $age->m;
+        }
+
+        $heightCm = round((float) $validated['height_cm'], 2);
+        $weightKg = round((float) $validated['weight_kg'], 2);
+        $heightMeter = $heightCm / 100;
+        $bmi = round($weightKg / ($heightMeter ** 2), 2);
+        $bmiResult = $this->resolveBmiResult($bmi);
+
+        return [
+            'assessment_date'  => $validated['assessment_date'],
+            'birth_date'       => $client->birth_date,
+            'age_year'         => $ageYear,
+            'age_month'        => $ageMonth,
+            'gender'           => $client->gender,
+            'height_cm'        => $heightCm,
+            'weight_kg'        => $weightKg,
+            'bmi'              => $bmi,
+            'bmi_result'       => $bmiResult,
+            'nutrition_status' => $bmiResult,
+            'summary_result'   => $bmiResult,
+            'note'             => $validated['note'] ?? null,
+        ];
     }
 
-    $assessment->delete();
-
-   return redirect()
-    ->route('nutrition_assessments.index', $client->id)
-    ->with('success', 'ลบผลประเมินภาวะโภชนาการเรียบร้อยแล้ว');
-}
+    private function resolveBmiResult(float $bmi): string
+    {
+        return match (true) {
+            $bmi < 18.5 => 'น้ำหนักน้อย',
+            $bmi < 23   => 'สมส่วน',
+            $bmi < 25   => 'เริ่มอ้วน',
+            $bmi < 30   => 'อ้วน',
+            default     => 'อ้วนมาก',
+        };
+    }
 }

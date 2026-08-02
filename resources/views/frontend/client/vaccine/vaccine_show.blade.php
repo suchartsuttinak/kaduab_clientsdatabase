@@ -18,14 +18,35 @@ body.vaccine-modal-open{
 @endpush
 
 @section('content')
-<div class="container-fluid py-3 vaccine-page">
-    @include('frontend.client.vaccine.partials._header')
-    @include('frontend.client.vaccine.partials._client_info')
+@php
+    $hasVaccineData = isset($vaccinations) && $vaccinations->isNotEmpty();
+    $hasActiveVaccineFilter = request()->filled('start_date')
+        || request()->filled('end_date');
 
-    @if($vaccinations->isNotEmpty())
+    /*
+     * สถานะว่างครั้งแรก:
+     * - ยังไม่มีข้อมูลจริง
+     * - ไม่ได้อยู่ระหว่างค้นหาด้วยตัวกรอง
+     */
+    $isVaccineFirstEmptyState = !$hasVaccineData && !$hasActiveVaccineFilter;
+@endphp
+
+<div class="container-fluid py-3 vaccine-page">
+    @include('frontend.client.vaccine.partials._header', [
+        'isVaccineFirstEmptyState' => $isVaccineFirstEmptyState,
+        'hasVaccineData' => $hasVaccineData,
+    ])
+
+    @unless($isVaccineFirstEmptyState)
+        @include('frontend.client.vaccine.partials._client_info')
+    @endunless
+
+    @if($hasVaccineData)
         @include('frontend.client.vaccine.partials._table')
     @else
-        @include('frontend.client.vaccine.partials._empty')
+        @include('frontend.client.vaccine.partials._empty', [
+            'isVaccineFirstEmptyState' => $isVaccineFirstEmptyState,
+        ])
     @endif
 </div>
 

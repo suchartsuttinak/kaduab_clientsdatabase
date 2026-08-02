@@ -16,8 +16,9 @@
 
                 <div class="nutrition-header-actions">
                     <a href="{{ route('nutrition_assessments.index', $client->id) }}"
-                        class="btn btn-outline-secondary btn-sm">
-                        กลับหน้ารายการ
+                        class="nutrition-btn nutrition-btn-secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        <span>กลับหน้ารายการ</span>
                     </a>
                 </div>
             </div>
@@ -255,6 +256,36 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+        }
+
+        .nutrition-btn {
+            min-height: 42px;
+            border-radius: 12px;
+            padding: 10px 18px;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
+        }
+
+        .nutrition-btn-secondary {
+            color: #475569;
+            background: #fff;
+            border-color: #cbd5e1;
+            box-shadow: 0 3px 8px rgba(15, 23, 42, .05);
+        }
+
+        .nutrition-btn-secondary:hover,
+        .nutrition-btn-secondary:focus {
+            color: #1e293b;
+            background: #f8fafc;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
         }
 
         /* ข้อมูลผลประเมินแบบแถวย่อ */
@@ -531,6 +562,11 @@
             .assessment-mini-grid,
             .growth-summary-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .nutrition-header-actions,
+            .nutrition-header-actions .nutrition-btn {
+                width: 100%;
             }
 
             .assessment-mini-item {

@@ -3,364 +3,317 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\CaseActivity;
 use App\Models\Client;
 use App\Models\Misbehavior;
 use App\Models\Observe;
 use App\Models\ObserveFollowup;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Carbon\Carbon;
-use App\Models\CaseActivity;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ObserveController extends Controller
 {
-    // หน้าเพิ่มใหม่
+    private const TIMEZONE = 'Asia/Bangkok';
+    private const TEXT_MAX = 5000;
+
+    /**
+     * หน้าเพิ่มข้อมูลพฤติกรรม
+     */
     public function AddObserve($client_id)
     {
-        // =========================
-        // PATCH: กันเดา URL เข้า client
-        // =========================
         $client = Client::forUser(auth()->user())->findOrFail($client_id);
 
-        $misbehaviors = Misbehavior::all();
-        $observes = Observe::with('followups')
-            ->where('client_id', $client->id)
-            ->orderBy('date', 'desc')
-            ->get();
-        $observe = null;
-
-        return view('frontend.client.observe.observe_create', compact('client', 'client_id', 'misbehaviors', 'observes', 'observe'));
+        return view('frontend.client.observe.observe_create', array_merge(
+            $this->pageData($client),
+            ['observe' => null]
+        ));
     }
 
-    // บันทึกข้อมูลใหม่
+    /**
+     * บันทึกข้อมูลพฤติกรรมใหม่
+     */
     public function StoreObserve(Request $request)
-        {
-            $data = $request->validate([
-               'date' => [
+    {
+        $this->trimTextFields($request, [
+            'behavior',
+            'cause',
+            'solution',
+            'action',
+            'obstacles',
+            'result',
+        ]);
+
+        $clientInput = $request->validateWithBag('observeForm', [
+            'client_id' => ['required', 'integer'],
+        ], [
+            'client_id.required' => 'ไม่พบข้อมูลผู้รับบริการ',
+            'client_id.integer'  => 'ข้อมูลผู้รับบริการไม่ถูกต้อง',
+        ]);
+
+        // ตรวจสิทธิ์ก่อนนำ client_id ไปใช้กับ validation/query อื่น
+        $client = Client::forUser(auth()->user())->findOrFail($clientInput['client_id']);
+        $today = now(self::TIMEZONE)->toDateString();
+
+        $data = $request->validateWithBag('observeForm', [
+            'date' => [
                 'required',
                 'date',
-                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
-
-                Rule::unique('observes')->where(function ($query) use ($request) {
-                    return $query->where('client_id', $request->client_id);
-                }),
+                'before_or_equal:' . $today,
+                Rule::unique('observes', 'date')
+                    ->where(fn ($query) => $query->where('client_id', $client->id)),
             ],
-                'behavior'       => 'required|string',
-                'cause'          => 'required|string',
-                'solution'       => 'required|string',
-                'action'         => 'required|string',
-                'obstacles'      => 'nullable|string',
-                'result'         => 'required|string',
-
-                'record_date' => [
+            'misbehavior_id' => [
+                'required',
+                'integer',
+                Rule::exists('misbehaviors', 'id'),
+            ],
+            'behavior'  => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'cause'     => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'solution'  => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'action'    => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'obstacles' => ['nullable', 'string', 'max:' . self::TEXT_MAX],
+            'result'    => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'record_date' => [
                 'required',
                 'date',
-                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+                'after_or_equal:date',
+                'before_or_equal:' . $today,
             ],
+        ], $this->observeValidationMessages());
 
-                'recorder'       => 'nullable|string|max:100',
-                'misbehavior_id' => 'required|integer',
-                'client_id'      => 'required|integer',
-            ], [
-                'date.required'           => 'กรุณาระบุวันที่',
-                'date.date'               => 'วันที่ไม่ถูกต้อง',
-                'date.unique'             => 'วันที่นี้ถูกบันทึกแล้วสำหรับนักเรียนรายนี้',
-                'behavior.required'       => 'กรุณาระบุพฤติกรรม',
-                'cause.required'          => 'กรุณาระบุสาเหตุ',
-                'solution.required'       => 'กรุณาระบุแนวทางแก้ไข',
-                'action.required'         => 'กรุณาระบุการดำเนินการ',
-                'result.required'         => 'กรุณาระบุผลการดำเนินการ',
-                'record_date.required'    => 'กรุณาระบุวันที่บันทึก',
-                'date.before_or_equal'        => 'วันที่เกิดเหตุต้องไม่เกินวันปัจจุบัน',
-                'record_date.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันปัจจุบัน',
-                'misbehavior_id.required' => 'กรุณาเลือกประเภทพฤติกรรมไม่เหมาะสม',
-                'client_id.required'      => 'กรุณาเลือกนักเรียน',
-            ]);
+        DB::transaction(function () use ($client, $data): void {
+            // ล็อกผู้รับบริการ ป้องกันการบันทึกวันเดียวกันพร้อมกัน
+            Client::query()->whereKey($client->id)->lockForUpdate()->firstOrFail();
 
-            // =========================
-            // PATCH: กันเปลี่ยน client_id
-            // =========================
-            $client = Client::forUser(auth()->user())->findOrFail($data['client_id']);
+            if (Observe::query()
+                ->where('client_id', $client->id)
+                ->whereDate('date', $data['date'])
+                ->exists()) {
+                $this->throwValidation('observeForm', [
+                    'date' => 'วันที่นี้ถูกบันทึกแล้วสำหรับผู้รับบริการรายนี้',
+                ]);
+            }
 
-            // =========================
-            // PATCH: บังคับ client_id จากสิทธิ์ที่ตรวจแล้ว
-            // =========================
-            $data['client_id'] = $client->id;
+            Observe::create(array_merge($data, [
+                'client_id' => $client->id,
+                'recorder'  => auth()->user()->name ?? null,
+            ]));
 
-            // =========================
-            // PATCH: ผู้บันทึกใช้ชื่อ user ที่ login เท่านั้น
-            // ไม่รับค่าจาก input เพื่อป้องกันการแก้ชื่อเอง
-            // =========================
-            $data['recorder'] = auth()->user()->name ?? null;
+            $this->syncCaseActivity($client->id);
+        });
 
-            $observe = Observe::create($data);
+        return redirect()
+            ->route('observe.create', $client->id)
+            ->with('success', 'บันทึกข้อมูลเรียบร้อย');
+    }
 
-            CaseActivity::where('client_id', $client->id)
-                ->where('module', 'observe')
-                ->delete();
-
-            CaseActivity::record([
-                'client_id'   => $client->id,
-                'module'      => 'observe',
-                'type'        => 'warning',
-                'title'       => 'บันทึกพฤติกรรมไม่เหมาะสม',
-                'description' => 'วันที่บันทึก: ' . ($data['date'] ?? '-') .
-                                ' | พฤติกรรม: ' . ($data['behavior'] ?? '-') .
-                                ' | ผลการดำเนินการ: ' . ($data['result'] ?? '-'),
-                'occurred_at' => now(),
-                'icon'        => 'bi-exclamation-triangle',
-                'url'         => route('observe.create', $client->id),
-            ]);
-
-            return redirect()->route('observe.create', $data['client_id'])
-                ->with('success', 'บันทึกข้อมูลเรียบร้อย');
-        }
-
-    // หน้าแก้ไข
+    /**
+     * หน้าแก้ไขข้อมูลพฤติกรรม
+     */
     public function EditObserve($id)
     {
-        // =========================
-        // PATCH: กันเข้าดู record คนอื่นตั้งแต่ query แรก
-        // เดิม: $observe = Observe::with('followups')->findOrFail($id);
-        // =========================
-        $observe = Observe::with('followups')
-            ->whereHas('client', function ($q) {
-                $q->forUser(auth()->user());
-            })
+        $observe = $this->authorizedObserveQuery()
+            ->with(['followups' => $this->followupOrderCallback()])
             ->findOrFail($id);
 
-        // =========================
-        // PATCH: กันเข้าดู record คนอื่น
-        // =========================
         $client = Client::forUser(auth()->user())->findOrFail($observe->client_id);
 
-        $misbehaviors = Misbehavior::all();
-        $observes = Observe::with('followups')
-            ->where('client_id', $client->id)
-            ->orderBy('date', 'desc')
-            ->get();
-
-        return view('frontend.client.observe.observe_create', compact('client', 'misbehaviors', 'observes', 'observe'));
+        return view('frontend.client.observe.observe_create', array_merge(
+            $this->pageData($client),
+            ['observe' => $observe]
+        ));
     }
 
-    // อัปเดตข้อมูล
-   public function UpdateObserve(Request $request, $id)
-{
-    // =========================
-    // PATCH: กัน update record คนอื่นตั้งแต่ query แรก
-    // เดิม: $observe = Observe::findOrFail($id);
-    // =========================
-    $observe = Observe::whereHas('client', function ($q) {
-            $q->forUser(auth()->user());
-        })
-        ->findOrFail($id);
+    /**
+     * อัปเดตข้อมูลพฤติกรรม
+     */
+    public function UpdateObserve(Request $request, $id)
+    {
+        $observe = $this->authorizedObserveQuery()->findOrFail($id);
+        $client = Client::forUser(auth()->user())->findOrFail($observe->client_id);
 
-    // =========================
-    // PATCH: กัน update record คนอื่น
-    // =========================
-    Client::forUser(auth()->user())->findOrFail($observe->client_id);
+        $this->trimTextFields($request, [
+            'behavior',
+            'cause',
+            'solution',
+            'action',
+            'obstacles',
+            'result',
+        ]);
 
-    $data = $request->validate([
-        'date' => [
-        'required',
-        'date',
-        'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+        $today = now(self::TIMEZONE)->toDateString();
 
-        Rule::unique('observes')
-            ->where(function ($query) use ($observe) {
-                return $query->where('client_id', $observe->client_id);
-            })
-            ->ignore($id),
-    ],
-        'behavior'       => 'required|string',
-        'cause'          => 'required|string',
-        'solution'       => 'required|string',
-        'action'         => 'required|string',
-        'result'         => 'required|string',
+        $data = $request->validateWithBag('observeForm', [
+            'date' => [
+                'required',
+                'date',
+                'before_or_equal:' . $today,
+                Rule::unique('observes', 'date')
+                    ->where(fn ($query) => $query->where('client_id', $observe->client_id))
+                    ->ignore($observe->id),
+            ],
+            'misbehavior_id' => [
+                'required',
+                'integer',
+                Rule::exists('misbehaviors', 'id'),
+            ],
+            'behavior'  => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'cause'     => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'solution'  => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'action'    => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'obstacles' => ['nullable', 'string', 'max:' . self::TEXT_MAX],
+            'result'    => ['required', 'string', 'max:' . self::TEXT_MAX],
+            'record_date' => [
+                'required',
+                'date',
+                'after_or_equal:date',
+                'before_or_equal:' . $today,
+            ],
+        ], $this->observeValidationMessages());
 
-       'record_date' => [
-        'required',
-        'date',
-        'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
-    ],
+        DB::transaction(function () use ($observe, $client, $data): void {
+            $lockedObserve = $this->authorizedObserveQuery()
+                ->lockForUpdate()
+                ->findOrFail($observe->id);
 
-        'recorder'       => 'nullable|string|max:100',
-        'misbehavior_id' => 'required|integer',
-        'client_id'      => 'required|integer',
-    ],[
-        'date.required'            => 'กรุณาระบุวันที่เกิดเหตุ',
-        'date.date'                => 'วันที่เกิดเหตุไม่ถูกต้อง',
-        'date.before_or_equal'     => 'วันที่เกิดเหตุต้องไม่เกินวันปัจจุบัน',
-        'date.unique'              => 'วันที่นี้ถูกบันทึกแล้วสำหรับนักเรียนรายนี้',
+            if (Observe::query()
+                ->where('client_id', $lockedObserve->client_id)
+                ->whereDate('date', $data['date'])
+                ->where('id', '<>', $lockedObserve->id)
+                ->exists()) {
+                $this->throwValidation('observeForm', [
+                    'date' => 'วันที่นี้ถูกบันทึกแล้วสำหรับผู้รับบริการรายนี้',
+                ]);
+            }
 
-        'record_date.required'        => 'กรุณาระบุวันที่บันทึก',
-        'record_date.date'            => 'วันที่บันทึกไม่ถูกต้อง',
-        'record_date.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันปัจจุบัน',
-    ]);
+            $lockedObserve->update(array_merge($data, [
+                'client_id' => $lockedObserve->client_id,
+                'recorder'  => auth()->user()->name ?? null,
+            ]));
 
-    // =========================
-    // PATCH: กันเปลี่ยน client_id
-    // บังคับให้ใช้ client_id เดิมของ record นี้เท่านั้น
-    // =========================
-    $data['client_id'] = $observe->client_id;
+            $this->syncCaseActivity($client->id);
+        });
 
-    // =========================
-    // PATCH: ตรวจสิทธิ์ client_id หลังบังคับค่าแล้ว
-    // =========================
-    Client::forUser(auth()->user())->findOrFail($data['client_id']);
+        return redirect()
+            ->route('observe.create', $client->id)
+            ->with('success', 'อัปเดตข้อมูลเรียบร้อย');
+    }
 
-    // =========================
-    // PATCH: ผู้บันทึกใช้ชื่อ user ที่ login เท่านั้น
-    // ไม่รับค่าจาก input เพื่อป้องกันการแก้ชื่อเอง
-    // =========================
-    $data['recorder'] = auth()->user()->name ?? null;
-
-    $observe->update($data);
-
-    CaseActivity::where('client_id', $observe->client_id)
-    ->where('module', 'observe')
-    ->delete();
-
-    CaseActivity::record([
-        'client_id'   => $observe->client_id,
-        'module'      => 'observe',
-        'type'        => 'warning',
-        'title'       => 'แก้ไขพฤติกรรมไม่เหมาะสม',
-        'description' => 'วันที่บันทึก: ' . ($data['date'] ?? '-') .
-                        ' | พฤติกรรม: ' . ($data['behavior'] ?? '-') .
-                        ' | ผลการดำเนินการ: ' . ($data['result'] ?? '-'),
-        'occurred_at' => now(),
-        'icon'        => 'bi-exclamation-triangle',
-        'url'         => route('observe.create', $observe->client_id),
-    ]);
-
-    return redirect()->route('observe.create', $data['client_id'])
-        ->with('success', 'อัปเดตข้อมูลเรียบร้อย');
-}
-
-    // ลบข้อมูล
+    /**
+     * ลบข้อมูลพฤติกรรม
+     */
     public function DeleteObserve($id)
     {
-        // =========================
-        // PATCH: กันลบ record คนอื่นตั้งแต่ query แรก
-        // เดิม: $observe = Observe::findOrFail($id);
-        // =========================
-        $observe = Observe::whereHas('client', function ($q) {
-                $q->forUser(auth()->user());
-            })
-            ->findOrFail($id);
+        $observe = $this->authorizedObserveQuery()->findOrFail($id);
+        $clientId = $observe->client_id;
 
-        // =========================
-        // PATCH: กันลบ record คนอื่น
-        // =========================
-        Client::forUser(auth()->user())->findOrFail($observe->client_id);
+        DB::transaction(function () use ($observe, $clientId): void {
+            $lockedObserve = $this->authorizedObserveQuery()
+                ->with('followups')
+                ->lockForUpdate()
+                ->findOrFail($observe->id);
 
-        $client_id = $observe->client_id;
+            // รองรับทั้งฐานข้อมูลที่ตั้ง cascade และฐานข้อมูลเดิมที่ยังไม่ได้ตั้ง cascade
+            $lockedObserve->followups()->delete();
+            $lockedObserve->delete();
 
-        CaseActivity::where('client_id', $client_id)
-            ->where('module', 'observe')
-            ->delete();
+            $this->syncCaseActivity($clientId);
+        });
 
-        $observe->delete();
-
-        return redirect()->route('observe.create', $client_id)
-            ->with(['message' => 'ลบข้อมูลเรียบร้อย', 'alert-type' => 'success']);
+        return redirect()
+            ->route('observe.create', $clientId)
+            ->with('success', 'ลบข้อมูลเรียบร้อย');
     }
 
-    // บันทึกการติดตามผล
+    /**
+     * บันทึกการติดตามผล
+     */
     public function StoreFollowup(Request $request)
     {
-        $data = $request->validate([
-            'observe_id'      => 'required|integer|exists:observes,id',
-            'followup_date'   => 'required|date',
-            'followup_action' => 'nullable|string',
-            'followup_result' => 'nullable|string',
-        ], [
-            'observe_id.required'     => 'ไม่พบข้อมูลพฤติกรรมที่ต้องการติดตามผล',
-            'observe_id.integer'      => 'ข้อมูลพฤติกรรมไม่ถูกต้อง',
-            'observe_id.exists'       => 'ไม่พบข้อมูลพฤติกรรมในระบบ',
-            'followup_date.required'  => 'กรุณาระบุวันที่ติดตาม',
-            'followup_date.date'      => 'รูปแบบวันที่ติดตามไม่ถูกต้อง',
-        ]);
-
-        // =========================
-        // PATCH: กันเพิ่ม followup ของ client คนอื่นตั้งแต่ query แรก
-        // เดิม: $observe = Observe::findOrFail($data['observe_id']);
-        // =========================
-        $observe = Observe::whereHas('client', function ($q) {
-                $q->forUser(auth()->user());
-            })
-            ->findOrFail($data['observe_id']);
-
-        // =========================
-        // PATCH: กันเพิ่ม followup ของ client คนอื่น
-        // =========================
+        $observeId = (int) $request->input('observe_id');
+        $observe = $this->authorizedObserveQuery()->findOrFail($observeId);
         Client::forUser(auth()->user())->findOrFail($observe->client_id);
 
-        // =========================
-        // AUTO: นับครั้งอัตโนมัติจากจำนวนปัจจุบัน + 1
-        // =========================
-        $nextFollowupCount = ObserveFollowup::where('observe_id', $observe->id)->count() + 1;
+        $this->trimTextFields($request, ['followup_action', 'followup_result']);
 
-        // =========================
-        // VALIDATE: วันที่ของครั้งใหม่ต้อง "มากกว่า" วันที่ของครั้งล่าสุดเท่านั้น
-        // ห้ามซ้ำ และห้ามน้อยกว่า
-        // =========================
-        $lastFollowup = ObserveFollowup::where('observe_id', $observe->id)
-            ->orderByDesc('followup_count')
-            ->first();
+        $bag = 'followupStore' . $observe->id;
+        $today = now(self::TIMEZONE)->toDateString();
 
-        if ($lastFollowup && $lastFollowup->followup_date) {
-            $newFollowupDate  = Carbon::parse($data['followup_date'])->startOfDay();
-            $lastFollowupDate = Carbon::parse($lastFollowup->followup_date)->startOfDay();
+        $validator = Validator::make($request->all(), [
+            'followup_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . $observe->date,
+                'before_or_equal:' . $today,
+                Rule::unique('observe_followups', 'followup_date')
+                    ->where(fn ($query) => $query->where('observe_id', $observe->id)),
+            ],
+            'followup_action' => ['nullable', 'string', 'max:' . self::TEXT_MAX],
+            'followup_result' => ['nullable', 'string', 'max:' . self::TEXT_MAX],
+        ], $this->followupValidationMessages($observe->date));
 
-            if ($newFollowupDate->lte($lastFollowupDate)) {
-                return redirect()->back()
-                    ->withErrors([
-                        'followup_date' => 'วันที่ติดตามของครั้งที่ ' . $nextFollowupCount . ' ต้องมากกว่าวันที่ของครั้งที่ ' . $lastFollowup->followup_count . ' เท่านั้น และห้ามซ้ำ'
-                    ])
-                    ->withInput();
-            }
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator, $bag)
+                ->withInput();
         }
 
-        $followup = ObserveFollowup::create([
-            'observe_id'      => $observe->id,
-            'followup_date'   => $data['followup_date'],
-            'followup_count'  => $nextFollowupCount,
-            'followup_action' => $data['followup_action'] ?? null,
-            'followup_result' => $data['followup_result'] ?? null,
-        ]);
+        $data = $validator->validated();
 
-        CaseActivity::where('client_id', $observe->client_id)
-            ->where('module', 'observe')
-            ->delete();
+        DB::transaction(function () use ($observe, $data, $bag): void {
+            $lockedObserve = $this->authorizedObserveQuery()
+                ->lockForUpdate()
+                ->findOrFail($observe->id);
 
-        CaseActivity::record([
-            'client_id'   => $observe->client_id,
-            'module'      => 'observe',
-            'type'        => 'warning',
-            'title'       => 'บันทึกการติดตามพฤติกรรม',
-            'description' => 'ติดตามครั้งที่ ' . ($followup->followup_count ?? '-') .
-                            ' | วันที่ติดตาม: ' . ($data['followup_date'] ?? '-') .
-                            ' | ผลติดตาม: ' . ($data['followup_result'] ?? '-'),
-            'occurred_at' => now(),
-            'icon'        => 'bi-clipboard2-check',
-            'url'         => route('observe.edit', $observe->id),
-        ]);
+            $lastFollowup = ObserveFollowup::query()
+                ->where('observe_id', $lockedObserve->id)
+                ->orderByDesc('followup_date')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($lastFollowup) {
+                $newDate = Carbon::parse($data['followup_date'], self::TIMEZONE)->startOfDay();
+                $lastDate = Carbon::parse($lastFollowup->followup_date, self::TIMEZONE)->startOfDay();
+
+                if ($newDate->lte($lastDate)) {
+                    $this->throwValidation($bag, [
+                        'followup_date' => 'วันที่ติดตามครั้งใหม่ต้องมากกว่าวันที่ติดตามครั้งล่าสุด ('
+                            . $lastDate->format('d/m/Y') . ') และห้ามซ้ำ',
+                    ]);
+                }
+            }
+
+            $nextFollowupCount = ((int) ObserveFollowup::query()
+                ->where('observe_id', $lockedObserve->id)
+                ->max('followup_count')) + 1;
+
+            ObserveFollowup::create([
+                'observe_id'      => $lockedObserve->id,
+                'followup_date'   => $data['followup_date'],
+                'followup_count'  => $nextFollowupCount,
+                'followup_action' => $data['followup_action'] ?? null,
+                'followup_result' => $data['followup_result'] ?? null,
+            ]);
+
+            $this->syncCaseActivity($lockedObserve->client_id);
+        });
 
         return redirect()
             ->route('observe.edit', $observe->id)
             ->with('success', 'บันทึกการติดตามผลเรียบร้อย');
     }
 
-    // ลบการติดตามผล
-        public function DeleteFollowup($id)
+    /**
+     * ลบการติดตามผลและเรียงเลขครั้งใหม่ตามวันที่
+     */
+    public function DeleteFollowup($id)
     {
-        $followup = ObserveFollowup::whereHas('observeRelation.client', function ($q) {
-                $q->forUser(auth()->user());
-            })
-            ->findOrFail($id);
-
+        $followup = $this->authorizedFollowupQuery()->findOrFail($id);
         $observe = $followup->observeRelation;
 
         if (!$observe) {
@@ -368,69 +321,57 @@ class ObserveController extends Controller
         }
 
         Client::forUser(auth()->user())->findOrFail($observe->client_id);
-
-        $observe_id = $followup->observe_id;
+        $observeId = $observe->id;
         $clientId = $observe->client_id;
 
-        CaseActivity::where('client_id', $clientId)
-            ->where('module', 'observe')
-            ->delete();
+        DB::transaction(function () use ($followup, $observeId, $clientId): void {
+            $this->authorizedObserveQuery()->lockForUpdate()->findOrFail($observeId);
 
-        $followup->delete();
+            $lockedFollowup = $this->authorizedFollowupQuery()
+                ->lockForUpdate()
+                ->findOrFail($followup->id);
 
-        $remainingFollowups = ObserveFollowup::where('observe_id', $observe_id)
-            ->orderBy('followup_date', 'asc')
-            ->orderBy('id', 'asc')
-            ->get();
+            $lockedFollowup->delete();
+            $this->renumberFollowups($observeId);
+            $this->syncCaseActivity($clientId);
+        });
 
-        foreach ($remainingFollowups as $index => $item) {
-            $item->update([
-                'followup_count' => $index + 1
-            ]);
-        }
-
-        return redirect()->route('observe.edit', $observe_id)
-            ->with(['message' => 'ลบข้อมูลเรียบร้อย', 'alert-type' => 'success']);
+        return redirect()
+            ->route('observe.edit', $observeId)
+            ->with('success', 'ลบการติดตามผลเรียบร้อย');
     }
-        // แก้ไขการติดตามผล
+
+    /**
+     * เปิดหน้าแก้ไขและเปิด Modal ของรายการติดตามที่เลือก
+     */
     public function EditFollowup($id)
     {
-        $followup = ObserveFollowup::whereHas('observeRelation.client', function ($q) {
-                $q->forUser(auth()->user());
-            })
-            ->findOrFail($id);
-
+        $followup = $this->authorizedFollowupQuery()->findOrFail($id);
         $observe = $followup->observeRelation;
 
         if (!$observe) {
             return redirect()->back()->with('error', 'ไม่พบข้อมูลพฤติกรรมที่สัมพันธ์กับการติดตามผลนี้');
         }
 
+        $observe->load(['followups' => $this->followupOrderCallback()]);
         $client = Client::forUser(auth()->user())->findOrFail($observe->client_id);
 
-        $misbehaviors = Misbehavior::all();
-        $observes = Observe::with('followups')
-            ->where('client_id', $client->id)
-            ->orderBy('date', 'desc')
-            ->get();
-
-        return view('frontend.client.observe.observe_create', compact(
-            'client',
-            'misbehaviors',
-            'observes',
-            'observe',
-            'followup'
+        return view('frontend.client.observe.observe_create', array_merge(
+            $this->pageData($client),
+            [
+                'observe'   => $observe,
+                'followup'  => $followup,
+                'openModal' => 'editFollowupModal' . $followup->id,
+            ]
         ));
     }
 
-        // อัปเดตการติดตามผล
-        public function UpdateFollowup(Request $request, $id)
+    /**
+     * อัปเดตการติดตามผล
+     */
+    public function UpdateFollowup(Request $request, $id)
     {
-        $followup = ObserveFollowup::whereHas('observeRelation.client', function ($q) {
-                $q->forUser(auth()->user());
-            })
-            ->findOrFail($id);
-
+        $followup = $this->authorizedFollowupQuery()->findOrFail($id);
         $observe = $followup->observeRelation;
 
         if (!$observe) {
@@ -438,103 +379,315 @@ class ObserveController extends Controller
         }
 
         Client::forUser(auth()->user())->findOrFail($observe->client_id);
+        $this->trimTextFields($request, ['followup_action', 'followup_result']);
 
-        $data = $request->validate([
-            'followup_date'   => 'required|date',
-            'followup_action' => 'nullable|string',
-            'followup_result' => 'nullable|string',
-        ], [
-            'followup_date.required' => 'กรุณาระบุวันที่ติดตาม',
-            'followup_date.date'     => 'รูปแบบวันที่ติดตามไม่ถูกต้อง',
-        ]);
+        $bag = 'followupUpdate' . $followup->id;
+        $today = now(self::TIMEZONE)->toDateString();
 
-        $newFollowupDate = Carbon::parse($data['followup_date'])->startOfDay();
+        $validator = Validator::make($request->all(), [
+            'followup_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . $observe->date,
+                'before_or_equal:' . $today,
+                Rule::unique('observe_followups', 'followup_date')
+                    ->where(fn ($query) => $query->where('observe_id', $observe->id))
+                    ->ignore($followup->id),
+            ],
+            'followup_action' => ['nullable', 'string', 'max:' . self::TEXT_MAX],
+            'followup_result' => ['nullable', 'string', 'max:' . self::TEXT_MAX],
+        ], $this->followupValidationMessages($observe->date));
 
-        $prevFollowup = ObserveFollowup::where('observe_id', $followup->observe_id)
-            ->where('followup_count', '<', $followup->followup_count)
-            ->orderByDesc('followup_count')
-            ->first();
-
-        if ($prevFollowup && $prevFollowup->followup_date) {
-            $prevFollowupDate = Carbon::parse($prevFollowup->followup_date)->startOfDay();
-
-            if ($newFollowupDate->lte($prevFollowupDate)) {
-                return redirect()->back()
-                    ->withErrors([
-                        'followup_date' => 'วันที่ติดตามของครั้งที่ ' . $followup->followup_count . ' ต้องมากกว่าวันที่ของครั้งที่ ' . $prevFollowup->followup_count . ' เท่านั้น และห้ามซ้ำ'
-                    ])
-                    ->withInput();
-            }
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator, $bag)
+                ->withInput();
         }
 
-        $nextFollowup = ObserveFollowup::where('observe_id', $followup->observe_id)
-            ->where('followup_count', '>', $followup->followup_count)
-            ->orderBy('followup_count', 'asc')
-            ->first();
+        $data = $validator->validated();
 
-        if ($nextFollowup && $nextFollowup->followup_date) {
-            $nextFollowupDate = Carbon::parse($nextFollowup->followup_date)->startOfDay();
+        DB::transaction(function () use ($followup, $observe, $data, $bag): void {
+            $this->authorizedObserveQuery()->lockForUpdate()->findOrFail($observe->id);
 
-            if ($newFollowupDate->gte($nextFollowupDate)) {
-                return redirect()->back()
-                    ->withErrors([
-                        'followup_date' => 'วันที่ติดตามของครั้งที่ ' . $followup->followup_count . ' ต้องน้อยกว่าวันที่ของครั้งที่ ' . $nextFollowup->followup_count . ' เท่านั้น และห้ามซ้ำ'
-                    ])
-                    ->withInput();
+            $lockedFollowup = $this->authorizedFollowupQuery()
+                ->lockForUpdate()
+                ->findOrFail($followup->id);
+
+            $newDate = Carbon::parse($data['followup_date'], self::TIMEZONE)->startOfDay();
+
+            $previous = ObserveFollowup::query()
+                ->where('observe_id', $lockedFollowup->observe_id)
+                ->where('followup_count', '<', $lockedFollowup->followup_count)
+                ->orderByDesc('followup_count')
+                ->first();
+
+            if ($previous) {
+                $previousDate = Carbon::parse($previous->followup_date, self::TIMEZONE)->startOfDay();
+
+                if ($newDate->lte($previousDate)) {
+                    $this->throwValidation($bag, [
+                        'followup_date' => 'วันที่ติดตามครั้งที่ ' . $lockedFollowup->followup_count
+                            . ' ต้องมากกว่าวันที่ของครั้งที่ ' . $previous->followup_count . ' และห้ามซ้ำ',
+                    ]);
+                }
+            }
+
+            $next = ObserveFollowup::query()
+                ->where('observe_id', $lockedFollowup->observe_id)
+                ->where('followup_count', '>', $lockedFollowup->followup_count)
+                ->orderBy('followup_count')
+                ->first();
+
+            if ($next) {
+                $nextDate = Carbon::parse($next->followup_date, self::TIMEZONE)->startOfDay();
+
+                if ($newDate->gte($nextDate)) {
+                    $this->throwValidation($bag, [
+                        'followup_date' => 'วันที่ติดตามครั้งที่ ' . $lockedFollowup->followup_count
+                            . ' ต้องน้อยกว่าวันที่ของครั้งที่ ' . $next->followup_count . ' และห้ามซ้ำ',
+                    ]);
+                }
+            }
+
+            $lockedFollowup->update([
+                'followup_date'   => $data['followup_date'],
+                'followup_action' => $data['followup_action'] ?? null,
+                'followup_result' => $data['followup_result'] ?? null,
+            ]);
+
+            $this->syncCaseActivity($observe->client_id);
+        });
+
+        return redirect()
+            ->route('observe.edit', $observe->id)
+            ->with('success', 'อัปเดตการติดตามผลเรียบร้อย');
+    }
+
+    /**
+     * รายงานข้อมูลพฤติกรรม
+     */
+    public function ReportObserve($id)
+    {
+        $observe = $this->authorizedObserveQuery()
+            ->with([
+                'client',
+                'misbehavior',
+                'followups' => $this->followupOrderCallback(),
+            ])
+            ->findOrFail($id);
+
+        $client = Client::forUser(auth()->user())->findOrFail($observe->client_id);
+
+        return view('frontend.client.observe.observe_report', compact('observe', 'client'));
+    }
+
+    /**
+     * Query ข้อมูลพฤติกรรมที่ผู้ใช้ปัจจุบันมีสิทธิ์เข้าถึง
+     */
+    private function authorizedObserveQuery()
+    {
+        return Observe::query()
+            ->whereHas('client', fn ($query) => $query->forUser(auth()->user()));
+    }
+
+    /**
+     * Query การติดตามผลที่ผู้ใช้ปัจจุบันมีสิทธิ์เข้าถึง
+     */
+    private function authorizedFollowupQuery()
+    {
+        return ObserveFollowup::query()
+            ->with('observeRelation')
+            ->whereHas('observeRelation.client', fn ($query) => $query->forUser(auth()->user()));
+    }
+
+    /**
+     * ข้อมูลที่ใช้ร่วมกันในหน้ารายการ/แก้ไข
+     */
+    private function pageData(Client $client): array
+    {
+        return [
+            'client'       => $client,
+            'client_id'    => $client->id,
+            'misbehaviors' => Misbehavior::query()
+                ->orderBy('misbehavior_name')
+                ->get(),
+            'observes' => Observe::query()
+                ->with(['followups' => $this->followupOrderCallback()])
+                ->where('client_id', $client->id)
+                ->orderByDesc('date')
+                ->orderByDesc('id')
+                ->get(),
+        ];
+    }
+
+    /**
+     * ลำดับมาตรฐานของการติดตามผล
+     */
+    private function followupOrderCallback(): callable
+    {
+        return fn ($query) => $query
+            ->orderBy('followup_count')
+            ->orderBy('followup_date')
+            ->orderBy('id');
+    }
+
+    /**
+     * เรียงเลขครั้งใหม่หลังลบ โดยยึดวันที่และ id เป็นลำดับคงที่
+     */
+    private function renumberFollowups(int $observeId): void
+    {
+        $followups = ObserveFollowup::query()
+            ->where('observe_id', $observeId)
+            ->orderBy('followup_date')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($followups as $index => $item) {
+            $newCount = $index + 1;
+
+            if ((int) $item->followup_count !== $newCount) {
+                $item->update(['followup_count' => $newCount]);
             }
         }
+    }
 
-        $followup->update([
-            'followup_date'   => $data['followup_date'],
-            'followup_count'  => $followup->followup_count,
-            'followup_action' => $data['followup_action'] ?? null,
-            'followup_result' => $data['followup_result'] ?? null,
-        ]);
-
-        CaseActivity::where('client_id', $observe->client_id)
+    /**
+     * ให้ CaseActivity แสดงเหตุการณ์ล่าสุดตามวันที่จริง ไม่ใช่เวลาที่กดแก้ไข
+     */
+    private function syncCaseActivity(int $clientId): void
+    {
+        CaseActivity::query()
+            ->where('client_id', $clientId)
             ->where('module', 'observe')
             ->delete();
 
+        $latestObserve = Observe::query()
+            ->where('client_id', $clientId)
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->first();
+
+        $latestFollowup = ObserveFollowup::query()
+            ->with('observeRelation:id,client_id')
+            ->whereHas('observeRelation', fn ($query) => $query->where('client_id', $clientId))
+            ->orderByDesc('followup_date')
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$latestObserve && !$latestFollowup) {
+            return;
+        }
+
+        $observeDate = $latestObserve
+            ? Carbon::parse($latestObserve->date, self::TIMEZONE)->startOfDay()
+            : null;
+
+        $followupDate = $latestFollowup
+            ? Carbon::parse($latestFollowup->followup_date, self::TIMEZONE)->startOfDay()
+            : null;
+
+        $useFollowup = $latestFollowup
+            && (!$observeDate || $followupDate->greaterThanOrEqualTo($observeDate));
+
+        if ($useFollowup) {
+            CaseActivity::record([
+                'client_id'   => $clientId,
+                'module'      => 'observe',
+                'type'        => 'warning',
+                'title'       => 'การติดตามพฤติกรรมล่าสุด',
+                'description' => Str::limit(
+                    'ติดตามครั้งที่ ' . ($latestFollowup->followup_count ?: '-')
+                    . ' | วันที่ติดตาม: ' . ($latestFollowup->followup_date ?: '-')
+                    . ' | ผลติดตาม: ' . ($latestFollowup->followup_result ?: '-'),
+                    250
+                ),
+                'occurred_at' => $followupDate,
+                'icon'        => 'bi-clipboard2-check',
+                'url'         => route('observe.edit', $latestFollowup->observe_id),
+            ]);
+
+            return;
+        }
+
         CaseActivity::record([
-            'client_id'   => $observe->client_id,
+            'client_id'   => $clientId,
             'module'      => 'observe',
             'type'        => 'warning',
-            'title'       => 'แก้ไขการติดตามพฤติกรรม',
-            'description' => 'ติดตามครั้งที่ ' . ($followup->followup_count ?? '-') .
-                            ' | วันที่ติดตาม: ' . ($data['followup_date'] ?? '-') .
-                            ' | ผลติดตาม: ' . ($data['followup_result'] ?? '-'),
-            'occurred_at' => now(),
-            'icon'        => 'bi-clipboard2-check',
-            'url'         => route('observe.edit', $observe->id),
+            'title'       => 'พฤติกรรมไม่เหมาะสมล่าสุด',
+            'description' => Str::limit(
+                'วันที่เกิดเหตุ: ' . ($latestObserve->date ?: '-')
+                . ' | พฤติกรรม: ' . ($latestObserve->behavior ?: '-')
+                . ' | ผลการดำเนินการ: ' . ($latestObserve->result ?: '-'),
+                250
+            ),
+            'occurred_at' => $observeDate,
+            'icon'        => 'bi-exclamation-triangle',
+            'url'         => route('observe.edit', $latestObserve->id),
         ]);
-
-        return redirect()->route('observe.edit', $observe->id)
-            ->with('success', 'อัปเดตการติดตามผลเรียบร้อย');
     }
-        public function ReportObserve($id)
-        {
-            // =========================
-            // PATCH: กันเข้าดู report ของ client คนอื่นตั้งแต่ query แรก
-            // เดิม: Observe::with([...])->findOrFail($id);
-            // =========================
-            $observe = Observe::with([
-                'client',
-                'misbehavior',
-                'followups' => function ($query) {
-                    $query->orderBy('followup_count', 'asc')
-                        ->orderBy('followup_date', 'asc');
-                }
-            ])
-            ->whereHas('client', function ($q) {
-                $q->forUser(auth()->user());
-            })
-            ->findOrFail($id);
 
-            // =========================
-            // PATCH: กันเข้าดู report ของ client คนอื่น
-            // =========================
-            $client = Client::forUser(auth()->user())->findOrFail($observe->client_id);
+    /**
+     * ตัดช่องว่างหน้า/หลัง ก่อนตรวจสอบและบันทึก
+     */
+    private function trimTextFields(Request $request, array $fields): void
+    {
+        $values = [];
 
-            return view('frontend.client.observe.observe_report', compact('observe', 'client'));
+        foreach ($fields as $field) {
+            $value = $request->input($field);
+            $values[$field] = is_string($value) ? trim($value) : $value;
         }
+
+        $request->merge($values);
     }
+
+    private function observeValidationMessages(): array
+    {
+        return [
+            'date.required'                 => 'กรุณาระบุวันที่เกิดเหตุ',
+            'date.date'                     => 'วันที่เกิดเหตุไม่ถูกต้อง',
+            'date.before_or_equal'          => 'วันที่เกิดเหตุต้องไม่เกินวันปัจจุบัน',
+            'date.unique'                   => 'วันที่นี้ถูกบันทึกแล้วสำหรับผู้รับบริการรายนี้',
+            'misbehavior_id.required'       => 'กรุณาเลือกสภาพปัญหา',
+            'misbehavior_id.integer'        => 'สภาพปัญหาไม่ถูกต้อง',
+            'misbehavior_id.exists'         => 'ไม่พบสภาพปัญหาที่เลือกในระบบ',
+            'behavior.required'             => 'กรุณาระบุพฤติกรรมที่พบเห็น',
+            'behavior.max'                  => 'พฤติกรรมที่พบเห็นต้องไม่เกิน ' . self::TEXT_MAX . ' ตัวอักษร',
+            'cause.required'                => 'กรุณาระบุสาเหตุ',
+            'cause.max'                     => 'สาเหตุต้องไม่เกิน ' . self::TEXT_MAX . ' ตัวอักษร',
+            'solution.required'             => 'กรุณาระบุแนวทางแก้ไข',
+            'solution.max'                  => 'แนวทางแก้ไขต้องไม่เกิน ' . self::TEXT_MAX . ' ตัวอักษร',
+            'action.required'               => 'กรุณาระบุการดำเนินการ',
+            'action.max'                    => 'การดำเนินการต้องไม่เกิน ' . self::TEXT_MAX . ' ตัวอักษร',
+            'obstacles.max'                 => 'ปัญหา/อุปสรรคต้องไม่เกิน ' . self::TEXT_MAX . ' ตัวอักษร',
+            'result.required'               => 'กรุณาระบุผลลัพธ์',
+            'result.max'                    => 'ผลลัพธ์ต้องไม่เกิน ' . self::TEXT_MAX . ' ตัวอักษร',
+            'record_date.required'          => 'กรุณาระบุวันที่บันทึก',
+            'record_date.date'              => 'วันที่บันทึกไม่ถูกต้อง',
+            'record_date.after_or_equal'    => 'วันที่บันทึกต้องไม่น้อยกว่าวันที่เกิดเหตุ',
+            'record_date.before_or_equal'   => 'วันที่บันทึกต้องไม่เกินวันปัจจุบัน',
+        ];
+    }
+
+    private function followupValidationMessages(?string $observeDate): array
+    {
+        return [
+            'followup_date.required'        => 'กรุณาระบุวันที่ติดตาม',
+            'followup_date.date'            => 'รูปแบบวันที่ติดตามไม่ถูกต้อง',
+            'followup_date.after_or_equal'  => 'วันที่ติดตามต้องไม่น้อยกว่าวันที่เกิดเหตุ' . ($observeDate ? ' (' . $observeDate . ')' : ''),
+            'followup_date.before_or_equal' => 'วันที่ติดตามต้องไม่เกินวันปัจจุบัน',
+            'followup_date.unique'          => 'วันที่ติดตามนี้ถูกบันทึกแล้ว กรุณาเลือกวันอื่น',
+            'followup_action.max'           => 'การดำเนินการต้องไม่เกิน ' . self::TEXT_MAX . ' ตัวอักษร',
+            'followup_result.max'           => 'ผลลัพธ์ต้องไม่เกิน ' . self::TEXT_MAX . ' ตัวอักษร',
+        ];
+    }
+
+    private function throwValidation(string $errorBag, array $messages): never
+    {
+        $exception = ValidationException::withMessages($messages);
+        $exception->errorBag = $errorBag;
+
+        throw $exception;
+    }
+}

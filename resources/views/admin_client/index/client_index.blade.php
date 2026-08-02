@@ -21,11 +21,20 @@
     $birthDate = !empty($client->birth_date) ? Carbon::parse($client->birth_date) : null;
     $arrivalDate = !empty($client->arrival_date) ? Carbon::parse($client->arrival_date) : null;
 
-    $educationRecords = $client->educationRecords ?? collect();
-    $educationRecord = $educationRecords->first();
+    // Controller เลือกข้อมูลภาคเรียนที่มีค่ามากที่สุดมาให้แล้ว
+    // เรียงปีการศึกษาและเลขภาคเรียน ไม่ใช้วันที่บันทึก
+    $educationRecord = $currentEducationRecord ?? null;
 
-    $educationName = optional(optional($educationRecord)->education)->education_name ?? 'ไม่ระบุ';
-    $institutionName = optional(optional($educationRecord)->institution)->institution_name ?? 'ไม่ระบุ';
+    $educationName = data_get($educationRecord, 'education.education_name')
+        ?: 'ยังไม่มีข้อมูลการศึกษา';
+
+    $institutionName = data_get($educationRecord, 'institution.institution_name')
+        ?: ($educationRecord->school_name ?? null)
+        ?: 'ยังไม่มีข้อมูลการศึกษา';
+
+    $educationPeriodText = $educationRecord && $currentSemester && $currentAcademicYear
+        ? 'ภาคเรียนที่ ' . $currentSemester . ' ปีการศึกษา ' . $currentAcademicYear
+        : 'ยังไม่มีข้อมูลภาคเรียน';
 
     $appointments = collect($appointments ?? []);
     $appointmentCount = $appointmentCount ?? $appointments->count();
@@ -168,6 +177,9 @@
                                 <div class="info-item">
                                     <div class="info-label">ระดับการศึกษา</div>
                                     <div class="info-value">{{ $educationName }}</div>
+                                    <div class="education-period {{ $educationRecord ? '' : 'education-period-missing' }}">
+                                        <i class="bi bi-calendar3 me-1"></i>{{ $educationPeriodText }}
+                                    </div>
                                 </div>
                             </div>
 
@@ -175,6 +187,13 @@
                                 <div class="info-item">
                                     <div class="info-label">สถานศึกษา</div>
                                     <div class="info-value">{{ $institutionName }}</div>
+                                    <div class="education-period {{ $educationRecord ? '' : 'education-period-missing' }}">
+                                        @if($educationRecord)
+                                            ข้อมูลตามภาคเรียนล่าสุด
+                                        @else
+                                            ยังไม่มีข้อมูลประวัติการศึกษา
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -306,7 +325,7 @@
         </div>
     </div>
 
-    <di class="row g-4">
+    <div class="row g-4">
         <div class="col-xl-4 col-md-6">
             <div class="card service-card border-0 shadow-sm h-100">
                 <div class="card-body p-4">
@@ -879,6 +898,21 @@
         word-break: break-word;
     }
 
+    .education-period {
+        display: flex;
+        align-items: center;
+        gap: .15rem;
+        margin-top: .35rem;
+        color: #0d6efd;
+        font-size: .8rem;
+        font-weight: 600;
+        line-height: 1.45;
+    }
+
+    .education-period-missing {
+        color: #b45309;
+    }
+
     .profile-note {
         background: #f8fafc;
         border: 1px dashed #cbd5e1;
@@ -1292,15 +1326,14 @@
             padding: 1rem !important;
         }
 
-        @media (max-width: 575.98px){
-    .service-meta-item{
-        flex-direction:column;
-        align-items:flex-start;
-    }
+        .service-meta-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
 
-    .service-meta-value{
-        text-align:left;
-    }
+        .service-meta-value {
+            text-align: left;
+        }
     }
 </style>
 
