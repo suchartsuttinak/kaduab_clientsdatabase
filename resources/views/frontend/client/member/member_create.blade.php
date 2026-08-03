@@ -5,19 +5,15 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
 @php
+    /*
+    |--------------------------------------------------------------------------
+    | แสดงตารางเฉพาะเมื่อมีข้อมูลสมาชิก
+    |--------------------------------------------------------------------------
+    | - เปิดหน้าเพิ่มครั้งแรก: ซ่อนตารางและแสดงสถานะว่าง
+    | - Validation ไม่ผ่าน: แสดงข้อมูลเดิมจาก old('members') พร้อมตาราง
+    */
     $formMembers = old('members', []);
-
-    if (empty($formMembers)) {
-        $formMembers = [[
-            'fullname' => '',
-            'member_age' => '',
-            'education_id' => '',
-            'relationship' => '',
-            'occupation_id' => '',
-            'income_id' => '',
-            'remark' => '',
-        ]];
-    }
+    $hasFormMembers = count($formMembers) > 0;
 @endphp
 
 
@@ -154,6 +150,47 @@
         margin: .2rem 0 0;
         color: var(--mf-muted);
         font-size: .78rem;
+    }
+
+    .member-empty-state {
+        padding: 2rem 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        border: 1px dashed #cbd8e6;
+        border-radius: 15px;
+        background: linear-gradient(180deg, #fbfdff 0%, #f5f9fd 100%);
+        color: var(--mf-muted);
+        text-align: center;
+    }
+
+    .member-empty-state-icon {
+        width: 52px;
+        height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #d8e5f1;
+        border-radius: 16px;
+        background: #fff;
+        color: var(--mf-primary);
+        font-size: 1.35rem;
+        box-shadow: 0 7px 18px rgba(36, 91, 145, .08);
+    }
+
+    .member-empty-state strong {
+        color: #334155;
+        font-size: .95rem;
+        font-weight: 800;
+    }
+
+    .member-empty-state p {
+        max-width: 480px;
+        margin: 0;
+        font-size: .8rem;
+        line-height: 1.65;
     }
 
     .member-table-wrap {
@@ -384,7 +421,7 @@
     <div class="member-form-shell">
         <div class="member-form-header">
             <div>
-                <span class="member-form-kicker">ADD FAMILY MEMBER</span>
+             
                 <h1 class="member-form-title">เพิ่มข้อมูลสมาชิกในครอบครัว</h1>
             </div>
 
@@ -435,7 +472,17 @@
                     </div>
                 </div>
 
-                <div class="member-table-wrap">
+                <div id="member-empty-state"
+                     class="member-empty-state {{ $hasFormMembers ? 'd-none' : '' }}">
+                    <span class="member-empty-state-icon" aria-hidden="true">
+                        <i class="bi bi-people"></i>
+                    </span>
+                    <strong>ยังไม่มีข้อมูลสมาชิกในครอบครัว</strong>
+                    <p>กดปุ่ม “เพิ่มสมาชิก” เพื่อเพิ่มรายการ ตารางจะแสดงขึ้นโดยอัตโนมัติ</p>
+                </div>
+
+                <div id="member-table-wrap"
+                     class="member-table-wrap {{ $hasFormMembers ? '' : 'd-none' }}">
                     <table class="table table-bordered align-middle member-entry-table">
                         <thead>
                             <tr>
@@ -587,7 +634,8 @@
                         </a>
 
                         <button type="submit"
-                                class="member-action-btn member-submit-btn"
+                                id="member-submit-btn"
+                                class="member-action-btn member-submit-btn {{ $hasFormMembers ? '' : 'd-none' }}"
                                 data-loading-text="กำลังบันทึก...">
                             <i class="bi bi-check2-circle"></i>
                             <span>บันทึกข้อมูล</span>
@@ -605,6 +653,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('member-form');
     const container = document.getElementById('member-container');
     const addButton = document.getElementById('add-member');
+    const tableWrap = document.getElementById('member-table-wrap');
+    const emptyState = document.getElementById('member-empty-state');
+    const submitButton = document.getElementById('member-submit-btn');
 
     const educationItems = @json($educations->map(fn ($item) => ['id' => $item->id, 'name' => $item->education_name])->values());
     const occupationItems = @json($occupations->map(fn ($item) => ['id' => $item->id, 'name' => $item->occupation_name])->values());
@@ -709,6 +760,14 @@ document.addEventListener('DOMContentLoaded', function () {
             </tr>`;
     }
 
+    function syncMemberUi() {
+        const hasRows = container.querySelectorAll('.member-item').length > 0;
+
+        tableWrap?.classList.toggle('d-none', !hasRows);
+        emptyState?.classList.toggle('d-none', hasRows);
+        submitButton?.classList.toggle('d-none', !hasRows);
+    }
+
     function clearFieldError(field) {
         field.classList.remove('is-invalid');
         const cell = field.closest('td');
@@ -802,20 +861,19 @@ document.addEventListener('DOMContentLoaded', function () {
         container.insertAdjacentHTML('beforeend', memberRow(nextIndex));
         const newRow = container.querySelector(`.member-item[data-index="${nextIndex}"]`);
         nextIndex += 1;
-        newRow?.querySelector('input')?.focus();
+
+        syncMemberUi();
+
+        newRow?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => newRow?.querySelector('input')?.focus({ preventScroll: true }), 250);
     });
 
     container.addEventListener('click', function (event) {
         const removeButton = event.target.closest('.remove-member');
         if (!removeButton) return;
 
-        const rows = container.querySelectorAll('.member-item');
-        if (rows.length <= 1) {
-            showNotice('ไม่สามารถลบได้', 'ต้องมีข้อมูลสมาชิกในครอบครัวอย่างน้อย 1 คน');
-            return;
-        }
-
         removeButton.closest('.member-item')?.remove();
+        syncMemberUi();
     });
 
     container.addEventListener('input', function (event) {
@@ -837,7 +895,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const submitButton = form.querySelector('.member-submit-btn');
         if (submitButton) {
             submitButton.disabled = true;
             submitButton.innerHTML = `
@@ -845,6 +902,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 <span>${submitButton.dataset.loadingText || 'กำลังบันทึก...'}</span>`;
         }
     });
+
+    syncMemberUi();
 
     const firstServerInvalid = form?.querySelector('.is-invalid');
     if (firstServerInvalid) {

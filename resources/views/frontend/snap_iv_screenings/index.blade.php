@@ -21,7 +21,7 @@
     }
 
     .snap-header-card {
-        padding: 1rem 1.25rem;
+        padding: 1.25rem 1.5rem;
         margin-bottom: 1.75rem;
     }
 
@@ -36,24 +36,24 @@
     .snap-header-left {
         display: flex;
         align-items: center;
-        gap: .85rem;
+        gap: 1rem;
         min-width: 0;
     }
 
     .snap-header-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 13px;
+        width: 54px;
+        height: 54px;
+        border-radius: 15px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        flex: 0 0 auto;
+        flex: 0 0 54px;
         background: #eff6ff;
         color: #2563eb;
     }
 
     .snap-header-icon i {
-        font-size: 1.05rem;
+        font-size: 1.35rem;
     }
 
     .snap-header-text {
@@ -63,16 +63,18 @@
     .snap-header-title {
         margin: 0;
         color: #0f172a;
-        font-size: 1.05rem;
+        font-size: clamp(1.25rem, 1.6vw, 1.5rem);
         font-weight: 800;
-        line-height: 1.4;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
     }
 
     .snap-header-subtitle {
-        margin-top: .15rem;
+        margin-top: .35rem;
         color: #64748b;
-        font-size: .82rem;
-        line-height: 1.45;
+        font-size: clamp(.92rem, 1vw, 1rem);
+        font-weight: 500;
+        line-height: 1.5;
     }
 
     .snap-header-subtitle strong {
@@ -239,7 +241,7 @@
         }
 
         .snap-header-card {
-            padding: .9rem;
+            padding: 1rem;
             margin-bottom: 1rem;
         }
 
@@ -259,6 +261,18 @@
     }
 
     @media (max-width: 575.98px) {
+        .snap-header-left {
+            align-items: flex-start;
+            gap: .75rem;
+        }
+
+        .snap-header-icon {
+            width: 48px;
+            height: 48px;
+            flex-basis: 48px;
+            border-radius: 13px;
+        }
+
         .snap-header-actions {
             flex-direction: column;
         }
@@ -269,11 +283,13 @@
         }
 
         .snap-header-title {
-            font-size: .96rem;
+            font-size: 1.12rem;
+            line-height: 1.35;
         }
 
         .snap-header-subtitle {
-            font-size: .76rem;
+            margin-top: .25rem;
+            font-size: .9rem;
         }
 
         .snap-empty-card {

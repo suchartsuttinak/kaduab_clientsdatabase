@@ -1,0 +1,702 @@
+@php
+    $routeClient = request()->route('client') ?? (request()->route('client_id') ?? (request()->route('id') ?? null));
+
+    $clientId = null;
+
+    if (isset($client) && is_object($client)) {
+        $clientId = $client->id;
+    } elseif (isset($client) && is_numeric($client)) {
+        $clientId = $client;
+    } elseif (is_object($routeClient)) {
+        $clientId = $routeClient->id ?? null;
+    } elseif (is_numeric($routeClient)) {
+        $clientId = $routeClient;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | บันทึกข้อมูลแรกเข้า
+    |--------------------------------------------------------------------------
+    */
+
+    $isProfileOpen =
+        Request::routeIs('client.show') ||
+        Request::routeIs('client.report') ||
+        Request::routeIs('client.edit') ||
+        Request::routeIs('case-activities.*') ||
+        Request::routeIs('issues.index');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ข้อมูลผู้ใช้
+    |--------------------------------------------------------------------------
+    */
+
+    $isProcessOpen =
+        Request::routeIs('factfinding.*') ||
+        Request::routeIs('family.*') ||
+        Request::routeIs('visitFamily.*') ||
+        Request::routeIs('member.*') ||
+        Request::routeIs('estimate.*') ||
+        Request::routeIs('client_files.*');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ข้อมูลการศึกษา
+    |--------------------------------------------------------------------------
+    */
+
+    $isEducationOpen =
+        Request::routeIs('education_record_*') || Request::routeIs('school_followup_*') || Request::routeIs('absent.*');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ข้อมูลสุขภาพ
+    |--------------------------------------------------------------------------
+    */
+
+    $isHealthOpen =
+        Request::routeIs('accident.*') ||
+        Request::routeIs('check_body.*') ||
+        Request::routeIs('medical.*') ||
+        Request::routeIs('vaccine.*') ||
+        Request::routeIs('psychiatric.*') ||
+        Request::routeIs('addictive.*') ||
+        Request::routeIs('healthc_heckups.*');
+
+    /*
+    |--------------------------------------------------------------------------
+    | แบบประเมิน / คัดกรอง
+    |--------------------------------------------------------------------------
+    */
+
+   $isAssessmentOpen =
+    Request::routeIs('behavior-screenings.*') ||
+    Request::routeIs('snap-iv.*') ||
+    Request::routeIs('depression-screenings.*') ||
+    Request::routeIs('nutrition_assessments.*');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ข้อมูลด้านพฤติกรรม
+    |--------------------------------------------------------------------------
+    */
+
+    $isBehaviorOpen = Request::routeIs('observe.*') || Request::routeIs('escape.*');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ข้อมูลด้านสังคม
+    |--------------------------------------------------------------------------
+    */
+
+    $isSocialOpen =
+        Request::routeIs('case_outside.*') ||
+        Request::routeIs('refers.*') ||
+        Request::routeIs('job_agencies.*') ||
+        Request::routeIs('help_sessions.*') ||
+        Request::routeIs('followup.*') ||
+        Request::routeIs('idstation.*');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ข้อมูลผู้รับบริการสำหรับการ์ดด้านบน Sidebar
+    |--------------------------------------------------------------------------
+    */
+
+    $sidebarClient = null;
+
+    if (isset($client) && is_object($client)) {
+        $sidebarClient = $client;
+    } elseif (is_object($routeClient)) {
+        $sidebarClient = $routeClient;
+    }
+
+    $sidebarClientName = trim((string) (
+        $sidebarClient->fullname ??
+        $sidebarClient->full_name ??
+        $sidebarClient->name ??
+        'ผู้รับบริการ'
+    ));
+
+    if ($sidebarClientName === '') {
+        $sidebarClientName = 'ผู้รับบริการ';
+    }
+
+    $sidebarClientImage = asset('upload/no_image.jpg');
+
+    if ($sidebarClient && !empty($sidebarClient->image)) {
+        $sidebarImageValue = trim((string) $sidebarClient->image);
+
+        if (\Illuminate\Support\Str::startsWith($sidebarImageValue, ['http://', 'https://'])) {
+            $sidebarClientImage = $sidebarImageValue;
+        } elseif (\Illuminate\Support\Str::startsWith($sidebarImageValue, ['/'])) {
+            $sidebarClientImage = url($sidebarImageValue);
+        } elseif (\Illuminate\Support\Str::startsWith($sidebarImageValue, ['upload/', 'storage/'])) {
+            $sidebarClientImage = asset($sidebarImageValue);
+        } else {
+            $sidebarClientImage = asset('upload/client_images/' . ltrim($sidebarImageValue, '/'));
+        }
+    }
+@endphp
+
+<style>
+    .behavior-screening-main-link {
+        font-weight: 600;
+    }
+
+    .behavior-screening-main-link i {
+        color: #2563eb;
+        font-size: 17px;
+    }
+
+    .behavior-screening-main-link.active i {
+        color: inherit;
+    }
+
+    /* =========================================================
+       Sidebar top spacing reset
+       ล้าง padding-top เดิมจากธีม เพื่อให้การ์ดชิดใต้ Topbar พอดี
+    ========================================================= */
+    .client-sidebar-panel .app-sidebar-menu {
+        top: 0 !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .client-sidebar-panel .app-sidebar-menu > .sidebar-scroll,
+    .client-sidebar-panel .app-sidebar-menu .simplebar-wrapper,
+    .client-sidebar-panel .app-sidebar-menu .simplebar-mask,
+    .client-sidebar-panel .app-sidebar-menu .simplebar-offset,
+    .client-sidebar-panel .app-sidebar-menu .simplebar-content-wrapper,
+    .client-sidebar-panel .app-sidebar-menu .simplebar-content,
+    .client-sidebar-panel #sidebar-menu,
+    .client-sidebar-panel #side-menu {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .client-sidebar-panel .sidebar-scroll {
+        min-height: 100%;
+    }
+
+    /* เว้นจากขอบบนเพียงเล็กน้อย ไม่ให้การ์ดชิดเส้น Topbar เกินไป */
+    .client-sidebar-panel #side-menu {
+        padding-top: 6px !important;
+    }
+
+    /* =========================================================
+       Client Photo Card — Sidebar (style คล้ายรูปโปรไฟล์ Navbar)
+    ========================================================= */
+    .sidebar-client-card-wrap {
+        list-style: none;
+        margin: 0 !important;
+        padding: 6px 13px 12px;
+    }
+
+    #side-menu > li.sidebar-client-card-wrap > a.sidebar-client-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 138px;
+        margin: 0 !important;
+        padding: 14px 12px !important;
+        color: #0f172a;
+        text-decoration: none;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid rgba(148, 163, 184, .18);
+        border-radius: 18px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, .06);
+        transition:
+            transform .18s ease,
+            box-shadow .18s ease,
+            border-color .18s ease,
+            background .18s ease;
+    }
+
+    #side-menu > li.sidebar-client-card-wrap > a.sidebar-client-card:hover {
+        color: #0f172a;
+        background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
+        border-color: rgba(59, 130, 246, .22);
+        box-shadow: 0 12px 24px rgba(37, 99, 235, .10);
+        transform: translateY(-1px);
+    }
+
+    .sidebar-client-avatar {
+        position: relative;
+        z-index: 1;
+        flex: 0 0 72px;
+        width: 72px;
+        height: 72px;
+        padding: 3px;
+        background: #ffffff;
+        border: 1px solid rgba(203, 213, 225, .9);
+        border-radius: 50%;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, .10);
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+
+    .sidebar-client-avatar::after {
+        content: '';
+        position: absolute;
+        right: 1px;
+        bottom: 2px;
+        width: 13px;
+        height: 13px;
+        background: #22c55e;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, .16);
+    }
+
+    .sidebar-client-avatar img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+        background: #f1f5f9;
+        border-radius: 50%;
+    }
+
+    #side-menu > li.sidebar-client-card-wrap > a.sidebar-client-card:hover .sidebar-client-avatar {
+        transform: scale(1.03);
+        border-color: rgba(59, 130, 246, .35);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, .14);
+    }
+
+
+    .sidebar-client-name {
+        display: -webkit-box;
+        max-width: 100%;
+        overflow: hidden;
+        color: #1e293b;
+        font-size: 13.25px;
+        font-weight: 700;
+        line-height: 1.38;
+        text-align: center;
+        text-overflow: ellipsis;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        word-break: break-word;
+    }
+
+    .sidebar-client-card-wrap + .menu-title {
+        padding-top: 8px;
+    }
+
+    @media (max-width: 575.98px) {
+        .sidebar-client-card-wrap {
+            padding: 8px 12px 11px;
+        }
+
+        #side-menu > li.sidebar-client-card-wrap > a.sidebar-client-card {
+            min-height: 128px;
+            gap: 8px;
+            border-radius: 16px;
+            padding: 12px 10px !important;
+        }
+
+        .sidebar-client-avatar {
+            flex-basis: 66px;
+            width: 66px;
+            height: 66px;
+        }
+
+        .sidebar-client-avatar::after {
+            width: 12px;
+            height: 12px;
+        }
+    }
+</style>
+
+<div class="app-sidebar-menu">
+    <div class="sidebar-scroll h-100" data-simplebar>
+        <div id="sidebar-menu">
+
+            <ul id="side-menu" class="metismenu list-unstyled">
+
+                @if ($sidebarClient && $clientId)
+                    <li class="sidebar-client-card-wrap">
+                        <a href="{{ route('client.edit', $clientId) }}"
+                            class="sidebar-client-card"
+                            title="เปิดข้อมูลผู้รับบริการ : {{ $sidebarClientName }}">
+                            <span class="sidebar-client-avatar" aria-hidden="true">
+                                <img src="{{ $sidebarClientImage }}"
+                                    alt="รูปผู้รับบริการ {{ $sidebarClientName }}"
+                                    loading="eager"
+                                    onerror="this.onerror=null;this.src='{{ asset('upload/no_image.jpg') }}';">
+                            </span>
+
+                            <span class="sidebar-client-name">
+                                {{ $sidebarClientName }}
+                            </span>
+                        </a>
+                    </li>
+                @endif
+
+                <li class="menu-title">ทะเบียนประวัติ</li>
+
+                <li>
+                    <a href="#sidebarProfile" data-bs-toggle="collapse"
+                        aria-expanded="{{ $isProfileOpen ? 'true' : 'false' }}"
+                        class="{{ $isProfileOpen ? 'active' : '' }}">
+                        <i data-feather="home"></i>
+                        <span> บันทึกข้อมูลแรกเข้า </span>
+                        <span class="menu-arrow"></span>
+                    </a>
+
+                    <div class="collapse {{ $isProfileOpen ? 'show' : '' }}" id="sidebarProfile">
+                        <ul class="nav-second-level">
+                            @if ($clientId)
+                                <li>
+                                    <a href="{{ route('client.edit', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('client.edit') ? 'active' : '' }}">
+                                        บันทึกข้อมูลทั่วไป
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('client.report', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('client.report') ? 'active' : '' }}">
+                                        รายงานผู้รับบริการ
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('case-activities.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('case-activities.*') ? 'active' : '' }}">
+                                        ความเคลื่อนไหวผู้รับบริการ
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="menu-title">กระบวนการ</li>
+
+                <li>
+                    <a href="#sidebarProcess" data-bs-toggle="collapse"
+                        aria-expanded="{{ $isProcessOpen ? 'true' : 'false' }}"
+                        class="{{ $isProcessOpen ? 'active' : '' }}">
+                        <i data-feather="users"></i>
+                        <span> ข้อมูลผู้ใช้ </span>
+                        <span class="menu-arrow"></span>
+                    </a>
+
+                    <div class="collapse {{ $isProcessOpen ? 'show' : '' }}" id="sidebarProcess">
+                        <ul class="nav-second-level">
+                            @if ($clientId)
+                                <li>
+                                    <a href="{{ route('factfinding.add', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('factfinding.*') ? 'active' : '' }}">
+                                        สอบข้อเท็จจริง
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('family.add', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('family.*') ? 'active' : '' }}">
+                                        บันทึกครอบครัว
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('visitFamily.create', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('visitFamily.*') ? 'active' : '' }}">
+                                        เยี่ยมบ้านครอบครัว
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('member.create', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('member.*') ? 'active' : '' }}">
+                                        บันทึกสมาชิกครอบครัว
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('estimate.show', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('estimate.*') ? 'active' : '' }}">
+                                        ประเมินครอบครัว
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('client_files.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('client_files.*') ? 'active' : '' }}">
+                                        รายการไฟล์เอกสาร
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                </li>
+
+                <li>
+                    <a href="#sidebarEducation" data-bs-toggle="collapse"
+                        aria-expanded="{{ $isEducationOpen ? 'true' : 'false' }}"
+                        class="{{ $isEducationOpen ? 'active' : '' }}">
+                        <i class="fas fa-graduation-cap sidebar-fa-icon"></i>
+                        <span> ข้อมูลการศึกษา </span>
+                        <span class="menu-arrow"></span>
+                    </a>
+
+                    <div class="collapse {{ $isEducationOpen ? 'show' : '' }}" id="sidebarEducation">
+                        <ul class="nav-second-level">
+                            @if ($clientId)
+                                <li>
+                                    <a href="{{ route('education_record_add', ['client_id' => $clientId]) }}"
+                                        class="tp-link {{ Request::routeIs('education_record_add') ? 'active' : '' }}">
+                                        บันทึกผลการเรียน
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('education_record_show', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('education_record_show') ? 'active' : '' }}">
+                                        แสดงผลการเรียน
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('school_followup_add', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('school_followup_*') ? 'active' : '' }}">
+                                        ติดตามการศึกษา
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('absent.add', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('absent.*') ? 'active' : '' }}">
+                                        บันทึกการขาดเรียน
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                </li>
+
+                <li>
+                    <a href="#sidebarHealth" data-bs-toggle="collapse"
+                        aria-expanded="{{ $isHealthOpen ? 'true' : 'false' }}"
+                        class="{{ $isHealthOpen ? 'active' : '' }}">
+                        <i class="fas fa-heartbeat sidebar-fa-icon"></i>
+                        <span> ข้อมูลสุขภาพ </span>
+                        <span class="menu-arrow"></span>
+                    </a>
+
+                    <div class="collapse {{ $isHealthOpen ? 'show' : '' }}" id="sidebarHealth">
+                        <ul class="nav-second-level">
+                            @if ($clientId)
+                                <li>
+                                    <a href="{{ route('accident.add', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('accident.*') ? 'active' : '' }}">
+                                        บันทึกการบาดเจ็บ
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('check_body.add', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('check_body.*') ? 'active' : '' }}">
+                                        ตรวจสุขภาพเบื้องต้น
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('medical.add', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('medical.*') ? 'active' : '' }}">
+                                        การรักษาพยาบาล
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('vaccine.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('vaccine.*') ? 'active' : '' }}">
+                                        ประวัติการรับวัคซีน
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('psychiatric.create', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('psychiatric.*') ? 'active' : '' }}">
+                                        การวินิจฉัยทางจิตเวช
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('addictive.create', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('addictive.*') ? 'active' : '' }}">
+                                        การตรวจสารเสพติด
+                                    </a>
+                                </li>
+                            @endif
+
+                            <li>
+                                <a href="{{ route('healthc_heckups.index') }}"
+                                    class="tp-link {{ Request::routeIs('healthc_heckups.*') ? 'active' : '' }}">
+                                    ตรวจสุขภาพประจำปี
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="menu-title mt-2">แบบประเมินและคัดกรอง</li>
+
+                <li>
+                    <a href="#sidebarAssessment" data-bs-toggle="collapse"
+                        aria-expanded="{{ $isAssessmentOpen ? 'true' : 'false' }}"
+                        class="{{ $isAssessmentOpen ? 'active' : '' }}">
+                        <i class="bi bi-clipboard2-pulse sidebar-fa-icon"></i>
+                        <span> แบบคัดกรอง </span>
+                        <span class="menu-arrow"></span>
+                    </a>
+
+                    <div class="collapse {{ $isAssessmentOpen ? 'show' : '' }}" id="sidebarAssessment">
+                        <ul class="nav-second-level">
+                            @if ($clientId)
+                                <li>
+                                    <a href="{{ route('behavior-screenings.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('behavior-screenings.*') ? 'active' : '' }}">
+                                        แบบประเมินพัฒนาการ
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('snap-iv.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('snap-iv.*') ? 'active' : '' }}">
+                                        แบบประเมิน SNAP-IV
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('depression-screenings.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('depression-screenings.*') ? 'active' : '' }}">
+                                        แบบคัดกรองภาวะซึมเศร้า
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('nutrition_assessments.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('nutrition_assessments.*') ? 'active' : '' }}">
+                                        แบบประเมินภาวะโภชนาการ
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="menu-title mt-2">ด้านพฤติกรรม</li>
+
+                <li>
+                    <a href="#sidebarBehavior" data-bs-toggle="collapse"
+                        aria-expanded="{{ $isBehaviorOpen ? 'true' : 'false' }}"
+                        class="{{ $isBehaviorOpen ? 'active' : '' }}">
+                        <i data-feather="package"></i>
+                        <span> ด้านพฤติกรรม </span>
+                        <span class="menu-arrow"></span>
+                    </a>
+
+                    <div class="collapse {{ $isBehaviorOpen ? 'show' : '' }}" id="sidebarBehavior">
+                        <ul class="nav-second-level">
+                            @if ($clientId)
+                                <li>
+                                    <a href="{{ route('observe.create', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('observe.*') ? 'active' : '' }}">
+                                        บันทึกพฤติกรรม
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('escape.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('escape.*') ? 'active' : '' }}">
+                                        หนีออกจากบ้าน
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="menu-title mt-2">ข้อมูลด้านสังคม</li>
+
+                <li>
+                    <a href="#sidebarSocial" data-bs-toggle="collapse"
+                        aria-expanded="{{ $isSocialOpen ? 'true' : 'false' }}"
+                        class="{{ $isSocialOpen ? 'active' : '' }}">
+                        <i class="fas fa-users sidebar-fa-icon"></i>
+                        <span> สังคมสงเคราะห์ </span>
+                        <span class="menu-arrow"></span>
+                    </a>
+
+                    <div class="collapse {{ $isSocialOpen ? 'show' : '' }}" id="sidebarSocial">
+                        <ul class="nav-second-level">
+                            @if ($clientId)
+
+                                 @if(
+                                        isset($client) &&
+                                        $client &&
+                                        optional($client->target)->target_name === 'บุคคลไม่มีสถานะทางทะเบียน'
+                                    )
+
+                                        <li>
+                                            <a href="{{ route('idstation.index', $clientId) }}"
+                                                class="tp-link {{ Request::routeIs('idstation.*') ? 'active' : '' }}">
+                                                {{-- <i class="bi bi-person-vcard me-1"></i> --}}
+                                                ช่วยเหลือด้านสถานะบุคคล
+                                            </a>
+                                        </li>
+
+                                    @endif
+
+                                <li>
+                                    <a href="{{ route('case_outside.show', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('case_outside.*') ? 'active' : '' }}">
+                                        ติดตามเด็กที่อยู่ภายนอก
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('refers.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('refers.*') ? 'active' : '' }}">
+                                        รายการการจำหน่าย
+                                    </a>
+                                </li>
+
+                               
+
+                                <li>
+                                    <a href="{{ route('job_agencies.show', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('job_agencies.*') ? 'active' : '' }}">
+                                        หางานให้ผู้รับบริการ
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('help_sessions.show', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('help_sessions.*') ? 'active' : '' }}">
+                                        รายการการช่วยเหลือ
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="{{ route('followup.index', $clientId) }}"
+                                        class="tp-link {{ Request::routeIs('followup.*') ? 'active' : '' }}">
+                                        การติดตามผล
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+</div>

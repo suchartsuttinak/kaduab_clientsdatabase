@@ -108,7 +108,7 @@
                                     </td>
 
                                     <td class="px-4 py-4 text-sm">
-                                        {{ optional($donation->donation_date)->format('Y') }}
+                                        {{ $donation->donation_date ? $donation->donation_date->year + 543 : '-' }}
                                     </td>
 
                                     <td class="px-4 py-4 text-sm">

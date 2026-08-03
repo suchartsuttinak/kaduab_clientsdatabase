@@ -33,7 +33,7 @@
                     {{ $news->title }}
                 </h1>
 
-                <p class="text-gray-700 leading-relaxed mb-8">
+                <p class="text-gray-700 leading-relaxed mb-8 whitespace-pre-line break-words">
                     {{ $news->description }}
                 </p>
 

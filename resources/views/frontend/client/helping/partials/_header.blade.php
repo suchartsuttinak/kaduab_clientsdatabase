@@ -1,367 +1,362 @@
+@php
+    $hasAnySessions = $hasAnySessions ?? $sessions->isNotEmpty();
+    $hasDateFilter = request()->filled('from') || request()->filled('to');
+    $clientName = $client->fullname ?? $client->full_name ?? '-';
+@endphp
+
 <style>
-    .hp-main-header{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:16px;
-        flex-wrap:wrap;
-        margin-bottom:1rem;
-        padding:18px 20px;
-        border:1px solid #e7edf5;
-        border-radius:18px;
-        background:linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
-        box-shadow:0 8px 24px rgba(15, 23, 42, 0.04);
+    .help-page .hp-main-header,
+    .help-page .hp-filter-card,
+    .help-page .hp-empty-card {
+        background: #fff;
+        border: 1px solid #dbe3ef;
+        border-radius: 18px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, .045);
     }
 
-    .hp-header-title{
-        display:flex;
-        align-items:flex-start;
-        gap:14px;
-        min-width:0;
-        flex:1 1 420px;
+    .help-page .hp-main-header {
+        min-height: 90px;
+        padding: 1.1rem 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
     }
 
-    .hp-header-icon{
-        width:48px;
-        height:48px;
-        border-radius:14px;
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        background:#eef4ff;
-        color:#4f6edb;
-        font-size:1.2rem;
-        flex:0 0 48px;
+    .help-page .hp-header-title {
+        display: flex;
+        align-items: center;
+        gap: .9rem;
+        min-width: 0;
+        flex: 1 1 440px;
     }
 
-    .hp-header-text h6{
-        margin:0 0 4px 0;
-        font-size:1.08rem;
-        font-weight:800;
-        color:#0f172a;
-        line-height:1.35;
+    .help-page .hp-header-icon {
+        width: 48px;
+        height: 48px;
+        flex: 0 0 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-size: 1.15rem;
     }
 
-    .hp-header-text p{
-        margin:0;
-        color:#64748b;
-        font-size:.95rem;
-        line-height:1.55;
+    .help-page .hp-header-text {
+        min-width: 0;
     }
 
-    .hp-header-actions{
-        display:flex;
-        align-items:center;
-        gap:12px;
-        flex-wrap:wrap;
-        justify-content:flex-end;
+    .help-page .hp-header-text h1 {
+        margin: 0;
+        color: #0f172a;
+        font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+        font-weight: 800;
+        line-height: 1.35;
+        letter-spacing: -0.01em;
     }
 
-    .hp-main-header .hp-btn{
-        display:inline-flex;
-        align-items:center;
-        gap:8px;
-        min-height:44px;
-        padding:.68rem 1rem;
-        border-radius:12px;
-        font-weight:700;
-        white-space:nowrap;
-        box-shadow:none;
+    .help-page .hp-header-text p {
+        margin: .25rem 0 0;
+        color: #64748b;
+        font-size: clamp(.92rem, 1vw, 1rem);
+        line-height: 1.45;
     }
 
-    .hp-filter-card{
-        margin-bottom:1rem;
-        padding:18px 20px;
-        border:1px solid #e7edf5;
-        border-radius:18px;
-        background:#ffffff;
-        box-shadow:0 8px 24px rgba(15, 23, 42, 0.04);
+    .help-page .hp-header-text strong {
+        color: #0f172a;
+        font-weight: 800;
     }
 
-    .hp-filter-head{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:12px;
-        flex-wrap:wrap;
-        margin-bottom:14px;
+    .help-page .hp-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .65rem;
+        flex-wrap: wrap;
     }
 
-    .hp-filter-title{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        color:#0f172a;
-        font-weight:800;
-        font-size:1rem;
+    .help-page .hp-btn,
+    .help-page .hp-filter-btn {
+        min-height: 42px;
+        padding: .62rem 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        border-radius: 12px;
+        font-weight: 750;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
     }
 
-    .hp-filter-title i{
-        color:#4f6edb;
-        font-size:1.05rem;
+    .help-page .hp-btn-primary {
+        color: #fff;
+        border: 1px solid #1d4ed8;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        box-shadow: 0 7px 16px rgba(37, 99, 235, .2);
     }
 
-    .hp-filter-subtitle{
-        color:#64748b;
-        font-size:.92rem;
-        line-height:1.55;
-        margin:0;
+    .help-page .hp-btn-primary:hover,
+    .help-page .hp-btn-primary:focus {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(37, 99, 235, .26);
     }
 
-    .hp-filter-form{
-        display:grid;
-        grid-template-columns: minmax(180px, 220px) minmax(180px, 220px) auto;
-        gap:14px;
-        align-items:end;
+    .help-page .hp-btn-back {
+        color: #7c3aed;
+        background: #fff;
+        border: 1px solid #8b5cf6;
     }
 
-    .hp-filter-group{
-        display:flex;
-        flex-direction:column;
-        gap:8px;
+    .help-page .hp-btn-back:hover,
+    .help-page .hp-btn-back:focus {
+        color: #6d28d9;
+        background: #faf5ff;
+        transform: translateY(-1px);
     }
 
-    .hp-filter-label{
-        margin:0;
-        color:#334155;
-        font-size:.92rem;
-        font-weight:700;
+    .help-page .hp-filter-card {
+        margin: 1rem 0;
+        padding: 1rem 1.1rem;
     }
 
-    .hp-filter-input{
-        height:44px;
-        border:1px solid #d6deea;
-        border-radius:12px;
-        padding:0 14px;
-        color:#0f172a;
-        background:#fff;
-        outline:none;
-        transition:border-color .15s ease, box-shadow .15s ease;
+    .help-page .hp-filter-head {
+        margin-bottom: .85rem;
     }
 
-    .hp-filter-input:focus{
-        border-color:#90b4ff;
-        box-shadow:0 0 0 4px rgba(79, 110, 219, 0.10);
+    .help-page .hp-filter-title {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 800;
     }
 
-    .hp-filter-actions{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        flex-wrap:wrap;
+    .help-page .hp-filter-title i {
+        color: #2563eb;
     }
 
-    .hp-filter-btn{
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        gap:8px;
-        min-height:44px;
-        padding:.68rem 1rem;
-        border-radius:12px;
-        font-weight:700;
-        text-decoration:none;
-        white-space:nowrap;
-        border:1px solid transparent;
+    .help-page .hp-filter-subtitle,
+    .help-page .hp-filter-note {
+        margin: .25rem 0 0;
+        color: #64748b;
+        font-size: .9rem;
+        line-height: 1.55;
     }
 
-    .hp-filter-btn-outline{
-        background:#fff;
-        color:#334155;
-        border-color:#cfd9e8;
+    .help-page .hp-filter-form {
+        display: grid;
+        grid-template-columns: minmax(180px, 220px) minmax(180px, 220px) minmax(280px, 1fr);
+        gap: .8rem;
+        align-items: end;
     }
 
-    .hp-filter-btn-outline:hover{
-        background:#f8fafc;
-        color:#0f172a;
-        border-color:#b9c7da;
+    .help-page .hp-filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
     }
 
-    .hp-filter-note{
-        margin-top:12px;
-        color:#64748b;
-        font-size:.9rem;
-        line-height:1.55;
+    .help-page .hp-filter-label {
+        margin: 0;
+        color: #334155;
+        font-size: .9rem;
+        font-weight: 700;
     }
 
-    .hp-empty-card{
-        margin-bottom:1rem;
-        padding:52px 20px;
-        border:1px solid #e7edf5;
-        border-radius:22px;
-        background:linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
-        box-shadow:0 12px 32px rgba(15, 23, 42, 0.06);
-        text-align:center;
+    .help-page .hp-filter-input {
+        height: 42px;
+        padding: 0 .8rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 11px;
+        color: #0f172a;
+        background: #fff;
     }
 
-    .hp-empty-icon{
-        width:86px;
-        height:86px;
-        margin:0 auto 18px;
-        border-radius:50%;
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        background:#eef4ff;
-        color:#4f6edb;
-        font-size:2.1rem;
-        box-shadow:0 12px 28px rgba(79, 110, 219, .14);
+    .help-page .hp-filter-input:focus {
+        border-color: #93b4ff;
+        outline: 0;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, .1);
     }
 
-    .hp-empty-card h5{
-        margin:0 0 8px;
-        color:#0f172a;
-        font-size:1.25rem;
-        font-weight:800;
+    .help-page .hp-filter-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: .55rem;
+        flex-wrap: wrap;
     }
 
-    .hp-empty-card p{
-        max-width:620px;
-        margin:0 auto 22px;
-        color:#64748b;
-        line-height:1.8;
+    .help-page .hp-filter-btn-search {
+        color: #fff;
+        border: 1px solid #1d4ed8;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
     }
 
-    .hp-empty-card .hp-btn{
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        gap:8px;
-        min-height:44px;
-        padding:.68rem 1rem;
-        border-radius:12px;
-        font-weight:700;
+    .help-page .hp-filter-btn-outline {
+        color: #475569;
+        background: #fff;
+        border: 1px solid #cbd5e1;
     }
 
-    @media (max-width: 991.98px){
-        .hp-main-header{
-            align-items:flex-start;
+    .help-page .hp-filter-btn-outline:hover,
+    .help-page .hp-filter-btn-outline:focus {
+        color: #0f172a;
+        background: #f8fafc;
+        border-color: #94a3b8;
+    }
+
+    .help-page .hp-filter-error {
+        color: #dc2626;
+        font-size: .82rem;
+    }
+
+    .help-page .hp-empty-card {
+        min-height: 320px;
+        padding: 2.5rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .help-page .hp-empty-icon {
+        width: 82px;
+        height: 82px;
+        margin-bottom: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #bfdbfe;
+        border-radius: 50%;
+        background: #eff6ff;
+        color: #2563eb;
+        font-size: 1.75rem;
+    }
+
+    .help-page .hp-empty-card h2 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 800;
+        line-height: 1.45;
+    }
+
+    .help-page .hp-empty-card p {
+        max-width: 660px;
+        margin: .55rem auto 1.2rem;
+        color: #64748b;
+        font-size: .92rem;
+        line-height: 1.65;
+    }
+
+    @media (max-width: 991.98px) {
+        .help-page .hp-filter-form {
+            grid-template-columns: 1fr 1fr;
         }
 
-        .hp-header-actions{
-            width:100%;
-            justify-content:flex-start;
-        }
-
-        .hp-filter-form{
-            grid-template-columns:1fr 1fr;
-        }
-
-        .hp-filter-actions{
-            grid-column:1 / -1;
+        .help-page .hp-filter-actions {
+            grid-column: 1 / -1;
         }
     }
 
-    @media (max-width: 575.98px){
-        .hp-main-header,
-        .hp-filter-card,
-        .hp-empty-card{
-            padding:14px;
+    @media (max-width: 767.98px) {
+        .help-page .hp-main-header {
+            align-items: stretch;
+            padding: 1rem;
         }
 
-        .hp-header-actions{
-            width:100%;
+        .help-page .hp-header-title,
+        .help-page .hp-header-actions {
+            width: 100%;
         }
 
-        .hp-main-header .hp-btn,
-        .hp-empty-card .hp-btn{
-            width:100%;
-            justify-content:center;
+        .help-page .hp-header-actions > * {
+            flex: 1 1 calc(50% - .35rem);
         }
+    }
 
-        .hp-filter-form{
-            grid-template-columns:1fr;
-        }
-
-        .hp-filter-actions{
-            width:100%;
-        }
-
-        .hp-filter-btn{
-            width:100%;
-        }
-
-        .hp-empty-card{
-            padding-top:42px;
-            padding-bottom:42px;
-        }
-
-        .hp-empty-icon{
-            width:74px;
-            height:74px;
-            font-size:1.8rem;
-        }
+    @media (max-width: 575.98px) {
+        .help-page .hp-header-text h1 { font-size: 1.12rem; }
+        .help-page .hp-header-text p { font-size: .9rem; }
+        .help-page .hp-header-actions,
+        .help-page .hp-filter-actions { flex-direction: column; }
+        .help-page .hp-header-actions > *,
+        .help-page .hp-filter-actions > * { width: 100%; flex: 1 1 auto; }
+        .help-page .hp-filter-form { grid-template-columns: 1fr; }
+        .help-page .hp-filter-actions { grid-column: auto; }
+        .help-page .hp-empty-card { min-height: 280px; padding: 2rem .9rem; }
     }
 </style>
 
-@php
-    $hasHelpingRows = false;
+<header class="hp-main-header">
+    <div class="hp-header-title">
+        <span class="hp-header-icon" aria-hidden="true">
+            <i class="bi bi-bag-heart-fill"></i>
+        </span>
 
-    if (isset($helpSessions)) {
-        $hasHelpingRows = $helpSessions->count() > 0;
-    } elseif (isset($help_sessions)) {
-        $hasHelpingRows = $help_sessions->count() > 0;
-    } elseif (isset($sessions)) {
-        $hasHelpingRows = $sessions->count() > 0;
-    } elseif (isset($items)) {
-        $hasHelpingRows = $items->count() > 0;
-    }
-
-    $hasDateFilter = request()->filled('from') || request()->filled('to');
-
-    /*
-        ✅ ถ้ามีข้อมูลจริง หรือมีการกรองวันที่ ให้แสดงส่วนหัว/ข้อมูลผู้รับ/ค้นหา
-        ✅ ถ้าไม่มีข้อมูลเลย ให้ซ่อนทั้งหมดและแสดง Empty State แทน
-    */
-    $showHelpHeaderSection = $hasHelpingRows || $hasDateFilter;
-@endphp
-
-@if($showHelpHeaderSection)
-    <div class="hp-main-header">
-        <div class="hp-header-title">
-            <span class="hp-header-icon">
-                <i class="bi bi-heart-pulse-fill"></i>
-            </span>
-
-            <div class="hp-header-text">
-                <h6>รายการให้ความช่วยเหลือผู้รับ</h6>
-                <p>ออกแบบใหม่ให้ทันสมัย อ่านง่าย และใช้งานได้ดีทุกขนาดหน้าจอ</p>
-            </div>
-        </div>
-
-        <div class="hp-header-actions">
-            <a href="{{ route('help_sessions.create', $client->id) }}" class="btn btn-primary hp-btn">
-                <i class="bi bi-plus-circle"></i>
-                <span>เพิ่มการช่วยเหลือใหม่</span>
-            </a>
+        <div class="hp-header-text">
+            <h1>การช่วยเหลือสิ่งของและเครื่องใช้</h1>
+            <p>
+                ผู้รับบริการ: <strong>{{ $clientName }}</strong>
+                @if(!empty($client->age))
+                    <span class="mx-1">•</span> อายุ <strong>{{ $client->age }} ปี</strong>
+                @endif
+            </p>
         </div>
     </div>
 
-    {{-- Profile Card --}}
+    <div class="hp-header-actions">
+        @if($hasAnySessions)
+            <a href="{{ route('help_sessions.create', $client->id) }}"
+               class="hp-btn hp-btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                <span>เพิ่มการช่วยเหลือ</span>
+            </a>
+        @endif
+
+        <a href="{{ route('admin.index', $client->id) }}"
+           class="hp-btn hp-btn-back">
+            <i class="bi bi-arrow-left-circle"></i>
+            <span>กลับ</span>
+        </a>
+    </div>
+</header>
+
+@if($hasAnySessions)
     @include('frontend.client.helping.partials.profile-card')
 
-    <div class="hp-filter-card">
+    <section class="hp-filter-card">
         <div class="hp-filter-head">
-            <div>
-                <div class="hp-filter-title">
-                    <i class="bi bi-funnel-fill"></i>
-                    <span>ค้นหาและออกรายงานตามช่วงวันที่</span>
-                </div>
-
-                <p class="hp-filter-subtitle">
-                    เลือกช่วงวันที่เพื่อดูรายการเฉพาะช่วง หรือกดดูทั้งหมดเพื่อแสดงข้อมูลทุกวัน
-                </p>
+            <div class="hp-filter-title">
+                <i class="bi bi-funnel-fill"></i>
+                <span>ค้นหาและออกรายงานตามช่วงวันที่</span>
             </div>
+            <p class="hp-filter-subtitle">เลือกช่วงวันที่เพื่อแสดงข้อมูลเฉพาะช่วงที่ต้องการ</p>
         </div>
 
-        <form method="GET" action="{{ route('help_sessions.show', $client->id) }}" class="hp-filter-form">
+        <form method="GET"
+              action="{{ route('help_sessions.show', $client->id) }}"
+              class="hp-filter-form">
             <div class="hp-filter-group">
                 <label for="from" class="hp-filter-label">ตั้งแต่วันที่</label>
                 <input type="date"
                        id="from"
                        name="from"
-                       class="hp-filter-input"
-                       value="{{ request('from') }}">
+                       class="hp-filter-input @error('from', 'filter') is-invalid @enderror"
+                       value="{{ request('from') }}"
+                       max="{{ now('Asia/Bangkok')->toDateString() }}">
+                @error('from', 'filter')
+                    <div class="hp-filter-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="hp-filter-group">
@@ -369,12 +364,16 @@
                 <input type="date"
                        id="to"
                        name="to"
-                       class="hp-filter-input"
-                       value="{{ request('to') }}">
+                       class="hp-filter-input @error('to', 'filter') is-invalid @enderror"
+                       value="{{ request('to') }}"
+                       max="{{ now('Asia/Bangkok')->toDateString() }}">
+                @error('to', 'filter')
+                    <div class="hp-filter-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="hp-filter-actions">
-                <button type="submit" class="btn btn-primary hp-filter-btn">
+                <button type="submit" class="hp-filter-btn hp-filter-btn-search">
                     <i class="bi bi-search"></i>
                     <span>ค้นหา</span>
                 </button>
@@ -385,8 +384,12 @@
                     <span>ดูทั้งหมด</span>
                 </a>
 
-                @if($hasHelpingRows)
-                    <a href="{{ route('help_sessions.report_range', ['client' => $client->id, 'from' => request('from'), 'to' => request('to')]) }}"
+                @if($sessions->isNotEmpty())
+                    <a href="{{ route('help_sessions.report_range', [
+                        'client' => $client->id,
+                        'from' => request('from'),
+                        'to' => request('to')
+                    ]) }}"
                        class="hp-filter-btn hp-filter-btn-outline">
                         <i class="bi bi-printer"></i>
                         <span>รายงานตามช่วงวันที่</span>
@@ -396,25 +399,24 @@
         </form>
 
         <div class="hp-filter-note">
-            กรณีไม่เลือกวันที่ ระบบจะแสดงข้อมูลทั้งหมดโดยอัตโนมัติ
+            ไม่เลือกวันที่ ระบบจะแสดงข้อมูลทั้งหมดโดยอัตโนมัติ
         </div>
-    </div>
+    </section>
 @else
-    <div class="hp-empty-card">
-        <div class="hp-empty-icon">
-            <i class="bi bi-inbox"></i>
+    <section class="hp-empty-card" role="status">
+        <div class="hp-empty-icon" aria-hidden="true">
+            <i class="bi bi-box2-heart"></i>
         </div>
 
-        <h5>ยังไม่มีข้อมูลการให้ความช่วยเหลือ</h5>
-
+        <h2>ยังไม่มีข้อมูลการช่วยเหลือ</h2>
         <p>
-            เมื่อยังไม่มีข้อมูล ระบบจะซ่อนข้อมูลผู้รับบริการ ช่องค้นหา และปุ่มรายงานไว้ก่อน
-            เพื่อให้หน้าจอดูสะอาดและใช้งานง่ายขึ้น
+            เริ่มต้นบันทึกรายการสิ่งของ เครื่องใช้ หรือค่าใช้จ่ายที่ให้ความช่วยเหลือแก่ผู้รับบริการรายนี้
         </p>
 
-        <a href="{{ route('help_sessions.create', $client->id) }}" class="btn btn-primary hp-btn">
+        <a href="{{ route('help_sessions.create', $client->id) }}"
+           class="hp-btn hp-btn-primary">
             <i class="bi bi-plus-circle"></i>
-            <span>เพิ่มการช่วยเหลือใหม่</span>
+            <span>เพิ่มข้อมูลการช่วยเหลือครั้งแรก</span>
         </a>
-    </div>
+    </section>
 @endif

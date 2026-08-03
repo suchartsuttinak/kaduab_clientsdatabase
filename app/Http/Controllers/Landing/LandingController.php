@@ -5,20 +5,39 @@ namespace App\Http\Controllers\Landing;
 use App\Http\Controllers\Controller;
 use App\Models\AboutData;
 use App\Models\News;
+use Illuminate\View\View;
 
 class LandingController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        // ดึงข้อมูลเกี่ยวกับเรา
-        $history   = AboutData::where('type', 'history')->latest()->first();
-        $objective = AboutData::where('type', 'objective')->latest()->first();
-        $mission   = AboutData::where('type', 'mission')->latest()->first();
+        /* ลด Query ข้อมูลเกี่ยวกับเราจาก 3 ครั้งเหลือ 1 ครั้ง */
+        $latestIds = AboutData::query()
+            ->selectRaw('MAX(id)')
+            ->whereIn('type', ['history', 'objective', 'mission'])
+            ->groupBy('type');
 
-        // ดึงข่าวล่าสุด 6 รายการ
-        $news = News::latest()->take(6)->get();
+        $latestByType = AboutData::query()
+            ->whereIn('id', $latestIds)
+            ->get()
+            ->keyBy('type');
 
-        // ส่งตัวแปรทั้งหมดไปที่หน้า Landing
-        return view('landing.index', compact('history','objective','mission','news'));
+        $history = $latestByType->get('history');
+        $objective = $latestByType->get('objective');
+        $mission = $latestByType->get('mission');
+
+        /* เลือกเฉพาะคอลัมน์ที่หน้า Landing ใช้งานจริง */
+        $news = News::query()
+            ->select(['id', 'title', 'description', 'image', 'created_at'])
+            ->latest('id')
+            ->limit(6)
+            ->get();
+
+        return view('landing.index', compact(
+            'history',
+            'objective',
+            'mission',
+            'news'
+        ));
     }
 }

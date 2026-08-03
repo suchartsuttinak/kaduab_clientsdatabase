@@ -3,90 +3,164 @@
 namespace App\Http\Controllers\Landing;
 
 use App\Http\Controllers\Controller;
-use App\Models\Scholarship;            // ✅ เพิ่มตัวนี้
+use App\Models\Scholarship;
 use App\Models\ScholarshipDonation;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class ScholarshipController extends Controller
 {
-  
+    private const SUPPORT_TYPES = [
+        'ทุนการศึกษา',
+        'ชุดนักเรียน',
+        'อุปกรณ์การเรียน',
+    ];
 
-        public function index(Request $request)
-        {
-            /*
-            |--------------------------------------------------------------------------
-            | เมื่อ Admin เปิดดูหน้ารายการผู้สนับสนุนทุน
-            | ให้ถือว่าอ่านแจ้งเตือนแล้ว
-            |--------------------------------------------------------------------------
-            */
-            if (auth()->check() && auth()->user()->role === 'admin') {
-                Scholarship::where('is_read', false)->update([
+    private const DONATION_TYPES = [
+        'เงินสด',
+        'โอนเงิน',
+        'ทุนการศึกษา',
+        'ชุดนักเรียน',
+        'อุปกรณ์การเรียน',
+        'อื่น ๆ',
+    ];
+
+    public function index(Request $request): View
+    {
+        if (auth()->check() && (auth()->user()->role ?? null) === 'admin') {
+            Scholarship::query()
+                ->where('is_read', false)
+                ->update([
                     'is_read' => true,
                     'read_at' => now('Asia/Bangkok'),
                 ]);
-            }
-
-            $startDate = $request->start_date;
-            $endDate   = $request->end_date;
-
-            $query = ScholarshipDonation::query();
-
-            // filter ตามช่วงวันที่
-            if ($startDate && $endDate) {
-                $query->whereBetween('donation_date', [$startDate, $endDate]);
-            }
-
-            // ดึง id ผู้สนับสนุน
-            $scholarshipIds = $query->pluck('scholarship_id')->unique();
-
-            $scholarships = Scholarship::when($startDate && $endDate, function ($q) use ($scholarshipIds) {
-                    $q->whereIn('id', $scholarshipIds);
-                })
-                ->latest()
-                ->paginate(20);
-
-            // รวมเงินตามช่วงวันที่
-            $totalDonationAmount = (clone $query)->sum('amount');
-
-            // summary ตามปี
-            $donationYearSummary = ScholarshipDonation::selectRaw('YEAR(donation_date) as year, SUM(amount) as total_amount')
-                ->groupBy(DB::raw('YEAR(donation_date)'))
-                ->orderByDesc('year')
-                ->get();
-
-            return view('landing.scholarship.scholarship.index', compact(
-                'scholarships',
-                'totalDonationAmount',
-                'donationYearSummary',
-                'startDate',
-                'endDate'
-            ));
         }
 
-    public function create()
+        $endDateRules = [
+            'nullable',
+            'date',
+            'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+        ];
+
+        if ($request->filled('start_date')) {
+            $endDateRules[] = 'after_or_equal:start_date';
+        }
+
+        $validated = $request->validate([
+            'start_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+            'end_date' => $endDateRules,
+        ], [
+            'start_date.date' => 'รูปแบบวันที่เริ่มต้นไม่ถูกต้อง',
+            'start_date.before_or_equal' => 'วันที่เริ่มต้นต้องไม่เกินวันที่ปัจจุบัน',
+            'end_date.date' => 'รูปแบบวันที่สิ้นสุดไม่ถูกต้อง',
+            'end_date.after_or_equal' => 'วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น',
+            'end_date.before_or_equal' => 'วันที่สิ้นสุดต้องไม่เกินวันที่ปัจจุบัน',
+        ]);
+
+        $startDate = $validated['start_date'] ?? null;
+        $endDate = $validated['end_date'] ?? null;
+
+        $applyDateFilter = static function ($query) use ($startDate, $endDate) {
+            return $query
+                ->when($startDate, fn ($q) => $q->where('donation_date', '>=', $startDate))
+                ->when($endDate, fn ($q) => $q->where('donation_date', '<=', $endDate));
+        };
+
+        $scholarships = Scholarship::query()
+            ->select([
+                'id',
+                'fullname',
+                'support_types',
+                'phone',
+                'email',
+                'detail',
+                'created_at',
+            ])
+            ->when(
+                $startDate || $endDate,
+                fn (Builder $query) => $query->whereHas('donations', $applyDateFilter)
+            )
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        $donationQuery = ScholarshipDonation::query();
+        $applyDateFilter($donationQuery);
+
+        $totalDonationAmount = (clone $donationQuery)->sum('amount');
+
+        /*
+         * ใช้ตัวกรองช่วงวันที่เดียวกับยอดรวม
+         * และส่ง total_items ให้ตรงกับที่หน้า Blade แสดงผล
+         */
+        $donationYearSummary = (clone $donationQuery)
+            ->selectRaw('YEAR(donation_date) AS year')
+            ->selectRaw('SUM(amount) AS total_amount')
+            ->selectRaw('COUNT(*) AS total_items')
+            ->whereNotNull('donation_date')
+            ->groupByRaw('YEAR(donation_date)')
+            ->orderByDesc('year')
+            ->get();
+
+        return view('landing.scholarship.scholarship.index', compact(
+            'scholarships',
+            'totalDonationAmount',
+            'donationYearSummary',
+            'startDate',
+            'endDate'
+        ));
+    }
+
+    public function create(): View
     {
         return view('landing.scholarship.scholarship.create');
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'fullname' => 'required|string|max:255',
-            'support_types' => 'required|array|min:1',
-            'support_types.*' => 'string|max:100',
-            'phone' => 'required|string|max:50',
-            'email' => 'nullable|email|max:255',
-            'detail' => 'nullable|string',
+        $request->merge([
+            'fullname' => Str::squish((string) $request->input('fullname')),
+            'phone' => trim((string) $request->input('phone')),
+            'email' => trim((string) $request->input('email')),
+            'detail' => trim((string) $request->input('detail')),
         ]);
 
-        Scholarship::create([
-            'fullname' => $request->fullname,
-            'support_types' => $request->support_types,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'detail' => $request->detail,
-             // แจ้งเตือนใหม่ (ยังไม่ได้เปิดอ่าน)
+        $validated = $request->validate([
+            'fullname' => ['required', 'string', 'max:255'],
+            'support_types' => ['required', 'array', 'min:1'],
+            'support_types.*' => [
+                'required',
+                'string',
+                'distinct',
+                Rule::in(self::SUPPORT_TYPES),
+            ],
+            'phone' => ['required', 'string', 'max:50'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'detail' => ['nullable', 'string', 'max:5000'],
+        ], [
+            'fullname.required' => 'กรุณากรอกชื่อ-สกุลผู้สนับสนุน',
+            'support_types.required' => 'กรุณาเลือกรูปแบบการสนับสนุนอย่างน้อย 1 รายการ',
+            'support_types.min' => 'กรุณาเลือกรูปแบบการสนับสนุนอย่างน้อย 1 รายการ',
+            'support_types.*.in' => 'มีรูปแบบการสนับสนุนบางรายการไม่ถูกต้อง',
+            'phone.required' => 'กรุณากรอกเบอร์โทรศัพท์',
+            'email.email' => 'รูปแบบอีเมลไม่ถูกต้อง',
+            'detail.max' => 'รายละเอียดเพิ่มเติมต้องไม่เกิน 5,000 ตัวอักษร',
+        ]);
+
+        Scholarship::query()->create([
+            'fullname' => $validated['fullname'],
+            'support_types' => array_values(array_unique($validated['support_types'])),
+            'phone' => $validated['phone'],
+            'email' => $validated['email'] ?: null,
+            'detail' => $validated['detail'] ?: null,
             'is_read' => false,
         ]);
 
@@ -95,26 +169,46 @@ class ScholarshipController extends Controller
             ->with('success', 'ส่งข้อมูลการสนับสนุนเรียบร้อยแล้ว เจ้าหน้าที่จะติดต่อกลับภายหลัง');
     }
 
-    public function createDonation(Scholarship $scholarship)
+    public function createDonation(Scholarship $scholarship): View
     {
-        return view('landing.scholarship.scholarship.donation_create', compact('scholarship'));
+        return view(
+            'landing.scholarship.scholarship.donation_create',
+            compact('scholarship')
+        );
     }
 
-    public function storeDonation(Request $request, Scholarship $scholarship)
-    {
-        $request->validate([
-            'donation_date' => 'required|date',
-            'amount' => 'nullable|numeric|min:0',
-            'donation_type' => 'required|string|max:100',
-            'description' => 'nullable|string',
+    public function storeDonation(
+        Request $request,
+        Scholarship $scholarship
+    ): RedirectResponse {
+        $request->merge([
+            'description' => trim((string) $request->input('description')),
         ]);
 
-        ScholarshipDonation::create([
-            'scholarship_id' => $scholarship->id,
-            'donation_date' => $request->donation_date,
-            'amount' => $request->amount,
-            'donation_type' => $request->donation_type,
-            'description' => $request->description,
+        $validated = $request->validate([
+            'donation_date' => [
+                'required',
+                'date',
+                'before_or_equal:' . now('Asia/Bangkok')->toDateString(),
+            ],
+            'amount' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
+            'donation_type' => ['required', Rule::in(self::DONATION_TYPES)],
+            'description' => ['nullable', 'string', 'max:5000'],
+        ], [
+            'donation_date.required' => 'กรุณาระบุวันที่บริจาค',
+            'donation_date.before_or_equal' => 'วันที่บริจาคต้องไม่เกินวันที่ปัจจุบัน',
+            'amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลข',
+            'amount.min' => 'จำนวนเงินต้องไม่น้อยกว่า 0 บาท',
+            'donation_type.required' => 'กรุณาเลือกประเภทการบริจาค',
+            'donation_type.in' => 'ประเภทการบริจาคไม่ถูกต้อง',
+            'description.max' => 'รายละเอียดต้องไม่เกิน 5,000 ตัวอักษร',
+        ]);
+
+        $scholarship->donations()->create([
+            'donation_date' => $validated['donation_date'],
+            'amount' => $validated['amount'] ?? null,
+            'donation_type' => $validated['donation_type'],
+            'description' => $validated['description'] ?: null,
             'recorded_by' => auth()->user()->name ?? null,
         ]);
 
@@ -123,23 +217,34 @@ class ScholarshipController extends Controller
             ->with('success', 'บันทึกข้อมูลการบริจาคเรียบร้อยแล้ว');
     }
 
-    public function donationIndex($id)
+    public function donationIndex($id): View
     {
-        $scholarship = Scholarship::findOrFail($id);
+        $scholarship = Scholarship::query()->findOrFail($id);
 
         $donations = $scholarship->donations()
+            ->select([
+                'id',
+                'scholarship_id',
+                'donation_date',
+                'amount',
+                'donation_type',
+                'description',
+                'recorded_by',
+                'created_at',
+            ])
             ->latest('donation_date')
-            ->paginate(20);
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString();
 
-        // ✅ รวมยอดเงินบริจาคทั้งหมดของผู้สนับสนุนรายนี้
-        $totalDonationAmount = $scholarship->donations()
-            ->sum('amount');
+        $totalDonationAmount = $scholarship->donations()->sum('amount');
 
-        // ✅ สรุปยอดบริจาคแยกตามปี เช่น 2566 / 2567 / 2568
         $donationYearSummary = $scholarship->donations()
-            ->selectRaw('YEAR(donation_date) as year, SUM(amount) as total_amount, COUNT(*) as total_items')
+            ->selectRaw('YEAR(donation_date) AS year')
+            ->selectRaw('SUM(amount) AS total_amount')
+            ->selectRaw('COUNT(*) AS total_items')
             ->whereNotNull('donation_date')
-            ->groupBy(DB::raw('YEAR(donation_date)'))
+            ->groupByRaw('YEAR(donation_date)')
             ->orderByDesc('year')
             ->get();
 

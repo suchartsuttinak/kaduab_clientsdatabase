@@ -3,26 +3,39 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class FactFindingDocument extends Model
+class Factfinding extends Model
 {
-   // ⚡ กำหนดชื่อ table ให้ตรงกับฐานข้อมูล
-    protected $table = 'factfinding_documents';
+    protected $guarded = [];
 
-    protected $fillable = ['factfinding_id', 'document_id'];
+    protected $casts = [
+        'date' => 'date',
+        'receive_date' => 'date',
+        'sick' => 'boolean',
+        'active' => 'boolean',
+        'weight' => 'decimal:2',
+        'height' => 'decimal:2',
+    ];
 
-    public function document()
+    public function client(): BelongsTo
     {
-        return $this->belongsTo(Document::class, 'document_id');
+        return $this->belongsTo(Client::class, 'client_id');
     }
 
-    public function factfinding()
+    public function documents(): BelongsToMany
     {
-        return $this->belongsTo(Factfinding::class, 'factfinding_id');
+        return $this->belongsToMany(
+            Document::class,
+            'factfinding_documents',
+            'factfinding_id',
+            'document_id'
+        )->withTimestamps();
     }
 
-
-
-
-
+    public function marital(): BelongsTo
+    {
+        return $this->belongsTo(Marital::class, 'marital_id');
+    }
 }

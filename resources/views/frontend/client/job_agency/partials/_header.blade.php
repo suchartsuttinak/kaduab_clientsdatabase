@@ -1,132 +1,337 @@
+@php
+    $reportQuery = http_build_query(array_filter([
+        'start_date' => request('start_date', old('start_date')),
+        'end_date'   => request('end_date', old('end_date')),
+    ], fn ($value) => $value !== null && $value !== ''));
+
+    $reportUrl = route('job_agencies.report', $client->id)
+        . ($reportQuery !== '' ? '?' . $reportQuery : '');
+@endphp
 
 <style>
-    .ja-empty-card{
-    margin-bottom:1rem;
-    padding:52px 20px;
-    border:1px solid #e7edf5;
-    border-radius:22px;
-    background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%);
-    box-shadow:0 12px 32px rgba(15,23,42,.06);
-    text-align:center;
+.ja-main-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    min-height: 82px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .045);
 }
 
-.ja-empty-icon{
-    width:86px;
-    height:86px;
-    margin:0 auto 18px;
-    border-radius:50%;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    background:#ecfdf5;
-    color:#16a34a;
-    font-size:2.1rem;
-    box-shadow:0 12px 28px rgba(22,163,74,.14);
+.ja-header-left {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    min-width: 0;
 }
 
-.ja-empty-card h5{
-    margin:0 0 8px;
-    color:#0f172a;
-    font-size:1.25rem;
-    font-weight:800;
+.ja-header-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    background: #eff6ff;
+    color: #2563eb;
 }
 
-.ja-empty-card p{
-    max-width:620px;
-    margin:0 auto 22px;
-    color:#64748b;
-    line-height:1.8;
+.ja-header-icon i {
+    font-size: 1.05rem;
 }
 
-.ja-empty-btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    min-height:44px;
-    padding:.68rem 1rem;
-    border-radius:12px;
-    font-weight:700;
+.ja-header-text {
+    min-width: 0;
 }
 
-@media (max-width:575.98px){
-    .ja-empty-card{
-        padding:42px 14px;
+.ja-header-title {
+    margin: 0;
+    color: #0f172a;
+    font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -.01em;
+}
+
+.ja-header-subtitle {
+    margin-top: .3rem;
+    color: #64748b;
+    font-size: clamp(.92rem, 1vw, 1rem);
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+.ja-header-subtitle strong {
+    color: #0f172a;
+    font-weight: 800;
+}
+
+.ja-header-actions,
+.ja-filter-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .65rem;
+    flex-wrap: wrap;
+}
+
+.ja-btn {
+    min-height: 42px;
+    padding: .6rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    border-radius: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.ja-btn-primary {
+    color: #fff;
+    border: 1px solid #1d4ed8;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 7px 16px rgba(37, 99, 235, .2);
+}
+
+.ja-btn-primary:hover,
+.ja-btn-primary:focus {
+    color: #fff;
+    border-color: #1e40af;
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+}
+
+.ja-btn-back {
+    color: #7c3aed;
+    border: 1px solid #8b5cf6;
+    background: #fff;
+}
+
+.ja-btn-back:hover,
+.ja-btn-back:focus {
+    color: #6d28d9;
+    background: #faf5ff;
+}
+
+.ja-filter-card {
+    padding: 1rem 1.1rem;
+    margin-bottom: 1rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .035);
+}
+
+.ja-filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.ja-filter-group {
+    min-width: 190px;
+    flex: 1 1 190px;
+}
+
+.ja-filter-group .form-label {
+    margin-bottom: .4rem;
+    color: #475569;
+    font-size: .88rem;
+    font-weight: 700;
+}
+
+.ja-filter-group .form-control {
+    min-height: 42px;
+    border-radius: 11px;
+}
+
+.ja-filter-error {
+    margin-top: .35rem;
+    color: #dc2626;
+    font-size: .82rem;
+}
+
+.ja-first-empty {
+    min-height: 330px;
+    padding: 2.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .04);
+}
+
+.ja-first-empty-icon {
+    width: 82px;
+    height: 82px;
+    margin-bottom: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #bfdbfe;
+    border-radius: 50%;
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.ja-first-empty-icon i {
+    font-size: 1.7rem;
+}
+
+.ja-first-empty-title {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.45;
+}
+
+.ja-first-empty-description {
+    max-width: 720px;
+    margin: .55rem auto 1.2rem;
+    color: #64748b;
+    font-size: .92rem;
+    line-height: 1.65;
+}
+
+.ja-first-empty-btn {
+    min-height: 44px;
+    padding: .65rem 1.15rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    border-radius: 12px;
+    font-weight: 700;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, .2);
+}
+
+@media (max-width: 767.98px) {
+    .ja-main-header {
+        padding: .9rem;
+        align-items: stretch;
     }
 
-    .ja-empty-icon{
-        width:74px;
-        height:74px;
-        font-size:1.8rem;
+    .ja-header-left,
+    .ja-header-actions {
+        width: 100%;
     }
 
-    .ja-empty-btn{
-        width:100%;
+    .ja-header-actions > * {
+        flex: 1 1 calc(50% - .35rem);
+    }
+
+    .ja-header-title {
+        font-size: 1.12rem;
+    }
+
+    .ja-header-subtitle {
+        font-size: .9rem;
+    }
+
+    .ja-filter-actions {
+        width: 100%;
+    }
+
+    .ja-filter-actions > * {
+        flex: 1 1 auto;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .ja-header-actions,
+    .ja-filter-actions {
+        flex-direction: column;
+    }
+
+    .ja-header-actions > *,
+    .ja-filter-actions > *,
+    .ja-first-empty-btn {
+        width: 100%;
+        flex: 1 1 auto;
+    }
+
+    .ja-first-empty {
+        min-height: 285px;
+        padding: 1.75rem .9rem;
+    }
+
+    .ja-first-empty-icon {
+        width: 72px;
+        height: 72px;
     }
 }
 </style>
 
+<header class="ja-main-header">
+    <div class="ja-header-left">
+        <span class="ja-header-icon" aria-hidden="true">
+            <i class="bi bi-briefcase-fill"></i>
+        </span>
 
-@php
-    $hasJobAgencyRows = false;
-
-    if (isset($jobAgencies)) {
-        $hasJobAgencyRows = $jobAgencies->count() > 0;
-    } elseif (isset($job_agencies)) {
-        $hasJobAgencyRows = $job_agencies->count() > 0;
-    } elseif (isset($items)) {
-        $hasJobAgencyRows = $items->count() > 0;
-    }
-
-    $hasDateFilter = request()->filled('start_date') || request()->filled('end_date');
-
-    // ✅ มีข้อมูล หรือมีการค้นหาแล้ว ค่อยแสดง header/filter
-    // ✅ ถ้าไม่มีข้อมูลจริง ให้ซ่อนรายงาน/ค้นหา/หัวข้อมูล
-    $showJobAgencySection = $hasJobAgencyRows || $hasDateFilter;
-@endphp
-
-@if($showJobAgencySection)
-    <div class="ja-main-header">
-        <div class="ja-header-left">
-            <span class="ja-header-icon">
-                <i class="bi bi-briefcase-fill"></i>
-            </span>
-
-            <div class="ja-header-text">
-                <h6>การจัดหางานให้ผู้รับ</h6>
-                <p>ออกแบบใหม่ให้ทันสมัย ใช้งานง่าย และรองรับทุกขนาดหน้าจอ</p>
+        <div class="ja-header-text">
+            <h1 class="ja-header-title">การจัดหางานให้ผู้รับบริการ</h1>
+            <div class="ja-header-subtitle">
+                ผู้รับบริการ:
+                <strong>{{ $client->fullname ?? $client->full_name ?? $client->name ?? '-' }}</strong>
             </div>
         </div>
+    </div>
 
-        <div class="ja-header-actions">
-            @if($hasJobAgencyRows)
-                <a href="{{ route('job_agencies.report', $client->id) }}"
-                   class="btn btn-outline-success ja-btn">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <span>รายงาน</span>
-                </a>
-            @endif
+    <div class="ja-header-actions">
+        @if($hasAnyJobAgency)
+            <a href="{{ $reportUrl }}" class="btn btn-outline-success ja-btn">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>รายงาน</span>
+            </a>
 
             <button type="button"
-                    class="btn btn-primary ja-btn"
+                    class="btn ja-btn ja-btn-primary"
                     data-bs-toggle="modal"
                     data-bs-target="#createJobAgencyModal">
                 <i class="bi bi-plus-circle"></i>
                 <span>เพิ่มข้อมูล</span>
             </button>
-        </div>
-    </div>
+        @endif
 
+        <a href="{{ route('admin.index', $client->id) }}"
+           class="btn ja-btn ja-btn-back"
+           aria-label="กลับหน้าหลักผู้รับบริการ">
+            <i class="bi bi-arrow-left-circle"></i>
+            <span>กลับ</span>
+        </a>
+    </div>
+</header>
+
+@if($hasAnyJobAgency || $hasDateFilter)
     <div class="ja-filter-card">
-        <form method="GET" action="{{ route('job_agencies.show', $client->id) }}">
+        <form method="GET" action="{{ route('job_agencies.show', $client->id) }}" novalidate>
             <div class="ja-filter-row">
                 <div class="ja-filter-group">
                     <label for="start_date" class="form-label">วันที่เริ่มต้น</label>
                     <input type="date"
                            id="start_date"
                            name="start_date"
-                           class="form-control"
-                           value="{{ request('start_date') }}">
+                           class="form-control @error('start_date', 'filters') is-invalid @enderror"
+                           value="{{ request('start_date', old('start_date')) }}"
+                           max="{{ now('Asia/Bangkok')->toDateString() }}">
+                    @error('start_date', 'filters')
+                        <div class="ja-filter-error">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="ja-filter-group">
@@ -134,25 +339,28 @@
                     <input type="date"
                            id="end_date"
                            name="end_date"
-                           class="form-control"
-                           value="{{ request('end_date') }}">
+                           class="form-control @error('end_date', 'filters') is-invalid @enderror"
+                           value="{{ request('end_date', old('end_date')) }}"
+                           max="{{ now('Asia/Bangkok')->toDateString() }}">
+                    @error('end_date', 'filters')
+                        <div class="ja-filter-error">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="ja-filter-actions">
-                    <button type="submit" class="btn btn-primary ja-btn">
+                    <button type="submit" class="btn ja-btn ja-btn-primary">
                         <i class="bi bi-search"></i>
                         <span>ค้นหา</span>
                     </button>
 
                     <a href="{{ route('job_agencies.show', $client->id) }}"
-                       class="btn btn-light ja-btn ja-btn-reset">
+                       class="btn btn-light ja-btn border">
                         <i class="bi bi-arrow-clockwise"></i>
                         <span>รีเซ็ต</span>
                     </a>
 
-                    @if($hasJobAgencyRows)
-                        <a href="{{ route('job_agencies.report', $client->id) }}?start_date={{ request('start_date') }}&end_date={{ request('end_date') }}"
-                           class="btn btn-success ja-btn">
+                    @if($hasAnyJobAgency)
+                        <a href="{{ $reportUrl }}" class="btn btn-success ja-btn">
                             <i class="bi bi-printer"></i>
                             <span>ดูรายงาน</span>
                         </a>
@@ -160,26 +368,5 @@
                 </div>
             </div>
         </form>
-    </div>
-@else
-    <div class="ja-empty-card">
-        <div class="ja-empty-icon">
-            <i class="bi bi-briefcase"></i>
-        </div>
-
-        <h5>ยังไม่มีข้อมูลการจัดหางาน</h5>
-
-        <p>
-            เมื่อยังไม่มีข้อมูล ระบบจะซ่อนปุ่มรายงาน ช่องค้นหา และส่วนหัวรายการไว้ก่อน
-            เพื่อให้หน้าจอดูสะอาดและใช้งานง่ายขึ้น
-        </p>
-
-        <button type="button"
-                class="btn btn-primary ja-empty-btn"
-                data-bs-toggle="modal"
-                data-bs-target="#createJobAgencyModal">
-            <i class="bi bi-plus-circle"></i>
-            <span>เพิ่มข้อมูลการจัดหางาน</span>
-        </button>
     </div>
 @endif

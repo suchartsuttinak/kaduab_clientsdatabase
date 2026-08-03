@@ -1,15 +1,16 @@
 @php
-    $canApproveRefer = auth()->check() && in_array(auth()->user()->role, ['admin', 'executive']);
-    $hasReferRows = isset($refers) && $refers->count() > 0;
+    $canApproveRefer = auth()->check() && in_array(auth()->user()->role, ['admin', 'executive'], true);
+    $hasReferRows = isset($refers) && $refers->isNotEmpty();
+    $canCreateRefer = $canCreateRefer ?? !in_array($client->release_status, ['pending_refer', 'refer'], true);
 @endphp
 
 <style>
 .rf-table-card{
     margin-top:16px;
     border:1px solid #e7edf5;
-    border-radius:22px;
-    background:#ffffff;
-    box-shadow:0 12px 32px rgba(15,23,42,.06);
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 10px 30px rgba(15,23,42,.05);
     overflow:hidden;
 }
 
@@ -21,7 +22,7 @@
     flex-wrap:wrap;
     padding:16px 18px;
     border-bottom:1px solid #eef2f7;
-    background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%);
+    background:#f8fafc;
 }
 
 .rf-table-title{
@@ -47,22 +48,15 @@
 .rf-table-meta{
     padding:7px 12px;
     border-radius:999px;
-    background:#f8fafc;
+    background:#fff;
     border:1px solid #e2e8f0;
     color:#475569;
     font-size:13px;
     font-weight:700;
 }
 
-.rf-table-wrap{
-    padding:16px;
-    overflow-x:auto;
-}
-
-.rf-table{
-    min-width:1500px;
-    margin-bottom:0;
-}
+.rf-table-wrap{padding:16px;overflow-x:auto;}
+.rf-table{min-width:1500px;margin-bottom:0;}
 
 .rf-table thead th{
     white-space:nowrap;
@@ -73,32 +67,10 @@
     vertical-align:middle;
 }
 
-.rf-table tbody td{
-    font-size:13px;
-    color:#334155;
-    vertical-align:middle;
-}
-
-.rf-cell{
-    min-width:130px;
-    max-width:180px;
-    white-space:normal;
-    line-height:1.6;
-}
-
-.rf-cell-sm{
-    min-width:90px;
-    max-width:130px;
-    white-space:normal;
-    line-height:1.6;
-}
-
-.rf-cell-lg{
-    min-width:180px;
-    max-width:260px;
-    white-space:normal;
-    line-height:1.6;
-}
+.rf-table tbody td{font-size:13px;color:#334155;vertical-align:middle;}
+.rf-cell{min-width:130px;max-width:180px;white-space:normal;line-height:1.6;}
+.rf-cell-sm{min-width:90px;max-width:130px;white-space:normal;line-height:1.6;}
+.rf-cell-lg{min-width:180px;max-width:260px;white-space:normal;line-height:1.6;}
 
 .rf-btn-sm{
     display:inline-flex;
@@ -113,46 +85,51 @@
     white-space:nowrap;
 }
 
-.rf-actions{
-    min-width:170px;
-}
+.rf-actions{min-width:170px;}
 
 .rf-empty-card{
+    min-height:320px;
     margin-top:16px;
-    padding:52px 20px;
-    border:1px solid #e7edf5;
-    border-radius:22px;
-    background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%);
-    box-shadow:0 12px 32px rgba(15,23,42,.06);
+    padding:2.5rem 1.25rem;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
     text-align:center;
+    border:1px solid #dbe3ef;
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 10px 30px rgba(15,23,42,.04);
 }
 
 .rf-empty-icon{
-    width:86px;
-    height:86px;
-    margin:0 auto 18px;
+    width:82px;
+    height:82px;
+    margin-bottom:1rem;
+    border:1px solid #c7d2fe;
     border-radius:50%;
     display:inline-flex;
     align-items:center;
     justify-content:center;
     background:#eef2ff;
     color:#4f46e5;
-    font-size:2.1rem;
-    box-shadow:0 12px 28px rgba(79,70,229,.14);
+    font-size:1.7rem;
 }
 
-.rf-empty-card h5{
-    margin:0 0 8px;
+.rf-empty-title{
+    margin:0;
     color:#0f172a;
-    font-size:1.25rem;
+    font-size:1.15rem;
     font-weight:800;
+    line-height:1.45;
 }
 
-.rf-empty-card p{
-    max-width:620px;
-    margin:0 auto 22px;
+.rf-empty-description{
+    max-width:720px;
+    margin:.55rem auto 1.2rem;
     color:#64748b;
-    line-height:1.8;
+    font-size:.92rem;
+    line-height:1.65;
 }
 
 .rf-empty-btn{
@@ -161,33 +138,43 @@
     justify-content:center;
     gap:8px;
     min-height:44px;
-    padding:10px 16px;
-    border-radius:14px;
+    padding:.65rem 1.15rem;
+    border:0;
+    border-radius:12px;
+    color:#fff;
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);
+    box-shadow:0 7px 16px rgba(37,99,235,.22);
+    font-weight:700;
+}
+
+.rf-empty-btn:hover,
+.rf-empty-btn:focus{
+    color:#fff;
+    transform:translateY(-1px);
+    box-shadow:0 10px 20px rgba(37,99,235,.28);
+}
+
+.rf-empty-status{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    min-height:42px;
+    padding:9px 14px;
+    border:1px solid #fde68a;
+    border-radius:12px;
+    background:#fffbeb;
+    color:#92400e;
     font-weight:700;
 }
 
 @media (max-width:575.98px){
-    .rf-table-head{
-        padding:14px;
-    }
-
-    .rf-table-wrap{
-        padding:12px;
-    }
-
-    .rf-empty-card{
-        padding:42px 14px;
-    }
-
-    .rf-empty-icon{
-        width:74px;
-        height:74px;
-        font-size:1.8rem;
-    }
-
-    .rf-empty-btn{
-        width:100%;
-    }
+    .rf-table-head{padding:14px;}
+    .rf-table-wrap{padding:12px;}
+    .rf-empty-card{min-height:280px;padding:1.75rem .9rem;}
+    .rf-empty-icon{width:72px;height:72px;}
+    .rf-empty-title{font-size:1rem;}
+    .rf-empty-description{font-size:.84rem;}
+    .rf-empty-btn{width:100%;}
 }
 </style>
 
@@ -234,56 +221,19 @@
 
                         <tr>
                             <td class="text-center">
-                                {{ \Carbon\Carbon::parse($refer->refer_date)->format('d/m/Y') }}
+                                {{ $refer->refer_date
+                                    ? \Carbon\Carbon::parse($refer->refer_date)->addYears(543)->format('d/m/Y')
+                                    : '-' }}
                             </td>
 
-                            <td>
-                                <div class="rf-cell">
-                                    {{ $refer->client->fullname ?? $refer->client->name ?? '-' }}
-                                </div>
-                            </td>
-
-                            <td>
-                                <div class="rf-cell">
-                                    {{ $refer->translate->translate_name ?? '-' }}
-                                </div>
-                            </td>
-
-                            <td>
-                                <div class="rf-cell-lg">
-                                    {{ $refer->destination ?? '-' }}
-                                </div>
-                            </td>
-
-                            <td class="text-center">
-                                <div class="rf-cell-sm">
-                                    {{ $refer->guardian ?? '-' }}
-                                </div>
-                            </td>
-
-                            <td>
-                                <div class="rf-cell">
-                                    {{ $refer->parent_name ?? '-' }}
-                                </div>
-                            </td>
-
-                            <td>
-                                <div class="rf-cell">
-                                    {{ $refer->parent_tel ?? '-' }}
-                                </div>
-                            </td>
-
-                            <td>
-                                <div class="rf-cell">
-                                    {{ $refer->member ?? '-' }}
-                                </div>
-                            </td>
-
-                            <td>
-                                <div class="rf-cell">
-                                    {{ $refer->teacher ?? '-' }}
-                                </div>
-                            </td>
+                            <td><div class="rf-cell">{{ $refer->client->fullname ?? $client->fullname ?? '-' }}</div></td>
+                            <td><div class="rf-cell">{{ $refer->translate->translate_name ?? '-' }}</div></td>
+                            <td><div class="rf-cell-lg">{{ $refer->destination ?: '-' }}</div></td>
+                            <td class="text-center"><div class="rf-cell-sm">{{ $refer->guardian ?: '-' }}</div></td>
+                            <td><div class="rf-cell">{{ $refer->parent_name ?: '-' }}</div></td>
+                            <td><div class="rf-cell">{{ $refer->parent_tel ?: '-' }}</div></td>
+                            <td><div class="rf-cell">{{ $refer->member ?: '-' }}</div></td>
+                            <td><div class="rf-cell">{{ $refer->teacher ?: '-' }}</div></td>
 
                             <td class="text-center">
                                 @if($committeeResult === 'ผ่าน')
@@ -301,6 +251,7 @@
                                 @if(!empty($refer->meeting_report_file))
                                     <a href="{{ asset('uploads/refer_meeting_reports/' . $refer->meeting_report_file) }}"
                                        target="_blank"
+                                       rel="noopener noreferrer"
                                        class="btn btn-outline-primary rf-btn-sm">
                                         <i class="bi bi-file-earmark-pdf"></i>
                                         <span>เปิดไฟล์</span>
@@ -310,11 +261,7 @@
                                 @endif
                             </td>
 
-                            <td>
-                                <div class="rf-cell-lg">
-                                    {{ $refer->remark ?? '-' }}
-                                </div>
-                            </td>
+                            <td><div class="rf-cell-lg">{{ $refer->remark ?: '-' }}</div></td>
 
                             <td class="text-center">
                                 @if($approveStatus === 'pending')
@@ -339,41 +286,47 @@
                             <td class="text-center">
                                 <div class="rf-actions d-flex flex-wrap justify-content-center gap-2">
                                     @if($approveStatus === 'pending')
-                                        <button type="button" class="btn btn-warning rf-btn-sm" disabled>
-                                            <i class="bi bi-hourglass-split"></i>
-                                            <span>รออนุมัติ</span>
-                                        </button>
-
                                         @if($canApproveRefer)
-                                            <form action="{{ route('refers.approve', $refer->id) }}" method="POST" class="d-inline">
+                                            <form action="{{ route('refers.approve', $refer->id) }}"
+                                                  method="POST"
+                                                  class="d-inline js-refer-confirm-form"
+                                                  data-confirm-title="ยืนยันการอนุมัติ"
+                                                  data-confirm-text="คุณต้องการอนุมัติการจำหน่ายรายการนี้ใช่หรือไม่"
+                                                  data-confirm-button="อนุมัติรายการ">
                                                 @csrf
                                                 @method('PUT')
-                                                <button type="submit"
-                                                        class="btn btn-success rf-btn-sm"
-                                                        onclick="return confirm('ยืนยันการอนุมัติการจำหน่ายรายการนี้ใช่หรือไม่?')">
+                                                <button type="submit" class="btn btn-success rf-btn-sm">
                                                     <i class="bi bi-check-circle"></i>
                                                     <span>อนุมัติ</span>
                                                 </button>
                                             </form>
+                                        @else
+                                            <button type="button" class="btn btn-warning rf-btn-sm" disabled>
+                                                <i class="bi bi-hourglass-split"></i>
+                                                <span>รออนุมัติ</span>
+                                            </button>
                                         @endif
                                     @endif
 
                                     @if($approveStatus === 'approved')
                                         @if($canApproveRefer)
-                                            <form action="{{ route('refers.restore', $refer->id) }}" method="POST" class="d-inline">
+                                            <form action="{{ route('refers.restore', $refer->id) }}"
+                                                  method="POST"
+                                                  class="d-inline js-refer-confirm-form"
+                                                  data-confirm-title="ยืนยันการคืนสถานะ"
+                                                  data-confirm-text="คุณต้องการยกเลิกรายการจำหน่ายและคืนสถานะผู้รับบริการใช่หรือไม่"
+                                                  data-confirm-button="คืนสถานะ">
                                                 @csrf
                                                 @method('PUT')
-                                                <button type="submit"
-                                                        class="btn btn-outline-success rf-btn-sm"
-                                                        onclick="return confirm('ยืนยันการคืนสถานะผู้รับบริการรายนี้ใช่หรือไม่?')">
+                                                <button type="submit" class="btn btn-outline-success rf-btn-sm">
                                                     <i class="bi bi-arrow-counterclockwise"></i>
-                                                    <span>Restore</span>
+                                                    <span>คืนสถานะ</span>
                                                 </button>
                                             </form>
                                         @else
                                             <button type="button" class="btn btn-outline-secondary rf-btn-sm" disabled>
                                                 <i class="bi bi-lock"></i>
-                                                <span>รอสิทธิ์อนุมัติ</span>
+                                                <span>ไม่มีสิทธิ์คืนสถานะ</span>
                                             </button>
                                         @endif
                                     @endif
@@ -393,24 +346,31 @@
         </div>
     </div>
 @else
-    <div class="rf-empty-card">
-        <div class="rf-empty-icon">
-            <i class="bi bi-inbox"></i>
+    <div class="rf-empty-card" role="status">
+        <div class="rf-empty-icon" aria-hidden="true">
+            <i class="bi bi-box-arrow-right"></i>
         </div>
 
-        <h5>ยังไม่มีข้อมูลการจำหน่าย</h5>
+        <h2 class="rf-empty-title">ยังไม่มีข้อมูลการจำหน่ายผู้รับบริการ</h2>
 
-        <p>
-            เมื่อยังไม่มีข้อมูล ระบบจะซ่อนตารางรายการจำหน่ายไว้ก่อน
-            เพื่อให้หน้าจอดูสะอาด ใช้งานง่าย และไม่แสดงตารางว่างโดยไม่จำเป็น
+        <p class="rf-empty-description">
+            เริ่มต้นบันทึกวันที่นำส่ง สาเหตุการจำหน่าย สถานที่นำส่ง ผู้ดูแล
+            ผลคณะกรรมการ และข้อมูลผู้นำส่งของผู้รับบริการรายนี้
         </p>
 
-        <button type="button"
-                class="btn btn-primary rf-empty-btn"
-                data-bs-toggle="modal"
-                data-bs-target="#createReferModal">
-            <i class="bi bi-plus-circle"></i>
-            <span>เพิ่มข้อมูลจำหน่าย</span>
-        </button>
+        @if($canCreateRefer)
+            <button type="button"
+                    class="rf-empty-btn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#createReferModal">
+                <i class="bi bi-plus-circle"></i>
+                <span>เพิ่มข้อมูลจำหน่ายครั้งแรก</span>
+            </button>
+        @else
+            <div class="rf-empty-status">
+                <i class="bi bi-hourglass-split"></i>
+                <span>ผู้รับบริการมีรายการจำหน่ายที่กำลังดำเนินการอยู่</span>
+            </div>
+        @endif
     </div>
 @endif

@@ -605,6 +605,12 @@
                 </div>
             </div>
 
+            @if($errors->any())
+                <div class="filter-result" style="border-color:#fecaca;background:#fef2f2;color:#b91c1c;">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
             <form method="GET" action="{{ route('scholarship.index') }}" class="filter-form">
                 <div class="filter-group">
                     <label for="start_date">วันที่เริ่มต้น</label>
@@ -613,6 +619,7 @@
                         id="start_date"
                         name="start_date"
                         value="{{ request('start_date', $startDate ?? '') }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                         class="filter-control"
                     >
                 </div>
@@ -624,6 +631,7 @@
                         id="end_date"
                         name="end_date"
                         value="{{ request('end_date', $endDate ?? '') }}"
+                        max="{{ now('Asia/Bangkok')->toDateString() }}"
                         class="filter-control"
                     >
                 </div>
@@ -637,12 +645,19 @@
                 </a>
             </form>
 
-            @if(request('start_date') && request('end_date'))
+            @if($startDate || $endDate)
                 <div class="filter-result">
-                    กำลังแสดงข้อมูลการบริจาคตั้งแต่
-                    {{ \Carbon\Carbon::parse(request('start_date'))->format('d/m/Y') }}
-                    ถึง
-                    {{ \Carbon\Carbon::parse(request('end_date'))->format('d/m/Y') }}
+                    @if($startDate && $endDate)
+                        กำลังแสดงข้อมูลตั้งแต่
+                        {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }}
+                        ถึง {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}
+                    @elseif($startDate)
+                        กำลังแสดงข้อมูลตั้งแต่วันที่
+                        {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} เป็นต้นไป
+                    @else
+                        กำลังแสดงข้อมูลถึงวันที่
+                        {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}
+                    @endif
                 </div>
             @endif
         </div>
@@ -669,7 +684,7 @@
                 <div>
                     <h2>สรุปยอดบริจาค</h2>
                     <p>
-                        @if(request('start_date') && request('end_date'))
+                        @if($startDate || $endDate)
                             สรุปยอดเงินบริจาคตามช่วงวันที่ที่เลือก
                         @else
                             สรุปยอดเงินบริจาครวมจากผู้สนับสนุนทั้งหมด
@@ -679,7 +694,7 @@
 
                 <div class="total-donation-box">
                     <span>
-                        @if(request('start_date') && request('end_date'))
+                        @if($startDate || $endDate)
                             รวมเงินบริจาคตามช่วงวันที่
                         @else
                             รวมเงินบริจาคทั้งหมด

@@ -42,7 +42,8 @@
                     </label>
                     <input type="date"
                            name="donation_date"
-                           value="{{ old('donation_date', date('Y-m-d')) }}"
+                           value="{{ old('donation_date', now('Asia/Bangkok')->toDateString()) }}"
+                           max="{{ now('Asia/Bangkok')->toDateString() }}"
                            required
                            class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
                 </div>
@@ -55,12 +56,12 @@
                             required
                             class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
                         <option value="">-- เลือกประเภท --</option>
-                        <option value="เงินสด">เงินสด</option>
-                        <option value="โอนเงิน">โอนเงิน</option>
-                        <option value="ทุนการศึกษา">ทุนการศึกษา</option>
-                        <option value="ชุดนักเรียน">ชุดนักเรียน</option>
-                        <option value="อุปกรณ์การเรียน">อุปกรณ์การเรียน</option>
-                        <option value="อื่น ๆ">อื่น ๆ</option>
+                        <option value="เงินสด" @selected(old('donation_type') === 'เงินสด')>เงินสด</option>
+                        <option value="โอนเงิน" @selected(old('donation_type') === 'โอนเงิน')>โอนเงิน</option>
+                        <option value="ทุนการศึกษา" @selected(old('donation_type') === 'ทุนการศึกษา')>ทุนการศึกษา</option>
+                        <option value="ชุดนักเรียน" @selected(old('donation_type') === 'ชุดนักเรียน')>ชุดนักเรียน</option>
+                        <option value="อุปกรณ์การเรียน" @selected(old('donation_type') === 'อุปกรณ์การเรียน')>อุปกรณ์การเรียน</option>
+                        <option value="อื่น ๆ" @selected(old('donation_type') === 'อื่น ๆ')>อื่น ๆ</option>
                     </select>
                 </div>
 
@@ -70,6 +71,8 @@
                     </label>
                     <input type="number"
                            step="0.01"
+                           min="0"
+                           max="999999999.99"
                            name="amount"
                            value="{{ old('amount') }}"
                            class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none"
@@ -82,6 +85,7 @@
                     </label>
                     <textarea name="description"
                               rows="5"
+                              maxlength="5000"
                               class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none"
                               placeholder="เช่น จำนวนชุดนักเรียน จำนวนอุปกรณ์ หรือหมายเหตุอื่น ๆ">{{ old('description') }}</textarea>
                 </div>

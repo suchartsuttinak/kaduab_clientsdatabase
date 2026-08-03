@@ -31,14 +31,24 @@
                 @csrf
 
                 <select name="type" class="w-full border rounded-xl px-4 py-3">
-                    <option value="history">ประความเป็นมา</option>
-                    <option value="objective">วัตถุประสงค์</option>
-                    <option value="mission">พันธกิจ</option>
+                    <option value="history" @selected(old('type') === 'history')>ประวัติความเป็นมา</option>
+                    <option value="objective" @selected(old('type') === 'objective')>วัตถุประสงค์</option>
+                    <option value="mission" @selected(old('type') === 'mission')>พันธกิจ</option>
                 </select>
 
-                <textarea name="content" rows="4"
-                          class="w-full border rounded-xl px-4 py-3"
-                          placeholder="รายละเอียด..."></textarea>
+                <textarea name="content" rows="4" maxlength="10000" required
+                          class="w-full border rounded-xl px-4 py-3 @error('content') border-red-500 @enderror"
+                          placeholder="รายละเอียด...">{{ old('content') }}</textarea>
+
+                @if($errors->any())
+                    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        <ul class="list-disc pl-5 space-y-1">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
                 <div class="text-right">
                     <button class="bg-blue-600 text-white px-6 py-2 rounded-xl">
@@ -70,10 +80,10 @@
                         <tr>
 
                             <td class="px-6 py-4">
-                                {{ $data->type }}
+                                {{ ['history' => 'ประวัติความเป็นมา', 'objective' => 'วัตถุประสงค์', 'mission' => 'พันธกิจ'][$data->type] ?? $data->type }}
                             </td>
 
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4 whitespace-pre-line break-words max-w-xl">
                                 {{ $data->content }}
                             </td>
 
@@ -107,6 +117,12 @@
                     </tbody>
                 </table>
             </div>
+
+            @if(method_exists($aboutData, 'hasPages') && $aboutData->hasPages())
+                <div class="border-t bg-white px-6 py-4">
+                    {{ $aboutData->onEachSide(1)->links() }}
+                </div>
+            @endif
         </div>
 
     </div>
@@ -146,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
     Swal.fire({
         icon: 'success',
         title: 'สำเร็จ',
-        text: "{{ session('success') }}"
+        text: @json(session('success'))
     });
     @endif
 

@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
     ->name('factfinding.edit');
 
     // บันทึก factfinding
-   Route::post('/factfinding/update/{id}', [FactfindingController::class, 'FactfindingUpdate'])
+   Route::post('/factfinding/update/{factfinding_id}', [FactfindingController::class, 'FactfindingUpdate'])
      ->name('factfinding.update');
 
      Route::delete('/factfinding/{id}', [FactfindingController::class, 'FactfindingDelete'])

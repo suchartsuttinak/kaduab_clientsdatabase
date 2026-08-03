@@ -1,284 +1,692 @@
 @extends('admin_client.admin_client')
 
 @section('content')
+@php
+    $clientName = $client->fullname ?? $client->full_name ?? '-';
+    $formItems = old('items', [
+        ['item_name' => '', 'quantity' => 1, 'unit_price' => ''],
+    ]);
+
+    if (!is_array($formItems) || count($formItems) === 0) {
+        $formItems = [['item_name' => '', 'quantity' => 1, 'unit_price' => '']];
+    }
+@endphp
 
 <style>
-    .help-session-create-wrap{
-        padding-bottom: 110px;
+    .help-entry-page {
+        --he-primary: #2563eb;
+        --he-primary-dark: #1d4ed8;
+        --he-text: #0f172a;
+        --he-muted: #64748b;
+        --he-border: #dbe3ef;
+        padding: 1rem 0 3rem;
     }
 
-    .help-session-save-area{
-        margin-top: 24px;
-        margin-bottom: 60px;
-        padding-bottom: 24px;
+    .help-entry-shell {
+        max-width: 1180px;
+        margin: 0 auto;
     }
 
-    .help-session-save-btn{
-        border: none;
-        border-radius: 999px;
-        padding: 11px 28px;
-        font-weight: 600;
-        letter-spacing: .2px;
-        background: linear-gradient(135deg, #16a34a, #22c55e);
-        box-shadow: 0 10px 22px rgba(34, 197, 94, .28);
-        transition: all .2s ease;
+    .help-entry-header,
+    .help-entry-card {
+        background: #fff;
+        border: 1px solid var(--he-border);
+        border-radius: 18px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, .045);
     }
 
-    .help-session-save-btn:hover:not(:disabled){
+    .help-entry-header {
+        min-height: 88px;
+        padding: 1.1rem 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .help-entry-heading {
+        display: flex;
+        align-items: center;
+        gap: .9rem;
+        min-width: 0;
+    }
+
+    .help-entry-icon {
+        width: 48px;
+        height: 48px;
+        flex: 0 0 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        background: #eff6ff;
+        color: var(--he-primary);
+        font-size: 1.15rem;
+    }
+
+    .help-entry-title {
+        margin: 0;
+        color: var(--he-text);
+        font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+        font-weight: 800;
+        line-height: 1.35;
+    }
+
+    .help-entry-subtitle {
+        margin-top: .25rem;
+        color: var(--he-muted);
+        font-size: clamp(.92rem, 1vw, 1rem);
+        line-height: 1.45;
+    }
+
+    .help-entry-subtitle strong {
+        color: var(--he-text);
+        font-weight: 800;
+    }
+
+    .help-entry-back,
+    .help-entry-add,
+    .help-entry-save {
+        min-height: 42px;
+        padding: .62rem 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        border-radius: 12px;
+        font-weight: 750;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .help-entry-back {
+        color: #7c3aed;
+        background: #fff;
+        border: 1px solid #8b5cf6;
+    }
+
+    .help-entry-back:hover,
+    .help-entry-back:focus {
+        color: #6d28d9;
+        background: #faf5ff;
         transform: translateY(-1px);
-        box-shadow: 0 14px 28px rgba(34, 197, 94, .34);
     }
 
-    .help-session-save-btn:disabled{
-        opacity: .55;
+    .help-entry-card {
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+
+    .help-entry-card-head {
+        min-height: 54px;
+        padding: .85rem 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        flex-wrap: wrap;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--he-border);
+    }
+
+    .help-entry-card-title {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        color: var(--he-text);
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    .help-entry-card-title i {
+        color: var(--he-primary);
+    }
+
+    .help-entry-card-body {
+        padding: 1.1rem;
+    }
+
+    .help-entry-label {
+        margin-bottom: .45rem;
+        color: #334155;
+        font-weight: 700;
+    }
+
+    .help-entry-page .form-control {
+        min-height: 44px;
+        border: 1px solid #cbd5e1;
+        border-radius: 11px;
+        color: var(--he-text);
+    }
+
+    .help-entry-page .form-control:focus {
+        border-color: #93b4ff;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, .1);
+    }
+
+    .help-entry-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid var(--he-border);
+        border-radius: 14px;
+        background: #fff;
+    }
+
+    .help-entry-table {
+        width: 100%;
+        min-width: 920px;
+        margin: 0;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .help-entry-table th {
+        padding: .8rem .7rem;
+        color: #334155;
+        background: #eff6ff;
+        border-bottom: 1px solid #bfdbfe;
+        font-size: .9rem;
+        font-weight: 800;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .help-entry-table td {
+        padding: .65rem;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: top;
+        background: #fff;
+    }
+
+    .help-entry-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .help-entry-table .col-item { text-align: left; }
+    .help-entry-table .col-quantity { text-align: center; }
+    .help-entry-table .col-money { text-align: right; }
+    .help-entry-table .col-action { text-align: center; }
+
+    .help-entry-table .quantity-input {
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .help-entry-table .money-input,
+    .help-entry-table .total-price {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .help-entry-table .total-price {
+        color: #0f172a;
+        background: #f8fafc;
+        font-weight: 800;
+    }
+
+    .help-entry-remove {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        color: #b91c1c;
+        background: #fef2f2;
+    }
+
+    .help-entry-remove:hover,
+    .help-entry-remove:focus {
+        color: #fff;
+        background: #dc2626;
+        border-color: #dc2626;
+    }
+
+    .help-entry-add {
+        color: #1d4ed8;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+    }
+
+    .help-entry-add:hover,
+    .help-entry-add:focus {
+        color: #fff;
+        background: var(--he-primary);
+        border-color: var(--he-primary);
+        transform: translateY(-1px);
+    }
+
+    .help-entry-summary {
+        margin-top: 1rem;
+        padding: .85rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .7rem;
+        border: 1px solid #dbeafe;
+        border-radius: 13px;
+        background: #f8fbff;
+    }
+
+    .help-entry-summary-label {
+        color: var(--he-muted);
+        font-weight: 700;
+    }
+
+    .help-entry-summary-value {
+        color: #1d4ed8;
+        font-size: 1.15rem;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .help-entry-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .7rem;
+        flex-wrap: wrap;
+    }
+
+    .help-entry-save {
+        min-width: 158px;
+        color: #fff;
+        border: 1px solid #1d4ed8;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        box-shadow: 0 7px 16px rgba(37, 99, 235, .2);
+    }
+
+    .help-entry-save:hover,
+    .help-entry-save:focus {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(37, 99, 235, .26);
+    }
+
+    .help-entry-save:disabled {
+        color: #fff;
+        border-color: #1d4ed8;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        opacity: .72;
         cursor: not-allowed;
-        background: #94a3b8;
-        box-shadow: none;
+        transform: none;
     }
 
-    @media (max-width: 768px){
-        .help-session-create-wrap{
-            padding-bottom: 140px;
-        }
+    .help-entry-errors {
+        margin-bottom: 1rem;
+        padding: .9rem 1rem;
+        border: 1px solid #fecaca;
+        border-radius: 13px;
+        color: #991b1b;
+        background: #fef2f2;
+    }
 
-        .help-session-save-area{
-            text-align: center !important;
-            margin-bottom: 80px;
-        }
+    @media (max-width: 767.98px) {
+        .help-entry-page { padding-top: .75rem; }
+        .help-entry-header { padding: 1rem; }
+        .help-entry-heading,
+        .help-entry-header > .help-entry-back { width: 100%; }
+        .help-entry-card-body { padding: .85rem; }
+        .help-entry-footer > * { width: 100%; }
+    }
 
-        .help-session-save-area .btn{
-            width: 100%;
-        }
+    @media (max-width: 575.98px) {
+        .help-entry-title { font-size: 1.12rem; }
+        .help-entry-subtitle { font-size: .9rem; }
+        .help-entry-summary { justify-content: space-between; }
     }
 </style>
 
-{{-- ต้องเพิ่ม enctype เพื่อรองรับการอัปโหลดไฟล์ --}}
-<div class="container help-session-create-wrap">
-    <h5 class="mb-4 text-center fw-bold mt-4 text-primary">
-        เพิ่มการช่วยเหลือใหม่สำหรับ {{ $client->full_name }}
-    </h5>
+<div class="container-fluid help-entry-page">
+    <div class="help-entry-shell">
+        <header class="help-entry-header">
+            <div class="help-entry-heading">
+                <span class="help-entry-icon" aria-hidden="true">
+                    <i class="bi bi-bag-heart-fill"></i>
+                </span>
 
-    <form action="{{ route('help_sessions.store', $client->id) }}" method="POST">
-        @csrf
-
-        {{-- ฟิลด์วันที่ --}}
-        <div class="card mb-4">
-            <div class="card-header">
-                ข้อมูลการช่วยเหลือ
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label for="help_date" class="form-label fw-bold">วันที่ให้ความช่วยเหลือ</label>
-                    <input type="date" name="help_date" id="help_date"
-                        class="form-control"
-                        value="{{ old('help_date', date('Y-m-d')) }}" required>
-                    <small class="text-muted">สามารถเลือกย้อนหลังได้</small>
+                <div>
+                    <h1 class="help-entry-title">เพิ่มข้อมูลการช่วยเหลือ</h1>
+                    <div class="help-entry-subtitle">
+                        ผู้รับบริการ: <strong>{{ $clientName }}</strong>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        {{-- ตารางรายการ --}}
-        <div class="card mb-4">
-            <div class="card-header">
-                รายการช่วยเหลือ
+            <a href="{{ route('help_sessions.show', $client->id) }}"
+               class="help-entry-back">
+                <i class="bi bi-arrow-left-circle"></i>
+                <span>กลับ</span>
+            </a>
+        </header>
+
+        @if($errors->any())
+            <div class="help-entry-errors" role="alert">
+                <div class="fw-bold mb-1">กรุณาตรวจสอบข้อมูล</div>
+                <div>{{ $errors->first() }}</div>
             </div>
-            <div class="card-body">
-                <table class="table table-bordered" id="items-table">
-                    <thead class="table-light">
-                        <tr>
-                            <th>รายการ</th>
-                            <th>จำนวน</th>
-                            <th>ราคา/หน่วย</th>
-                            <th>ราคารวม</th>
-                            <th>จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{-- เริ่มต้นไม่มีแถว --}}
-                    </tbody>
-                </table>
+        @endif
 
-                <div class="mt-3">
-                    <a href="{{ route('help_sessions.show', $client->id) }}?page={{ request('page') }}"
-                       class="btn btn-outline-secondary btn-sm me-2">
-                        <i class="bi bi-arrow-left-circle me-1"></i> กลับหน้าหลัก
-                    </a>
+        <form action="{{ route('help_sessions.store', $client->id) }}"
+              method="POST"
+              id="help-entry-form">
+            @csrf
 
-                    <button type="button" class="btn btn-primary btn-sm" id="add-row">
-                        <i class="bi bi-plus-circle me-1"></i> เพิ่มรายการ
+            <section class="help-entry-card">
+                <div class="help-entry-card-head">
+                    <div class="help-entry-card-title">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>ข้อมูลการช่วยเหลือ</span>
+                    </div>
+                </div>
+
+                <div class="help-entry-card-body">
+                    <div class="row">
+                        <div class="col-12 col-md-5 col-lg-4">
+                            <label for="help_date" class="help-entry-label">
+                                วันที่ให้ความช่วยเหลือ <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="date"
+                                   name="help_date"
+                                   id="help_date"
+                                   class="form-control @error('help_date') is-invalid @enderror"
+                                   value="{{ old('help_date', now('Asia/Bangkok')->toDateString()) }}"
+                                   max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                   required>
+
+                            @error('help_date')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+
+                            <div class="form-text">เลือกย้อนหลังได้ แต่ต้องไม่เกินวันปัจจุบัน</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="help-entry-card">
+                <div class="help-entry-card-head">
+                    <div class="help-entry-card-title">
+                        <i class="bi bi-box-seam"></i>
+                        <span>รายการช่วยเหลือ</span>
+                    </div>
+
+                    <button type="button" class="help-entry-add" id="add-row">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>เพิ่มรายการ</span>
                     </button>
                 </div>
-            </div>
-        </div>
 
-        {{-- ปุ่มบันทึก --}}
-        <div class="text-end help-session-save-area">
-            <button type="submit"
-                    id="save-btn"
-                    class="btn btn-success help-session-save-btn"
-                    disabled>
-                <i class="bi bi-save2 me-1"></i> บันทึกการช่วยเหลือ
-            </button>
-        </div>
-    </form>
+                <div class="help-entry-card-body">
+                    <div class="help-entry-table-wrap">
+                        <table class="help-entry-table" id="items-table">
+                            <colgroup>
+                                <col style="width: 42%;">
+                                <col style="width: 12%;">
+                                <col style="width: 18%;">
+                                <col style="width: 18%;">
+                                <col style="width: 10%;">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th class="col-item">รายการ</th>
+                                    <th class="col-quantity">จำนวน</th>
+                                    <th class="col-money">ราคา/หน่วย (บาท)</th>
+                                    <th class="col-money">ราคารวม (บาท)</th>
+                                    <th class="col-action">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($formItems as $index => $item)
+                                    @php
+                                        $quantity = $item['quantity'] ?? 1;
+                                        $unitPrice = $item['unit_price'] ?? '';
+                                        $rowTotal = is_numeric($quantity) && is_numeric($unitPrice)
+                                            ? (float) $quantity * (float) $unitPrice
+                                            : null;
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <input type="text"
+                                                   name="items[{{ $index }}][item_name]"
+                                                   class="form-control item-name @error("items.$index.item_name") is-invalid @enderror"
+                                                   value="{{ $item['item_name'] ?? '' }}"
+                                                   maxlength="255"
+                                                   placeholder="เช่น ข้าวสาร เครื่องใช้ หรือค่าเดินทาง"
+                                                   required>
+                                            @error("items.$index.item_name")
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </td>
+                                        <td>
+                                            <input type="number"
+                                                   name="items[{{ $index }}][quantity]"
+                                                   class="form-control quantity-input @error("items.$index.quantity") is-invalid @enderror"
+                                                   value="{{ $quantity }}"
+                                                   min="1"
+                                                   max="1000000"
+                                                   step="1"
+                                                   inputmode="numeric"
+                                                   required>
+                                            @error("items.$index.quantity")
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </td>
+                                        <td>
+                                            <input type="number"
+                                                   name="items[{{ $index }}][unit_price]"
+                                                   class="form-control money-input unit-price @error("items.$index.unit_price") is-invalid @enderror"
+                                                   value="{{ $unitPrice }}"
+                                                   min="0"
+                                                   max="999999999.99"
+                                                   step="0.01"
+                                                   inputmode="decimal"
+                                                   placeholder="0.00"
+                                                   required>
+                                            @error("items.$index.unit_price")
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </td>
+                                        <td>
+                                            <input type="text"
+                                                   class="form-control total-price"
+                                                   value="{{ $rowTotal !== null ? number_format($rowTotal, 2) : '' }}"
+                                                   placeholder="0.00"
+                                                   readonly
+                                                   tabindex="-1">
+                                        </td>
+                                        <td class="col-action">
+                                            <button type="button"
+                                                    class="help-entry-remove remove-row"
+                                                    title="ลบรายการ"
+                                                    aria-label="ลบรายการ">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @error('items')
+                        <div class="text-danger small mt-2">{{ $message }}</div>
+                    @enderror
+
+                    <div class="help-entry-summary">
+                        <span class="help-entry-summary-label">ยอดรวมทั้งหมด</span>
+                        <span class="help-entry-summary-value" id="grand-total">0.00 บาท</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="help-entry-footer">
+                <a href="{{ route('help_sessions.show', $client->id) }}"
+                   class="help-entry-back">
+                    <i class="bi bi-x-circle"></i>
+                    <span>ยกเลิก</span>
+                </a>
+
+                <button type="submit" class="help-entry-save" id="save-btn">
+                    <i class="bi bi-check2-circle"></i>
+                    <span>บันทึกการช่วยเหลือ</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
-    let rowIndex = 0;
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('help-entry-form');
+    const tableBody = document.querySelector('#items-table tbody');
+    const addButton = document.getElementById('add-row');
+    const saveButton = document.getElementById('save-btn');
+    const grandTotalElement = document.getElementById('grand-total');
+    const validationErrors = @json($errors->all());
+    let rowIndex = {{ count($formItems) }};
+    let submitting = false;
 
-    function toggleSaveButton() {
-        const tableBody = document.querySelector('#items-table tbody');
-        const saveBtn = document.getElementById('save-btn');
-        const helpDate = document.getElementById('help_date').value;
+    const moneyFormatter = new Intl.NumberFormat('th-TH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
 
-        let isValid = true;
-
-        if (!helpDate) {
-            isValid = false;
-        }
-
-        if (tableBody.children.length === 0) {
-            isValid = false;
-        }
-
-        tableBody.querySelectorAll('tr').forEach(row => {
-            const itemName = row.querySelector('input[name*="[item_name]"]')?.value.trim();
-            const quantity = row.querySelector('.quantity')?.value;
-            const unitPrice = row.querySelector('.unit_price')?.value;
-
-            if (
-                !itemName ||
-                !quantity ||
-                Number(quantity) <= 0 ||
-                unitPrice === '' ||
-                Number(unitPrice) < 0
-            ) {
-                isValid = false;
-            }
-        });
-
-        saveBtn.disabled = !isValid;
+    function rowTemplate(index) {
+        return `
+            <tr>
+                <td>
+                    <input type="text" name="items[${index}][item_name]"
+                           class="form-control item-name" maxlength="255"
+                           placeholder="เช่น ข้าวสาร เครื่องใช้ หรือค่าเดินทาง" required>
+                </td>
+                <td>
+                    <input type="number" name="items[${index}][quantity]"
+                           class="form-control quantity-input" value="1"
+                           min="1" max="1000000" step="1" inputmode="numeric" required>
+                </td>
+                <td>
+                    <input type="number" name="items[${index}][unit_price]"
+                           class="form-control money-input unit-price"
+                           min="0" max="999999999.99" step="0.01"
+                           inputmode="decimal" placeholder="0.00" required>
+                </td>
+                <td>
+                    <input type="text" class="form-control total-price"
+                           placeholder="0.00" readonly tabindex="-1">
+                </td>
+                <td class="col-action">
+                    <button type="button" class="help-entry-remove remove-row"
+                            title="ลบรายการ" aria-label="ลบรายการ">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </td>
+            </tr>`;
     }
 
-    document.getElementById('add-row').addEventListener('click', function () {
-        const tableBody = document.querySelector('#items-table tbody');
-        const newRow = document.createElement('tr');
+    function calculateRow(row) {
+        const quantity = Number(row.querySelector('.quantity-input')?.value || 0);
+        const unitPrice = Number(row.querySelector('.unit-price')?.value || 0);
+        const total = quantity > 0 && unitPrice >= 0 ? quantity * unitPrice : 0;
+        const totalField = row.querySelector('.total-price');
 
-        newRow.innerHTML = `
-            <td><input type="text" name="items[${rowIndex}][item_name]" class="form-control item-name" required></td>
-            <td><input type="number" name="items[${rowIndex}][quantity]" class="form-control quantity" min="1" required></td>
-            <td><input type="number" step="0.01" name="items[${rowIndex}][unit_price]" class="form-control unit_price" min="0" required></td>
-            <td><input type="text" class="form-control total_price" readonly></td>
-            <td><button type="button" class="btn btn-danger btn-sm remove-row"><i class="bi bi-trash"></i> ลบ</button></td>
-        `;
+        if (totalField) {
+            totalField.value = Number.isFinite(total) && (quantity > 0)
+                ? moneyFormatter.format(total)
+                : '';
+        }
 
-        tableBody.appendChild(newRow);
-        rowIndex++;
-        toggleSaveButton();
+        return Number.isFinite(total) ? total : 0;
+    }
+
+    function calculateGrandTotal() {
+        let total = 0;
+        tableBody.querySelectorAll('tr').forEach(function (row) {
+            total += calculateRow(row);
+        });
+        grandTotalElement.textContent = moneyFormatter.format(total) + ' บาท';
+    }
+
+    addButton.addEventListener('click', function () {
+        tableBody.insertAdjacentHTML('beforeend', rowTemplate(rowIndex));
+        rowIndex += 1;
+        calculateGrandTotal();
+
+        const rows = tableBody.querySelectorAll('tr');
+        rows[rows.length - 1]?.querySelector('.item-name')?.focus();
     });
 
-    document.addEventListener('click', function (e) {
-        if (e.target.classList.contains('remove-row') || e.target.closest('.remove-row')) {
-            e.target.closest('tr').remove();
-            toggleSaveButton();
+    tableBody.addEventListener('click', function (event) {
+        const removeButton = event.target.closest('.remove-row');
+        if (!removeButton) return;
+
+        removeButton.closest('tr')?.remove();
+        calculateGrandTotal();
+    });
+
+    tableBody.addEventListener('input', function (event) {
+        if (event.target.matches('.quantity-input, .unit-price')) {
+            calculateGrandTotal();
         }
     });
 
-    document.addEventListener('input', function (e) {
-        if (e.target.classList.contains('quantity') || e.target.classList.contains('unit_price')) {
-            const row = e.target.closest('tr');
-            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
-            const unitPrice = parseFloat(row.querySelector('.unit_price').value) || 0;
-            const totalPriceField = row.querySelector('.total_price');
-
-            totalPriceField.value = quantity && unitPrice ? (quantity * unitPrice).toFixed(2) : '';
+    form.addEventListener('submit', function (event) {
+        if (submitting) {
+            event.preventDefault();
+            return;
         }
 
-        toggleSaveButton();
-    });
+        if (tableBody.querySelectorAll('tr').length === 0) {
+            event.preventDefault();
+            const message = 'กรุณาเพิ่มรายการช่วยเหลืออย่างน้อย 1 รายการ';
 
-    document.getElementById('help_date').addEventListener('change', function () {
-        toggleSaveButton();
-    });
-
-    // Preview ภาพที่เลือก
-    const imagesInput = document.getElementById('images');
-    if (imagesInput) {
-        imagesInput.addEventListener('change', function (event) {
-            const preview = document.getElementById('preview-images');
-            preview.innerHTML = '';
-
-            const files = event.target.files;
-            if (files) {
-                Array.from(files).forEach(file => {
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const img = document.createElement('img');
-                            img.src = e.target.result;
-                            img.classList.add('img-thumbnail');
-                            img.style.width = '150px';
-                            img.style.height = 'auto';
-                            preview.appendChild(img);
-                        }
-                        reader.readAsDataURL(file);
-                    }
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ยังไม่มีรายการช่วยเหลือ',
+                    text: message,
+                    confirmButtonText: 'ตกลง'
                 });
+            } else {
+                window.alert(message);
             }
+            return;
+        }
+
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+            form.classList.add('was-validated');
+            form.querySelector(':invalid')?.focus();
+            return;
+        }
+
+        submitting = true;
+        saveButton.disabled = true;
+        saveButton.querySelector('span').textContent = 'กำลังบันทึก...';
+    });
+
+    calculateGrandTotal();
+
+    if (validationErrors.length && window.Swal) {
+        Swal.fire({
+            icon: 'error',
+            title: 'กรุณาตรวจสอบข้อมูล',
+            html: validationErrors.map(function (message) {
+                const div = document.createElement('div');
+                div.textContent = message;
+                return div.innerHTML;
+            }).join('<br>'),
+            confirmButtonText: 'ตกลง'
         });
     }
-
-    // ✅ ตรวจสอบวันที่ซ้ำแบบ AJAX
-    document.getElementById('help_date').addEventListener('change', function () {
-        const selectedDate = this.value;
-        const clientId = "{{ $client->id }}";
-
-        if (selectedDate) {
-            fetch(`/check-duplicate-date/${clientId}?date=${selectedDate}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.exists) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'วันที่ซ้ำ',
-                            text: `วันที่ ${selectedDate} มีการบันทึกแล้ว`,
-                            confirmButtonText: 'ตกลง'
-                        });
-
-                        this.value = "";
-                        toggleSaveButton();
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
-    });
-
-    toggleSaveButton();
+});
 </script>
-
-{{-- ต้องมี SweetAlert2 --}}
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-@if($errors->has('help_date'))
-<script>
-    Swal.fire({
-        icon: 'error',
-        title: 'ไม่สามารถบันทึกได้',
-        text: '{{ $errors->first("help_date") }}',
-        confirmButtonText: 'ตกลง'
-    });
-</script>
-@endif
-
-@if(session('success'))
-<script>
-    Swal.fire({
-        icon: 'success',
-        title: 'สำเร็จ',
-        text: '{{ session("success") }}',
-        confirmButtonText: 'ตกลง'
-    });
-</script>
-@endif
-
 @endsection

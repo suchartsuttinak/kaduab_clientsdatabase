@@ -4,47 +4,79 @@ namespace App\Http\Controllers\Landing;
 
 use App\Http\Controllers\Controller;
 use App\Models\AboutData;
-
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AboutController extends Controller
 {
-     public function index()
+    public function index(): View
     {
-       $history   = AboutData::where('type', 'history')->latest()->first();
-    $objective = AboutData::where('type', 'objective')->latest()->first();
-    $mission   = AboutData::where('type', 'mission')->latest()->first();
+        /*
+         * ดึงข้อมูลล่าสุดของทั้ง 3 ประเภทด้วย Query เดียว
+         * ลดการเรียกฐานข้อมูลซ้ำจากเดิม 3 ครั้ง
+         */
+        $latestIds = AboutData::query()
+            ->selectRaw('MAX(id)')
+            ->whereIn('type', ['history', 'objective', 'mission'])
+            ->groupBy('type');
 
-    // ดึงข้อมูลทั้งหมดสำหรับตาราง
-    $aboutData = AboutData::latest()->get();
+        $latestByType = AboutData::query()
+            ->whereIn('id', $latestIds)
+            ->get()
+            ->keyBy('type');
 
-    // โหลดหน้าฟอร์มกรอกข้อมูล (ไม่ใช่หน้า Landing)
-    return view('landing.about.index', compact('history','objective','mission','aboutData'));
+        $history = $latestByType->get('history');
+        $objective = $latestByType->get('objective');
+        $mission = $latestByType->get('mission');
 
+        /*
+         * ใช้ Pagination แทนการโหลดข้อมูลทั้งหมด
+         * เพื่อให้หน้าโหลดเร็วแม้มีประวัติจำนวนมาก
+         */
+        $aboutData = AboutData::query()
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('landing.about.index', compact(
+            'history',
+            'objective',
+            'mission',
+            'aboutData'
+        ));
     }
-    public function store(Request $request)
+
+    public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-        'type' => 'required|in:history,objective,mission',
-        'content' => 'required|string',
-    ]);
+        $request->merge([
+            'content' => trim((string) $request->input('content')),
+        ]);
 
-    AboutData::create([
-        'type' => $request->type,
-        'content' => $request->content,
-    ]);
+        $validated = $request->validate([
+            'type' => ['required', 'in:history,objective,mission'],
+            'content' => ['required', 'string', 'max:10000'],
+        ], [
+            'type.required' => 'กรุณาเลือกประเภทข้อมูล',
+            'type.in' => 'ประเภทข้อมูลไม่ถูกต้อง',
+            'content.required' => 'กรุณากรอกรายละเอียด',
+            'content.max' => 'รายละเอียดต้องไม่เกิน 10,000 ตัวอักษร',
+        ]);
 
-    // หลังบันทึกเสร็จ กลับไปหน้า Landing
-    return redirect()->route('landing.about.index')->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+        AboutData::query()->create($validated);
 
-
+        return redirect()
+            ->route('landing.about.index')
+            ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
     }
 
-    public function destroy($id)
-{
-    $data = AboutData::findOrFail($id);
-    $data->delete();
+    public function destroy($id): RedirectResponse
+    {
+        $data = AboutData::query()->findOrFail($id);
+        $data->delete();
 
-    return redirect()->back()->with('success', 'ลบข้อมูลเรียบร้อยแล้ว');
-}
+        return redirect()
+            ->back()
+            ->with('success', 'ลบข้อมูลเรียบร้อยแล้ว');
+    }
 }

@@ -2,11 +2,8 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Models\House;
-use App\Models\Operation;
-use App\Models\Project;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -31,11 +28,20 @@ class User extends Authenticatable
     public const ROLE_NURSE = 'nurse';
     public const ROLE_GENERAL_USER = 'general_user';
 
+    public const FORM_PERMISSION_ACTIONS = [
+        'view' => 'can_view',
+        'create' => 'can_create',
+        'update' => 'can_update',
+        'delete' => 'can_delete',
+        'print' => 'can_print',
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'form_permissions_enabled' => 'boolean',
         ];
     }
 
@@ -98,10 +104,10 @@ class User extends Authenticatable
         return $this->role === self::ROLE_TEACHER_CAREGIVER;
     }
 
-   public function isNurse(): bool
-{
-    return $this->role === self::ROLE_NURSE;
-}
+    public function isNurse(): bool
+    {
+        return $this->role === self::ROLE_NURSE;
+    }
 
     public function isGeneralUser(): bool
     {
@@ -117,9 +123,6 @@ class User extends Authenticatable
         return $this->role === $roles;
     }
 
-    /**
-     * ใช้แทน hasRole() แบบหลายค่า อ่านง่ายขึ้น
-     */
     public function hasAnyRole(array $roles): bool
     {
         return in_array($this->role, $roles, true);
@@ -136,7 +139,6 @@ class User extends Authenticatable
 
     /**
      * เผื่อใช้กรณีต้องการเฉพาะบ้านที่เปิดใช้งาน
-     * ถ้า table houses ไม่มีคอลัมน์ status/release_status ก็ไม่ต้องใช้เมธอดนี้
      */
     public function activeHouses(): BelongsToMany
     {
@@ -149,9 +151,27 @@ class User extends Authenticatable
             });
     }
 
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function operations(): HasMany
     {
         return $this->hasMany(Operation::class);
+    }
+
+    public function healthcHeckups(): HasMany
+    {
+        return $this->hasMany(HealthcHeckup::class, 'recorded_by');
+    }
+
+    /**
+     * สิทธิ์ระดับฟอร์มที่กำหนดให้ผู้ใช้รายนี้
+     */
+    public function formPermissions(): HasMany
+    {
+        return $this->hasMany(UserFormPermission::class);
     }
 
     /**
@@ -207,13 +227,70 @@ class User extends Authenticatable
         return $this->houses->isNotEmpty();
     }
 
-    public function project()
-{
-    return $this->belongsTo(Project::class);
-}
+    /**
+     * ตรวจสิทธิ์รายฟอร์ม
+     *
+     * หลักการเพื่อไม่ให้กระทบระบบเดิม:
+     * - admin ผ่านทุกสิทธิ์เสมอ
+     * - หาก form_permissions_enabled = false ให้ใช้ระบบ role/route เดิมต่อไป
+     * - เมื่อเปิดใช้งานแล้ว สิทธิ์ที่ไม่ได้กำหนดจะถือว่าไม่อนุญาต
+     */
+    public function hasFormPermission(string $permissionKey, string $action = 'view'): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
 
-    public function healthcHeckups()
-{
-    return $this->hasMany(\App\Models\HealthcHeckup::class, 'recorded_by');
-}
+        if (!$this->form_permissions_enabled) {
+            return true;
+        }
+
+        $column = self::FORM_PERMISSION_ACTIONS[$action] ?? null;
+
+        if ($column === null) {
+            return false;
+        }
+
+        $this->loadMissing('formPermissions');
+
+        $permission = $this->formPermissions->firstWhere('permission_key', $permissionKey);
+
+        return (bool) ($permission?->{$column} ?? false);
+    }
+
+    public function hasAnyFormPermission(array $permissionKeys, string $action = 'view'): bool
+    {
+        foreach ($permissionKeys as $permissionKey) {
+            if ($this->hasFormPermission($permissionKey, $action)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function canViewForm(string $permissionKey): bool
+    {
+        return $this->hasFormPermission($permissionKey, 'view');
+    }
+
+    public function canCreateForm(string $permissionKey): bool
+    {
+        return $this->hasFormPermission($permissionKey, 'create');
+    }
+
+    public function canUpdateForm(string $permissionKey): bool
+    {
+        return $this->hasFormPermission($permissionKey, 'update');
+    }
+
+    public function canDeleteForm(string $permissionKey): bool
+    {
+        return $this->hasFormPermission($permissionKey, 'delete');
+    }
+
+    public function canPrintForm(string $permissionKey): bool
+    {
+        return $this->hasFormPermission($permissionKey, 'print');
+    }
 }

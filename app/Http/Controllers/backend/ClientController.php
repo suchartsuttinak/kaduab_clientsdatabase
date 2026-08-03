@@ -179,6 +179,7 @@ class ClientController extends Controller
                 'clients.project_id',
                 'clients.house_id',
                 'clients.register_number',
+                'clients.title_id',
                 'clients.first_name',
                 'clients.last_name',
                 'clients.arrival_date',
@@ -188,6 +189,7 @@ class ClientController extends Controller
                 'clients.created_at',
             ])
             ->with([
+                'title:id,title_name',
                 'problems' => static function ($query) {
                     $query->select(['problems.id', 'problems.problem_name'])
                         ->orderBy('problems.problem_name');
@@ -638,6 +640,7 @@ class ClientController extends Controller
                 'clients.id',
                 'clients.project_id',
                 'clients.register_number',
+                'clients.title_id',
                 'clients.first_name',
                 'clients.last_name',
                 'clients.arrival_date',
@@ -647,6 +650,7 @@ class ClientController extends Controller
                 'clients.created_at',
             ])
             ->with([
+                'title:id,title_name',
                 'problems' => static function ($problemQuery) {
                     $problemQuery->select(['problems.id', 'problems.problem_name'])
                         ->orderBy('problems.problem_name');

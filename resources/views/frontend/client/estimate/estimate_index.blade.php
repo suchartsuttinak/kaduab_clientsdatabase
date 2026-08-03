@@ -30,32 +30,77 @@
             flex-wrap: wrap;
         }
 
-        .estimate-page .estimate-title {
-            margin: 0;
-            font-size: 1.05rem;
-            font-weight: 800;
-            color: var(--estimate-text);
+        .estimate-page .estimate-header-left {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: .85rem;
+            min-width: 0;
         }
 
-        .estimate-page .estimate-client-info {
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--estimate-border);
-            background: #fff;
+        .estimate-page .estimate-header-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 44px;
+            background: #eff6ff;
+            color: #2563eb;
         }
 
-        .estimate-page .estimate-client-line {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 18px;
+        .estimate-page .estimate-header-icon i {
+            font-size: 1.05rem;
+        }
+
+        .estimate-page .estimate-header-text {
+            min-width: 0;
+        }
+
+        .estimate-page .estimate-title {
+            margin: 0;
             color: var(--estimate-text);
-            font-size: .96rem;
+            font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+            font-weight: 800;
+            line-height: 1.35;
+            letter-spacing: -0.01em;
         }
 
-        .estimate-page .estimate-client-line strong {
+        .estimate-page .estimate-subtitle {
+            margin-top: .3rem;
+            color: var(--estimate-muted);
+            font-size: clamp(.92rem, 1vw, 1rem);
+            font-weight: 500;
+            line-height: 1.45;
+        }
+
+        .estimate-page .estimate-subtitle strong {
+            color: var(--estimate-text);
             font-weight: 800;
+        }
+
+        .estimate-page .estimate-header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: .65rem;
+            flex-wrap: wrap;
+        }
+
+        .estimate-page .estimate-back-btn {
+            min-width: 96px;
+            color: #7c3aed;
+            background: #fff;
+            border-color: #8b5cf6;
+            box-shadow: none;
+        }
+
+        .estimate-page .estimate-back-btn:hover,
+        .estimate-page .estimate-back-btn:focus {
+            color: #6d28d9;
+            background: #faf5ff;
+            border-color: #7c3aed;
+            box-shadow: 0 6px 14px rgba(124, 58, 237, .12);
         }
 
         .estimate-page .estimate-table-wrap {
@@ -442,8 +487,27 @@
                 padding: 14px;
             }
 
+            .estimate-page .estimate-header {
+                align-items: stretch;
+            }
+
+            .estimate-page .estimate-header-left,
+            .estimate-page .estimate-header-actions {
+                width: 100%;
+            }
+
+            .estimate-page .estimate-header-actions > * {
+                flex: 1 1 calc(50% - .35rem);
+            }
+
             .estimate-page .estimate-title {
-                font-size: 1rem;
+                font-size: 1.12rem;
+                line-height: 1.35;
+            }
+
+            .estimate-page .estimate-subtitle {
+                margin-top: .25rem;
+                font-size: .9rem;
             }
 
             .estimate-page .modal {
@@ -514,31 +578,60 @@
                 min-width: auto;
             }
         }
+
+        @media (max-width: 575.98px) {
+            .estimate-page .estimate-header-actions {
+                flex-direction: column;
+            }
+
+            .estimate-page .estimate-header-actions > * {
+                width: 100%;
+                flex: 1 1 auto;
+            }
+        }
+
     </style>
 
     <div class="estimate-page">
 
         <div class="estimate-card mt-3">
             <div class="estimate-header">
-                <h5 class="estimate-title">
-                    <i class="bi bi-people-fill text-primary"></i>
-                    <span>ประวัติการติดตามและประเมินครอบครัวเด็ก</span>
-                </h5>
+                <div class="estimate-header-left">
+                    <div class="estimate-header-icon" aria-hidden="true">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
 
-                <button type="button"
-                    class="btn estimate-action-btn estimate-add-btn"
-                    data-bs-toggle="modal"
-                    data-bs-target="#add-estimate-modal"
-                    id="btn-add-estimate">
-                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                    <span>เพิ่มข้อมูล</span>
-                </button>
-            </div>
+                    <div class="estimate-header-text">
+                        <h1 class="estimate-title">
+                            ประวัติการติดตามและประเมินครอบครัวเด็ก
+                        </h1>
 
-            <div class="estimate-client-info">
-                <div class="estimate-client-line">
-                    <span><strong>ชื่อ:</strong> {{ $client->full_name }}</span>
-                    <span><strong>อายุ:</strong> {{ $client->birth_date ? \Carbon\Carbon::parse($client->birth_date)->age . ' ปี' : '-' }}</span>
+                        <div class="estimate-subtitle">
+                            ผู้รับบริการ:
+                            <strong>{{ $client->full_name ?: '-' }}</strong>
+                            <span class="mx-1">•</span>
+                            อายุ:
+                            <strong>{{ $client->birth_date ? \Carbon\Carbon::parse($client->birth_date)->age . ' ปี' : '-' }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="estimate-header-actions">
+                    <button type="button"
+                        class="btn estimate-action-btn estimate-add-btn"
+                        data-bs-toggle="modal"
+                        data-bs-target="#add-estimate-modal"
+                        id="btn-add-estimate">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span>เพิ่มข้อมูล</span>
+                    </button>
+
+                    <a href="{{ route('admin.index', $client->id) }}"
+                       class="btn estimate-action-btn estimate-back-btn"
+                       aria-label="กลับหน้าหลักผู้รับบริการ">
+                        <i class="bi bi-arrow-left-circle" aria-hidden="true"></i>
+                        <span>กลับ</span>
+                    </a>
                 </div>
             </div>
 

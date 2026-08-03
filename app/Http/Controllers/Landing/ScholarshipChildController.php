@@ -78,11 +78,21 @@ class ScholarshipChildController extends Controller
             return;
         }
 
-        $fullPath = str_starts_with($path, 'upload/')
-            ? public_path($path)
-            : public_path('storage/' . $path);
+        $normalizedPath = ltrim(str_replace('\\', '/', trim($path)), '/');
 
-        if (File::exists($fullPath)) {
+        /*
+         * อนุญาตให้ลบเฉพาะโฟลเดอร์รูปทุนการศึกษาเท่านั้น
+         * ป้องกัน path ที่ผิดพลาดไปลบไฟล์ส่วนอื่นใน public
+         */
+        if (Str::startsWith($normalizedPath, 'upload/scholarship_children/')) {
+            $fullPath = public_path($normalizedPath);
+        } elseif (!Str::contains($normalizedPath, '..')) {
+            $fullPath = public_path('storage/' . $normalizedPath);
+        } else {
+            return;
+        }
+
+        if (File::isFile($fullPath)) {
             File::delete($fullPath);
         }
     }
@@ -113,9 +123,13 @@ class ScholarshipChildController extends Controller
                 continue;
             }
 
-            $originalName = $file->getClientOriginalName();
+            $originalName = Str::limit(
+                basename((string) $file->getClientOriginalName()),
+                255,
+                ''
+            );
             $fileSize = $file->getSize();
-            $mimeType = $file->getClientMimeType() ?: 'application/pdf';
+            $mimeType = $file->getMimeType() ?: 'application/pdf';
             $filename = Str::uuid()->toString() . '.pdf';
 
             $relativePath = 'upload/scholarship_expenses/'
@@ -222,20 +236,36 @@ class ScholarshipChildController extends Controller
 
     public function index(Request $request)
     {
-        $academicYear = $request->filled('academic_year')
-            ? trim((string) $request->input('academic_year'))
-            : null;
+        $filters = $request->validate([
+            'academic_year' => ['nullable', 'regex:/^[0-9]{4}$/'],
+            'semester' => ['nullable', Rule::in(['1', '2', 1, 2])],
+            'keyword' => ['nullable', 'string', 'max:100'],
+            'scholarship_status' => [
+                'nullable',
+                Rule::in([
+                    ScholarshipChild::STATUS_PENDING,
+                    ScholarshipChild::STATUS_APPROVED,
+                    ScholarshipChild::STATUS_REJECTED,
+                ]),
+            ],
+        ], [
+            'academic_year.regex' => 'ปีการศึกษาต้องเป็นตัวเลข พ.ศ. 4 หลัก',
+            'semester.in' => 'ภาคเรียนต้องเป็น 1 หรือ 2 เท่านั้น',
+            'keyword.max' => 'คำค้นหาต้องไม่เกิน 100 ตัวอักษร',
+            'scholarship_status.in' => 'สถานะการพิจารณาทุนไม่ถูกต้อง',
+        ]);
 
-        $semester = $request->filled('semester')
-            ? (int) $request->input('semester')
+        $academicYear = !empty($filters['academic_year'])
+            ? trim((string) $filters['academic_year'])
             : null;
-
-        $keyword = $request->filled('keyword')
-            ? trim((string) $request->input('keyword'))
+        $semester = isset($filters['semester']) && $filters['semester'] !== ''
+            ? (int) $filters['semester']
             : null;
-
-        $status = $request->filled('scholarship_status')
-            ? (string) $request->input('scholarship_status')
+        $keyword = !empty($filters['keyword'])
+            ? Str::squish((string) $filters['keyword'])
+            : null;
+        $status = !empty($filters['scholarship_status'])
+            ? (string) $filters['scholarship_status']
             : null;
 
         $years = ScholarshipChild::query()
@@ -378,11 +408,29 @@ class ScholarshipChildController extends Controller
         $data['scholarship_status'] = ScholarshipChild::STATUS_PENDING;
         $data['scholarship_status_updated_at'] = now();
 
-        if ($request->hasFile('photo')) {
-            $data['photo'] = $this->saveChildPhoto($request->file('photo'));
-        }
+        $newPhotoPath = null;
 
-        ScholarshipChild::create($data);
+        try {
+            if ($request->hasFile('photo')) {
+                $newPhotoPath = $this->saveChildPhoto($request->file('photo'));
+                $data['photo'] = $newPhotoPath;
+            }
+
+            DB::transaction(fn () => ScholarshipChild::query()->create($data), 3);
+        } catch (Throwable $exception) {
+            if ($newPhotoPath) {
+                $this->deleteChildPhoto($newPhotoPath);
+            }
+
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'child_store' => 'ไม่สามารถบันทึกผู้ขอรับทุนได้ กรุณาลองใหม่อีกครั้ง',
+                ])
+                ->with('open_create_child_modal', true);
+        }
 
         return redirect()
             ->route('scholarship.children.index', [
@@ -454,7 +502,18 @@ class ScholarshipChildController extends Controller
             ])
             ->all();
 
-        ScholarshipChild::create($data);
+        try {
+            DB::transaction(fn () => ScholarshipChild::query()->create($data), 3);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'application_store' => 'ไม่สามารถสร้างคำขอทุนรอบใหม่ได้ กรุณาลองใหม่อีกครั้ง',
+                ])
+                ->with('open_reapply_modal', $child->id);
+        }
 
         return redirect()
             ->route('scholarship.children.index', [
@@ -620,7 +679,7 @@ class ScholarshipChildController extends Controller
 
         $validated = $request->validate([
             'expense_child_id' => ['nullable', 'integer'],
-            'record_date' => ['required', 'date', 'before_or_equal:today'],
+            'record_date' => ['required', 'date', 'before_or_equal:' . now('Asia/Bangkok')->toDateString()],
             'semester' => ['required', Rule::in([(string) $child->semester, (int) $child->semester])],
             'note' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1'],
@@ -773,6 +832,15 @@ class ScholarshipChildController extends Controller
             abort(404, 'ไม่พบรายการค่าใช้จ่ายของผู้รับทุนรายนี้');
         }
 
+        if (!$child->isApproved()) {
+            return back()
+                ->withErrors([
+                    'edit_expense_items' =>
+                        'แก้ไขค่าใช้จ่ายได้เฉพาะคำขอทุนที่มีสถานะได้รับทุนเท่านั้น',
+                ])
+                ->with('open_edit_expense_modal', $expense->id);
+        }
+
         $request->merge([
             'semester' => (string) $child->semester,
         ]);
@@ -781,7 +849,7 @@ class ScholarshipChildController extends Controller
             $request->all(),
             [
                 'edit_expense_id' => ['nullable', 'integer'],
-                'record_date' => ['required', 'date', 'before_or_equal:today'],
+                'record_date' => ['required', 'date', 'before_or_equal:' . now('Asia/Bangkok')->toDateString()],
                 'semester' => ['required', Rule::in([(string) $child->semester, (int) $child->semester])],
                 'note' => ['nullable', 'string', 'max:2000'],
                 'items' => ['required', 'array', 'min:1'],
@@ -1030,17 +1098,31 @@ class ScholarshipChildController extends Controller
 
     public function report(Request $request)
     {
-        $academicYear = $request->filled('academic_year')
-            ? (string) $request->input('academic_year')
+        $filters = $request->validate([
+            'academic_year' => ['nullable', 'regex:/^[0-9]{4}$/'],
+            'semester' => ['nullable', Rule::in(['1', '2', 1, 2])],
+            'keyword' => ['nullable', 'string', 'max:100'],
+            'scholarship_status' => [
+                'nullable',
+                Rule::in([
+                    ScholarshipChild::STATUS_PENDING,
+                    ScholarshipChild::STATUS_APPROVED,
+                    ScholarshipChild::STATUS_REJECTED,
+                ]),
+            ],
+        ]);
+
+        $academicYear = !empty($filters['academic_year'])
+            ? (string) $filters['academic_year']
             : null;
-        $semester = $request->filled('semester')
-            ? (int) $request->input('semester')
+        $semester = isset($filters['semester']) && $filters['semester'] !== ''
+            ? (int) $filters['semester']
             : null;
-        $keyword = $request->filled('keyword')
-            ? trim((string) $request->input('keyword'))
+        $keyword = !empty($filters['keyword'])
+            ? Str::squish((string) $filters['keyword'])
             : null;
-        $status = $request->filled('scholarship_status')
-            ? (string) $request->input('scholarship_status')
+        $status = !empty($filters['scholarship_status'])
+            ? (string) $filters['scholarship_status']
             : null;
 
         $years = ScholarshipChild::query()
@@ -1049,8 +1131,15 @@ class ScholarshipChildController extends Controller
             ->orderByDesc('academic_year')
             ->pluck('academic_year');
 
+        /* โหลดค่าใช้จ่ายล่วงหน้า ป้องกัน N+1 Query ในหน้ารายงาน */
         $children = $this->applyChildFilters(
-            ScholarshipChild::query(),
+            ScholarshipChild::query()->with([
+                'expenses' => function ($query) {
+                    $query->with(['items', 'attachments'])
+                        ->orderByDesc('record_date')
+                        ->orderByDesc('id');
+                },
+            ]),
             $keyword,
             $academicYear,
             $semester,

@@ -177,6 +177,15 @@
         font-variant-numeric: tabular-nums;
     }
 
+    .help-report-table thead th.help-col-qty {
+        text-align: center;
+    }
+
+    .help-report-table thead th.help-col-unit,
+    .help-report-table thead th.help-col-total {
+        text-align: right;
+    }
+
     .help-report-sign{
         margin-top: 28px;
         display: flex;
@@ -424,9 +433,9 @@
                     <tr>
                         <th style="width: 20%;">วันที่</th>
                         <th style="width: 32%;">รายการ</th>
-                        <th style="width: 12%;">จำนวน</th>
-                        <th style="width: 18%;">ราคา/หน่วย</th>
-                        <th style="width: 18%;">ราคารวม</th>
+                        <th class="help-col-qty" style="width: 12%;">จำนวน</th>
+                        <th class="help-col-unit" style="width: 18%;">ราคา/หน่วย (บาท)</th>
+                        <th class="help-col-total" style="width: 18%;">ราคารวม (บาท)</th>
                     </tr>
                 </thead>
                 <tbody>

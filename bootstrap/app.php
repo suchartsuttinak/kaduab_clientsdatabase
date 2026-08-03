@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Foundation\Application;
@@ -6,11 +7,32 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Middleware สำหรับตรวจสิทธิ์รายฟอร์ม
+        |--------------------------------------------------------------------------
+        |
+        | เพิ่มต่อท้ายกลุ่ม web เพื่อให้ตรวจสิทธิ์ทุก Route ที่ทำงานผ่าน web.php
+        | โดยยังคงระบบ Session, Authentication และ Middleware เดิมทั้งหมด
+        |
+        */
+
+        $middleware->web(append: [
+            \App\Http\Middleware\EnforceFormPermission::class,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Middleware Aliases เดิมของระบบ
+        |--------------------------------------------------------------------------
+        */
+
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'prevent-back' => \App\Http\Middleware\PreventBackHistory::class,

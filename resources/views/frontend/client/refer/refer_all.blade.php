@@ -423,6 +423,59 @@
             text-align:center;
         }
 
+        .refer-all-empty-card{
+            min-height:320px;
+            padding:2.5rem 1.25rem;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            text-align:center;
+            background:#fff;
+            border:1px solid var(--refer-all-line);
+            border-radius:var(--refer-all-radius-lg);
+            box-shadow:var(--refer-all-shadow);
+        }
+
+        .refer-all-empty-icon{
+            width:82px;
+            height:82px;
+            margin-bottom:1rem;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            border:1px solid #c7d2fe;
+            border-radius:50%;
+            background:#eef2ff;
+            color:#4f46e5;
+            font-size:1.7rem;
+        }
+
+        .refer-all-empty-title{
+            margin:0;
+            color:var(--refer-all-text);
+            font-size:1.15rem;
+            font-weight:800;
+            line-height:1.45;
+        }
+
+        .refer-all-empty-description{
+            max-width:720px;
+            margin:.55rem auto 0;
+            color:var(--refer-all-text-muted);
+            font-size:.92rem;
+            line-height:1.65;
+        }
+
+        .refer-all-validation{
+            margin-bottom:16px;
+            padding:14px 16px;
+            border:1px solid #fecaca;
+            border-radius:14px;
+            background:#fef2f2;
+            color:#991b1b;
+        }
+
         @media (max-width: 1200px){
             .refer-all-col-2,
             .refer-all-col-3,
@@ -531,18 +584,32 @@
             </div>
         </div>
 
+        @php
+            $hasAnyRefers = $hasAnyRefers ?? true;
+        @endphp
+
+        @if($errors->any())
+            <div class="refer-all-validation" role="alert">
+                <div class="fw-bold mb-1">กรุณาตรวจสอบเงื่อนไขการค้นหา</div>
+                @foreach($errors->all() as $error)
+                    <div>• {{ $error }}</div>
+                @endforeach
+            </div>
+        @endif
+
+        @if($hasAnyRefers)
         <form method="GET" action="{{ route('refers.all') }}" class="refer-all-filter">
             <div class="refer-all-filter-title">ค้นหาและกรองข้อมูล</div>
 
             <div class="refer-all-grid">
                 <div class="refer-all-col-2">
                     <label class="refer-all-label">วันที่เริ่มต้น</label>
-                    <input type="date" name="date_from" class="refer-all-input" value="{{ request('date_from') }}">
+                    <input type="date" name="date_from" class="refer-all-input" value="{{ old('date_from', request('date_from')) }}" max="{{ now('Asia/Bangkok')->toDateString() }}">
                 </div>
 
                 <div class="refer-all-col-2">
                     <label class="refer-all-label">วันที่สิ้นสุด</label>
-                    <input type="date" name="date_to" class="refer-all-input" value="{{ request('date_to') }}">
+                    <input type="date" name="date_to" class="refer-all-input" value="{{ old('date_to', request('date_to')) }}" max="{{ now('Asia/Bangkok')->toDateString() }}">
                 </div>
 
                 <div class="refer-all-col-2">
@@ -550,7 +617,7 @@
                     <select name="year" class="refer-all-select">
                         <option value="">ทั้งหมด</option>
                         @for($y = now()->year; $y >= now()->year - 10; $y--)
-                            <option value="{{ $y }}" {{ request('year') == $y ? 'selected' : '' }}>
+                            <option value="{{ $y }}" {{ old('year', request('year')) == $y ? 'selected' : '' }}>
                                 {{ $y + 543 }}
                             </option>
                         @endfor
@@ -562,7 +629,7 @@
                     <select name="month" class="refer-all-select">
                         <option value="">ทั้งหมด</option>
                         @for($m = 1; $m <= 12; $m++)
-                            <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>
+                            <option value="{{ $m }}" {{ old('month', request('month')) == $m ? 'selected' : '' }}>
                                 {{ str_pad($m, 2, '0', STR_PAD_LEFT) }}
                             </option>
                         @endfor
@@ -573,9 +640,9 @@
                     <label class="refer-all-label">สถานะอนุมัติ</label>
                     <select name="approve_status" class="refer-all-select">
                         <option value="">ทั้งหมด</option>
-                        <option value="approved" {{ request('approve_status') === 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
-                        <option value="pending" {{ request('approve_status') === 'pending' ? 'selected' : '' }}>รออนุมัติ</option>
-                        <option value="cancelled" {{ request('approve_status') === 'cancelled' ? 'selected' : '' }}>ยกเลิกแล้ว</option>
+                        <option value="approved" {{ old('approve_status', request('approve_status')) === 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
+                        <option value="pending" {{ old('approve_status', request('approve_status')) === 'pending' ? 'selected' : '' }}>รออนุมัติ</option>
+                        <option value="cancelled" {{ old('approve_status', request('approve_status')) === 'cancelled' ? 'selected' : '' }}>ยกเลิกแล้ว</option>
                     </select>
                 </div>
 
@@ -583,8 +650,8 @@
                     <label class="refer-all-label">ผลคณะกรรมการฯ</label>
                     <select name="committee_result" class="refer-all-select">
                         <option value="">ทั้งหมด</option>
-                        <option value="ผ่าน" {{ request('committee_result') === 'ผ่าน' ? 'selected' : '' }}>ผ่าน</option>
-                        <option value="ไม่ผ่าน" {{ request('committee_result') === 'ไม่ผ่าน' ? 'selected' : '' }}>ไม่ผ่าน</option>
+                        <option value="ผ่าน" {{ old('committee_result', request('committee_result')) === 'ผ่าน' ? 'selected' : '' }}>ผ่าน</option>
+                        <option value="ไม่ผ่าน" {{ old('committee_result', request('committee_result')) === 'ไม่ผ่าน' ? 'selected' : '' }}>ไม่ผ่าน</option>
                     </select>
                 </div>
 
@@ -593,7 +660,7 @@
                     <input type="text"
                            name="keyword"
                            class="refer-all-input"
-                           value="{{ request('keyword') }}"
+                           value="{{ old('keyword', request('keyword')) }}"
                            placeholder="พิมพ์คำค้นหา...">
                 </div>
             </div>
@@ -672,6 +739,7 @@
                                     @if(!empty($item->meeting_report_file))
                                         <a href="{{ asset('uploads/refer_meeting_reports/' . $item->meeting_report_file) }}"
                                            target="_blank"
+                                           rel="noopener noreferrer"
                                            class="refer-all-link">
                                             เปิด PDF
                                         </a>
@@ -719,6 +787,20 @@
                 {{ $refers->links() }}
             </div>
         </div>
+        @else
+            <div class="refer-all-empty-card" role="status">
+                <div class="refer-all-empty-icon" aria-hidden="true">
+                    <i class="bi bi-box-arrow-right"></i>
+                </div>
+
+                <h2 class="refer-all-empty-title">ยังไม่มีข้อมูลการจำหน่ายผู้รับบริการ</h2>
+
+                <p class="refer-all-empty-description">
+                    เมื่อมีการบันทึกข้อมูลการจำหน่าย รายการ สถานะการอนุมัติ
+                    และรายงานที่เกี่ยวข้องจะแสดงในหน้านี้
+                </p>
+            </div>
+        @endif
     </div>
 </body>
 </html>

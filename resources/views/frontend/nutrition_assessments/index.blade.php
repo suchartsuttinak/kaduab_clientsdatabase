@@ -256,15 +256,17 @@
 .nutrition-header h4 {
     margin: 0;
     color: #0f172a;
-    font-size: 1.05rem;
+    font-size: clamp(1.25rem, 1.6vw, 1.5rem);
     font-weight: 800;
-    line-height: 1.4;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
 }
 
 .nutrition-header-subtitle {
-    margin-top: .15rem;
+    margin-top: .3rem;
     color: #64748b;
-    font-size: .82rem;
+    font-size: clamp(.92rem, 1vw, 1rem);
+    font-weight: 500;
     line-height: 1.45;
 }
 
@@ -570,11 +572,13 @@
     }
 
     .nutrition-header h4 {
-        font-size: .96rem;
+        font-size: 1.12rem;
+        line-height: 1.35;
     }
 
     .nutrition-header-subtitle {
-        font-size: .76rem;
+        margin-top: .25rem;
+        font-size: .9rem;
     }
 
     .nutrition-empty-state {

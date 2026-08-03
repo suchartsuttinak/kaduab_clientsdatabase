@@ -41,10 +41,10 @@
         :root {
             --topbar-height: 72px;
             --sidebar-width: 260px;
-            --topbar-offset: 12px;
-            --content-top-padding: .12rem;
-            --content-top-padding-lg: .18rem;
-            --content-top-padding-sm: .08rem;
+            --topbar-offset: 0px;
+            --content-top-padding: .75rem;
+            --content-top-padding-lg: .75rem;
+            --content-top-padding-sm: .5rem;
             --topbar-bg: rgba(255, 255, 255, .92);
             --topbar-border: #e6edf5;
             --topbar-text: #1f3b64;
@@ -80,7 +80,7 @@
             line-height: 1.6;
             color: #212529;
             background: var(--content-bg);
-            padding-top: calc(var(--topbar-height) - var(--topbar-offset));
+            padding-top: var(--topbar-height) !important;
         }
 
         h1,
@@ -148,7 +148,7 @@
 
         .app-body {
             display: flex;
-            min-height: calc(100vh - var(--topbar-height) + var(--topbar-offset));
+            min-height: calc(100vh - var(--topbar-height));
             max-width: 100%;
             overflow-x: hidden;
         }
@@ -159,7 +159,7 @@
             flex: 0 0 var(--sidebar-width);
             background: #f8f9fa;
             border-right: 1px solid #dee2e6;
-            min-height: calc(100vh - var(--topbar-height) + var(--topbar-offset));
+            min-height: calc(100vh - var(--topbar-height));
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
@@ -179,14 +179,16 @@
             border-right: 0 !important;
         }
 
-        .content-page {
+        .content-page,
+        .main-content {
             flex: 1 1 auto;
             min-width: 0;
             max-width: 100%;
             position: relative;
             background-color: var(--content-bg);
-            min-height: calc(100vh - var(--topbar-height) + var(--topbar-offset));
+            min-height: calc(100vh - var(--topbar-height));
             overflow-x: hidden;
+            margin-top: 0 !important;
             padding: var(--content-top-padding) 1.25rem 1.5rem 1.25rem !important;
         }
 
@@ -200,6 +202,43 @@
 
         .content-shell,
         .content-scroll-x {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+
+        /*
+         * ล้างเฉพาะระยะด้านบนของ wrapper ชั้นนอก
+         * ไม่แตะ padding ภายในการ์ด เพื่อไม่ให้หัวข้อชิดกรอบ
+         */
+        .content-scroll-x > .container,
+        .content-scroll-x > .container-fluid,
+        .content-scroll-x > .page-content,
+        .content-scroll-x > .page-wrapper,
+        .content-scroll-x > .main-wrapper,
+        .content-scroll-x > .form-wrap-wide {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+
+        .content-scroll-x > :first-child {
+            margin-top: 0 !important;
+        }
+
+        .content-scroll-x > :first-child.mt-1,
+        .content-scroll-x > :first-child.mt-2,
+        .content-scroll-x > :first-child.mt-3,
+        .content-scroll-x > :first-child.mt-4,
+        .content-scroll-x > :first-child.mt-5,
+        .content-scroll-x > :first-child.pt-1,
+        .content-scroll-x > :first-child.pt-2,
+        .content-scroll-x > :first-child.pt-3,
+        .content-scroll-x > :first-child.pt-4,
+        .content-scroll-x > :first-child.pt-5,
+        .content-scroll-x > :first-child.py-1,
+        .content-scroll-x > :first-child.py-2,
+        .content-scroll-x > :first-child.py-3,
+        .content-scroll-x > :first-child.py-4,
+        .content-scroll-x > :first-child.py-5 {
             margin-top: 0 !important;
             padding-top: 0 !important;
         }
@@ -278,11 +317,15 @@
             border-bottom: 1px solid #eef1f4;
         }
 
-        .app-topbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+        #appTopbar,
+        .app-topbar,
+        .topbar-custom {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            margin-top: 0 !important;
+            transform: none !important;
             z-index: 1100;
             min-height: var(--topbar-height);
             background: var(--topbar-bg);
@@ -332,6 +375,8 @@
             color: #1e3a5f;
             font-size: 15px;
             letter-spacing: .01em;
+            white-space: nowrap;
+            flex: 0 0 auto;
         }
 
         .topbar-toggler {
@@ -697,6 +742,52 @@
             color: #374151;
         }
 
+        /*
+         * Notebook Topbar Width Fix
+         * ช่วง 1200–1399px มีพื้นที่ไม่พอสำหรับชื่อระบบ + เมนูทั้งหมด
+         * จึงซ่อนเฉพาะข้อความชื่อระบบ แต่ยังคงไอคอนระบบไว้
+         */
+        @media (min-width: 1200px) and (max-width: 1399.98px) {
+            .topbar-brand-text {
+                display: none !important;
+            }
+
+            .topbar-brand {
+                gap: 0 !important;
+                margin-left: 0 !important;
+                flex: 0 0 auto !important;
+            }
+
+            .topbar-left-group {
+                flex: 0 0 auto !important;
+                gap: .35rem !important;
+            }
+
+            .topbar-collapse {
+                min-width: 0 !important;
+            }
+
+            .topbar-menu {
+                gap: .08rem !important;
+            }
+
+            .topbar-link {
+                gap: .35rem !important;
+                padding: .6rem .62rem !important;
+                font-size: 14px !important;
+            }
+
+            .topbar-user {
+                gap: .45rem !important;
+                padding-left: .35rem !important;
+                padding-right: .4rem !important;
+            }
+
+            .topbar-user-label {
+                display: none !important;
+            }
+        }
+
         @media (min-width:1200px) {
             .topbar-menu .dropdown:hover>.topbar-dropdown {
                 display: block;
@@ -729,7 +820,7 @@
 
         @media (max-width:1199.98px) {
             :root {
-                --topbar-offset: 10px;
+                --topbar-offset: 0px;
             }
 
             .app-body {
@@ -738,11 +829,11 @@
 
             .client-sidebar-panel {
                 position: fixed !important;
-                top: calc(var(--topbar-height) - var(--topbar-offset)) !important;
+                top: var(--topbar-height) !important;
                 left: 0 !important;
                 width: 260px !important;
                 max-width: 82vw !important;
-                height: calc(100dvh - var(--topbar-height) + var(--topbar-offset)) !important;
+                height: calc(100dvh - var(--topbar-height)) !important;
                 background: #fff !important;
                 z-index: 1090 !important;
                 transform: translateX(-100%) !important;
@@ -780,7 +871,7 @@
 
             .sidebar-overlay {
                 position: fixed;
-                top: calc(var(--topbar-height) - var(--topbar-offset));
+                top: var(--topbar-height);
                 left: 0;
                 right: 0;
                 bottom: 0;
@@ -938,7 +1029,7 @@
         @media (max-width:767.98px) {
             :root {
                 --topbar-height: 64px;
-                --topbar-offset: 8px;
+                --topbar-offset: 0px;
             }
 
             body {
@@ -1016,7 +1107,7 @@
                 width: var(--sidebar-width) !important;
                 flex: 0 0 var(--sidebar-width) !important;
                 max-width: var(--sidebar-width) !important;
-                min-height: calc(100vh - var(--topbar-height) + var(--topbar-offset)) !important;
+                min-height: calc(100vh - var(--topbar-height)) !important;
                 transform: none !important;
                 visibility: visible !important;
                 pointer-events: auto !important;
@@ -1220,6 +1311,7 @@
                 margin-left: 0 !important;
             }
         }
+        
     </style>
 </head>
 
@@ -1424,23 +1516,20 @@
                     return;
                 }
 
-                const height = topbar.offsetHeight || 72;
-                const rootStyle = getComputedStyle(document.documentElement);
-
-                const offset =
-                    parseInt(
-                        rootStyle.getPropertyValue('--topbar-offset'),
-                        10
-                    ) || 0;
-
-                const safePadding = Math.max(height - offset, 52);
+                const height = Math.ceil(
+                    topbar.getBoundingClientRect().height || 72
+                );
 
                 document.documentElement.style.setProperty(
                     '--topbar-height',
                     height + 'px'
                 );
 
-                body.style.paddingTop = safePadding + 'px';
+                /*
+                 * ไม่กำหนด body.style.paddingTop แบบ inline
+                 * เพราะ inline style จะทับ CSS และทำให้เกิดช่องว่างซ้ำ
+                 */
+                body.style.removeProperty('padding-top');
             }
 
             function sidebarIsVisible() {
@@ -1555,6 +1644,14 @@
                 );
             }
 
+            if ('ResizeObserver' in window && topbar) {
+                const topbarObserver = new ResizeObserver(function () {
+                    syncTopbarHeight();
+                });
+
+                topbarObserver.observe(topbar);
+            }
+
             syncTopbarHeight();
             syncToggleState();
         });
@@ -1562,4 +1659,4 @@
 
 </body>
 
-</html>
+</html

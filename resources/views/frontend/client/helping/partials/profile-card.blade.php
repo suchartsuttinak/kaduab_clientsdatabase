@@ -1,5 +1,5 @@
 @php
-    $clientInitial = mb_substr(trim($client->fullname ?? 'U'), 0, 1);
+    $clientInitial = mb_substr(trim($client->fullname ?? $client->full_name ?? 'U'), 0, 1);
 
     $clientImageUrl = asset('upload/no_image.jpg');
 
@@ -35,7 +35,7 @@
                     <span>ข้อมูลผู้รับบริการ</span>
                 </div>
 
-                <div class="hp-profile-name">{{ $client->fullname ?? '-' }}</div>
+                <div class="hp-profile-name">{{ $client->fullname ?? $client->full_name ?? '-' }}</div>
 
                 <div class="hp-profile-meta">
                     <span class="hp-meta-chip">
@@ -44,7 +44,7 @@
                     </span>
                     <span class="hp-meta-chip">
                         <i class="bi bi-clipboard2-heart"></i>
-                        จำนวน {{ $sessions->count() }} ครั้ง
+                        จำนวนทั้งหมด {{ number_format($totalSessionCount ?? $sessions->count()) }} ครั้ง
                     </span>
                 </div>
             </div>
@@ -52,12 +52,12 @@
     </div>
 
     <div class="hp-summary-card">
-        <div class="hp-summary-label">ยอดรวมการช่วยเหลือทั้งหมด</div>
+        <div class="hp-summary-label">ยอดรวมตามรายการที่แสดง</div>
         <div class="hp-summary-value">
             {{ number_format($grandTotal ?? 0, 2) }} บาท
         </div>
         <div class="hp-summary-sub">
-            สรุปจากข้อมูลการช่วยเหลือทั้งหมดของผู้รับรายนี้
+            สรุปจากข้อมูลที่แสดงตามช่วงวันที่ที่เลือก
         </div>
     </div>
 </div>

@@ -2,6 +2,80 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('backend/assets/css/case_outside.css') }}">
+
+    <style>
+        /* ปรับส่วนหัวกรณียังไม่มีข้อมูล ให้ข้อความอยู่กึ่งกลางและไม่ชิดขอบบน */
+        .co-page .co-empty-header {
+            min-height: 104px;
+            padding: 22px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .co-page .co-empty-header-main {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .co-page .co-empty-header-icon {
+            width: 54px;
+            height: 54px;
+            flex: 0 0 54px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .co-page .co-empty-header-copy {
+            min-width: 0;
+            min-height: 58px;
+            padding: 6px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .co-page .co-empty-header-title {
+            margin: 0;
+            line-height: 1.35;
+        }
+
+        .co-page .co-empty-header-subtitle {
+            margin: 6px 0 0;
+            line-height: 1.45;
+        }
+
+        .co-page .co-btn-back {
+            flex-shrink: 0;
+            align-self: center;
+        }
+
+        @media (max-width: 575.98px) {
+            .co-page .co-empty-header {
+                min-height: 88px;
+                padding: 16px 14px;
+                gap: 12px;
+            }
+
+            .co-page .co-empty-header-main {
+                gap: 10px;
+            }
+
+            .co-page .co-empty-header-icon {
+                width: 48px;
+                height: 48px;
+                flex-basis: 48px;
+            }
+
+            .co-page .co-empty-header-copy {
+                min-height: 52px;
+            }
+        }
+    </style>
 @endpush
 
 @section('content')

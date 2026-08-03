@@ -116,6 +116,8 @@
                     <input type="text"
                            name="fullname"
                            value="{{ old('fullname') }}"
+                           maxlength="255"
+                           autocomplete="name"
                            class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
                            required>
                 </div>
@@ -125,6 +127,9 @@
                     <input type="text"
                            name="phone"
                            value="{{ old('phone') }}"
+                           maxlength="20"
+                           inputmode="tel"
+                           autocomplete="tel"
                            class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
                            required>
                 </div>
@@ -133,6 +138,7 @@
                     <label class="block text-gray-700 mb-2">เรื่องที่แจ้ง</label>
                     <textarea name="subject"
                               rows="4"
+                              maxlength="5000"
                               class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
                               required>{{ old('subject') }}</textarea>
                 </div>

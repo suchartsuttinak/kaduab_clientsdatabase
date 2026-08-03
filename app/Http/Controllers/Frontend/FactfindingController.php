@@ -19,9 +19,7 @@ class FactfindingController extends Controller
      */
     public function FactfindingAdd($client_id)
     {
-        $client = Client::forUser(auth()->user())
-            ->select('clients.id')
-            ->findOrFail($client_id);
+        $client = $this->findAuthorizedClient($client_id);
 
         $factFinding = Factfinding::query()
             ->select(['id', 'client_id'])
@@ -128,9 +126,7 @@ class FactfindingController extends Controller
     {
         $factFinding = $this->findAuthorizedFactFinding($factfinding_id);
 
-        $client = Client::forUser(auth()->user())
-            ->select('clients.id')
-            ->findOrFail($factFinding->client_id);
+        $client = $this->findAuthorizedClient($factFinding->client_id);
 
         [$documents, $maritals] = $this->loadFormOptions();
 
@@ -249,6 +245,23 @@ class FactfindingController extends Controller
         }
 
         return back()->with('success', 'ลบข้อมูลเรียบร้อยแล้ว');
+    }
+
+    /**
+     * โหลดผู้รับบริการที่ผู้ใช้งานมีสิทธิ์เข้าถึง
+     *
+     * ไม่ select เฉพาะ clients.id เพราะ Layout, header และเมนูผู้รับบริการ
+     * อาจต้องใช้ชื่อ วันเกิด บ้าน โครงการ และคำนำหน้า
+     */
+    private function findAuthorizedClient($clientId): Client
+    {
+        return Client::forUser(auth()->user())
+            ->with([
+                'title:id,title_name',
+                'house:id,house_name',
+                'project:id,project_name',
+            ])
+            ->findOrFail($clientId);
     }
 
     /**
