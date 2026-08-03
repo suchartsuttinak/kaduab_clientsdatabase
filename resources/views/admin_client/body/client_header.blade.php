@@ -150,7 +150,7 @@
                     <i data-feather="menu" class="topbar-icon"></i>
                 </button>
 
-                <a href="{{ route('dashboard') }}" class="topbar-brand d-none d-md-flex">
+                <a href="{{ (auth()->user()?->canViewForm('dashboard_overview') ? route('dashboard') : route('client.show')) }}" class="topbar-brand d-none d-md-flex">
                     <span class="topbar-brand-badge"><i class="fas fa-people-group"></i></span>
                     <span class="topbar-brand-text">หน้าระบบผู้รับบริการ</span>
                 </a>
@@ -160,7 +160,7 @@
                 <ul class="navbar-nav topbar-menu mb-2 mb-xl-0">
                     <li class="nav-item">
                         <a class="nav-link topbar-link {{ $isDashboardActive ? 'active' : '' }}"
-                           href="{{ $clientId ? route('admin.index', $clientId) : route('dashboard') }}">
+                           href="{{ $clientId ? route('admin.index', $clientId) : (auth()->user()?->canViewForm('dashboard_overview') ? route('dashboard') : route('client.show')) }}">
                             <i class="fas fa-home"></i><span>หน้าหลัก</span>
                         </a>
                     </li>
@@ -349,3 +349,6 @@
         </nav>
     </div>
 </div>
+
+{{-- FORM_PERMISSION_UI_V6 --}}
+@include('components.form_permission_ui')

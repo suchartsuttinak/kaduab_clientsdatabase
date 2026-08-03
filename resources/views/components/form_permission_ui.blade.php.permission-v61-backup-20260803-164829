@@ -1,0 +1,128 @@
+@once
+@php
+    $permissionUi = \App\Support\FormPermissionUi::forUser(
+        auth()->user(),
+        request()->route()?->getName()
+    );
+@endphp
+
+@if($permissionUi['enabled'] ?? false)
+    <style>
+        .permission-ui-hidden { display: none !important; }
+        .permission-readonly-banner {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin: 0 0 1rem;
+            padding: .85rem 1rem;
+            color: #1e3a5f;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 14px;
+            font-size: .92rem;
+            font-weight: 600;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, .06);
+        }
+        .permission-readonly-banner i { color: #2563eb; font-size: 1rem; }
+    </style>
+
+    <script>
+        window.__FORM_PERMISSION_UI__ = @json($permissionUi, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const state = window.__FORM_PERMISSION_UI__ || {};
+            const deniedRoutes = Array.isArray(state.denied_routes) ? state.denied_routes : [];
+            const current = state.current || null;
+
+            function normalizeMethod(method) {
+                return String(method || 'GET').toUpperCase();
+            }
+
+            function routeDenied(urlValue, method) {
+                if (!urlValue) return false;
+
+                let url;
+                try {
+                    url = new URL(urlValue, window.location.origin);
+                } catch (e) {
+                    return false;
+                }
+
+                if (url.origin !== window.location.origin) return false;
+
+                const pathname = url.pathname || '/';
+                const normalizedMethod = normalizeMethod(method);
+
+                return deniedRoutes.some(function (rule) {
+                    const methods = Array.isArray(rule.methods) ? rule.methods.map(normalizeMethod) : [];
+                    if (!methods.includes(normalizedMethod)) return false;
+
+                    try {
+                        return new RegExp(rule.pattern).test(pathname);
+                    } catch (e) {
+                        return false;
+                    }
+                });
+            }
+
+            function hideElement(element) {
+                if (!element || element.dataset.permissionUiProcessed === '1') return;
+                element.dataset.permissionUiProcessed = '1';
+                element.classList.add('permission-ui-hidden');
+                element.setAttribute('aria-hidden', 'true');
+            }
+
+            function effectiveFormMethod(form) {
+                const spoofed = form.querySelector('input[name="_method"]');
+                return normalizeMethod(spoofed ? spoofed.value : form.method);
+            }
+
+            // ซ่อนลิงก์ไปยัง Route ที่ไม่มีสิทธิ์ เช่น เพิ่ม แก้ไข รายงาน
+            document.querySelectorAll('a[href]').forEach(function (anchor) {
+                if (routeDenied(anchor.getAttribute('href'), 'GET')) {
+                    hideElement(anchor.closest('li') || anchor);
+                }
+            });
+
+            // ซ่อนฟอร์ม POST/PUT/PATCH/DELETE ที่ไม่มีสิทธิ์
+            document.querySelectorAll('form[action]').forEach(function (form) {
+                if (routeDenied(form.getAttribute('action'), effectiveFormMethod(form))) {
+                    hideElement(form);
+                }
+            });
+
+            // หาก Modal มีเฉพาะฟอร์มที่ถูกซ่อน ให้ซ่อนปุ่มเปิด Modal ด้วย
+            document.querySelectorAll('.modal').forEach(function (modal) {
+                const forms = Array.from(modal.querySelectorAll('form'));
+                if (forms.length === 0) return;
+
+                const allDenied = forms.every(function (form) {
+                    return form.classList.contains('permission-ui-hidden');
+                });
+
+                if (!allDenied || !modal.id) return;
+
+                document.querySelectorAll('[data-bs-target="#' + CSS.escape(modal.id) + '"], [data-target="#' + CSS.escape(modal.id) + '"]').forEach(hideElement);
+            });
+
+            // ปุ่มพิมพ์แบบ window.print() ไม่มี Route จึงตรวจจากสิทธิ์พิมพ์โดยตรง
+            if (current && current.print === false) {
+                document.querySelectorAll('button[onclick*="print"], a[onclick*="print"], .btn-print, [data-print]').forEach(hideElement);
+            }
+
+            // ปรับหน้ารายการเป็นโหมดอ่านอย่างเดียวอย่างชัดเจน
+            if (current && current.view === true && current.create === false && current.update === false && current.delete === false) {
+                const container = document.querySelector('.page-content .container-fluid, .content-page .container-fluid, main .container-fluid, main');
+
+                if (container && !document.getElementById('permissionReadonlyBanner')) {
+                    const banner = document.createElement('div');
+                    banner.id = 'permissionReadonlyBanner';
+                    banner.className = 'permission-readonly-banner';
+                    banner.innerHTML = '<i class="bi bi-eye-fill" aria-hidden="true"></i><span>โหมดอ่านอย่างเดียว — บัญชีนี้สามารถดูข้อมูลได้ แต่ไม่สามารถเพิ่ม แก้ไข หรือลบรายการ</span>';
+                    container.prepend(banner);
+                }
+            }
+        });
+    </script>
+@endif
+@endonce

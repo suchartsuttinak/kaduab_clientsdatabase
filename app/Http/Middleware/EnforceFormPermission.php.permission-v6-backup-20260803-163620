@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\FormPermissionMenu;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -10,6 +9,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnforceFormPermission
 {
+    /**
+     * ตรวจสิทธิ์จากชื่อ Route โดยใช้ config/user_permissions.php
+     *
+     * Middleware นี้ปล่อย Route ที่ไม่ได้อยู่ใน route_permissions ผ่านตามเดิม
+     * จึงไม่กระทบ Dashboard, Login และเมนูส่วนกลางอื่นของระบบ
+     */
     public function handle(Request $request, Closure $next): Response
     {
         $routeName = $request->route()?->getName();
@@ -26,6 +31,7 @@ class EnforceFormPermission
 
         $user = $request->user();
 
+        // ปล่อยให้ auth middleware เดิมจัดการกรณียังไม่ได้เข้าสู่ระบบ
         if (!$user) {
             return $next($request);
         }
@@ -37,34 +43,26 @@ class EnforceFormPermission
             ? $user->hasFormPermission($permissionKeys[0], $action)
             : $user->hasAnyFormPermission($permissionKeys, $action);
 
-        if ($allowed) {
-            return $next($request);
+        if (!$allowed) {
+            $message = 'คุณไม่มีสิทธิ์ใช้งานฟอร์มหรือดำเนินการรายการนี้';
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $message,
+                ], 403);
+            }
+
+            abort(403, $message);
         }
 
-        /*
-         * ผู้ใช้ที่ไม่มีสิทธิ์ Dashboard จะถูกนำไปหน้าทะเบียนผู้รับบริการ
-         * ตามแนวทางที่กำหนดไว้ แทนการแสดง 403
-         */
-        if ($routeName === 'dashboard' && $request->isMethod('GET')) {
-            return redirect()
-                ->route('client.show')
-                ->with('info', 'บัญชีนี้ไม่ได้รับสิทธิ์หน้า Dashboard ระบบจึงนำไปยังทะเบียนผู้รับบริการ');
-        }
-
-        $message = 'คุณไม่มีสิทธิ์ใช้งานหน้าหรือดำเนินการรายการนี้';
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => $message], 403);
-        }
-
-        abort(403, $message);
+        return $next($request);
     }
 
     private function findRule(string $routeName): ?array
     {
         foreach (config('user_permissions.route_permissions', []) as $rule) {
             foreach ((array) ($rule['routes'] ?? []) as $pattern) {
-                if (Str::is((string) $pattern, $routeName)) {
+                if (Str::is($pattern, $routeName)) {
                     return $rule;
                 }
             }

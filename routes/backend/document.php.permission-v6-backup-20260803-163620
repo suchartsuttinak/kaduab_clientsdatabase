@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
     Route::middleware('auth')->group(function () {
     Route::get('/document', [DocumentController::class, 'ShowDocument'])->name('document.show');
     Route::post('/store/document', [DocumentController::class, 'StoreDocument'])->name('document.store');
-    Route::get('/edit/document/{id}', [DocumentController::class, 'EditDocument'])->name('document.edit');
+    Route::get('/edit/document/{id}', [DocumentController::class, 'EditDocument']);
     Route::post('/update/document', [DocumentController::class, 'UpdateDocument'])->name('document.update');
     Route::get('/delete/document/{id}', [DocumentController::class, 'DeleteDocument'])->name('document.delete');
 });

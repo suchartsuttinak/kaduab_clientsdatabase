@@ -62,7 +62,7 @@
         && optional($sidebarClient->target)->target_name === 'บุคคลไม่มีสถานะทางทะเบียน';
 @endphp
 
-{{-- FORM_PERMISSION_MENU_V3: CLIENT_SIDEBAR --}}
+{{-- FORM_PERMISSION_MENU_V6_NO_COUNT: CLIENT_SIDEBAR --}}
 <style>
     .client-sidebar-panel .app-sidebar-menu,
     .client-sidebar-panel .app-sidebar-menu > .sidebar-scroll,
@@ -102,7 +102,6 @@
 
     .sidebar-client-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: 50%; }
     .sidebar-client-name { max-width: 100%; overflow: hidden; color: #1e293b; font-size: 13.25px; font-weight: 700; line-height: 1.38; text-align: center; }
-    .permission-menu-count { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: rgba(37,99,235,.10); color: #2563eb; font-size: 11px; font-weight: 700; }
 </style>
 
 <div class="app-sidebar-menu">
@@ -122,11 +121,10 @@
                 @endif
 
                 @if ($groupAccess['registration'] ?? false)
-                    @php $registrationCount = collect(['registration_client_profile','registration_factfinding','registration_family','registration_family_visit','registration_family_members','registration_client_files','registration_client_reports'])->filter(fn($k) => $canForm($k))->count(); @endphp
                     <li class="menu-title">ทะเบียนแรกเข้า</li>
                     <li>
                         <a href="#sidebarRegistration" data-bs-toggle="collapse" aria-expanded="{{ $isRegistrationOpen ? 'true' : 'false' }}" class="{{ $isRegistrationOpen ? 'active' : '' }}">
-                            <i data-feather="home"></i><span>ทะเบียนแรกเข้า</span><span class="permission-menu-count">{{ $registrationCount }}</span><span class="menu-arrow"></span>
+                            <i data-feather="home"></i><span>ทะเบียนแรกเข้า</span><span class="menu-arrow"></span>
                         </a>
                         <div class="collapse {{ $isRegistrationOpen ? 'show' : '' }}" id="sidebarRegistration">
                             <ul class="nav-second-level">
@@ -143,11 +141,10 @@
                 @endif
 
                 @if ($groupAccess['education'] ?? false)
-                    @php $educationCount = collect(['education_grade_entry','education_results','education_followup','education_absence'])->filter(fn($k) => $canForm($k))->count(); @endphp
                     <li class="menu-title mt-2">การศึกษา</li>
                     <li>
                         <a href="#sidebarEducation" data-bs-toggle="collapse" aria-expanded="{{ $isEducationOpen ? 'true' : 'false' }}" class="{{ $isEducationOpen ? 'active' : '' }}">
-                            <i class="fas fa-graduation-cap sidebar-fa-icon"></i><span>ข้อมูลการศึกษา</span><span class="permission-menu-count">{{ $educationCount }}</span><span class="menu-arrow"></span>
+                            <i class="fas fa-graduation-cap sidebar-fa-icon"></i><span>ข้อมูลการศึกษา</span><span class="menu-arrow"></span>
                         </a>
                         <div class="collapse {{ $isEducationOpen ? 'show' : '' }}" id="sidebarEducation"><ul class="nav-second-level">
                             @if ($clientId && $canForm('education_grade_entry'))<li><a href="{{ route('education_record_add', ['client_id' => $clientId]) }}" class="tp-link {{ Request::routeIs('education_record_add') ? 'active' : '' }}">บันทึกผลการเรียน</a></li>@endif
@@ -159,11 +156,10 @@
                 @endif
 
                 @if ($groupAccess['health'] ?? false)
-                    @php $healthCount = collect(['health_accident','health_body_check','health_medical','health_vaccination','health_psychiatric','health_addictive','health_annual_checkup'])->filter(fn($k) => $canForm($k))->count(); @endphp
                     <li class="menu-title mt-2">สุขภาพ</li>
                     <li>
                         <a href="#sidebarHealth" data-bs-toggle="collapse" aria-expanded="{{ $isHealthOpen ? 'true' : 'false' }}" class="{{ $isHealthOpen ? 'active' : '' }}">
-                            <i class="fas fa-heartbeat sidebar-fa-icon"></i><span>ข้อมูลสุขภาพ</span><span class="permission-menu-count">{{ $healthCount }}</span><span class="menu-arrow"></span>
+                            <i class="fas fa-heartbeat sidebar-fa-icon"></i><span>ข้อมูลสุขภาพ</span><span class="menu-arrow"></span>
                         </a>
                         <div class="collapse {{ $isHealthOpen ? 'show' : '' }}" id="sidebarHealth"><ul class="nav-second-level">
                             @if ($clientId && $canForm('health_accident'))<li><a href="{{ route('accident.add', $clientId) }}" class="tp-link {{ Request::routeIs('accident.*') ? 'active' : '' }}">บันทึกการบาดเจ็บ</a></li>@endif
@@ -178,11 +174,10 @@
                 @endif
 
                 @if ($groupAccess['screening'] ?? false)
-                    @php $screeningCount = collect(['screening_behavior_four_diseases','screening_snap_iv','screening_depression','screening_nutrition'])->filter(fn($k) => $canForm($k))->count(); @endphp
                     <li class="menu-title mt-2">แบบประเมินและคัดกรอง</li>
                     <li>
                         <a href="#sidebarAssessment" data-bs-toggle="collapse" aria-expanded="{{ $isAssessmentOpen ? 'true' : 'false' }}" class="{{ $isAssessmentOpen ? 'active' : '' }}">
-                            <i class="bi bi-clipboard2-pulse sidebar-fa-icon"></i><span>แบบคัดกรอง</span><span class="permission-menu-count">{{ $screeningCount }}</span><span class="menu-arrow"></span>
+                            <i class="bi bi-clipboard2-pulse sidebar-fa-icon"></i><span>แบบคัดกรอง</span><span class="menu-arrow"></span>
                         </a>
                         <div class="collapse {{ $isAssessmentOpen ? 'show' : '' }}" id="sidebarAssessment"><ul class="nav-second-level">
                             @if ($clientId && $canForm('screening_behavior_four_diseases'))<li><a href="{{ route('behavior-screenings.index', $clientId) }}" class="tp-link {{ Request::routeIs('behavior-screenings.*') ? 'active' : '' }}">แบบสังเกตพฤติกรรม 4 โรค</a></li>@endif
@@ -194,11 +189,10 @@
                 @endif
 
                 @if ($groupAccess['social_welfare'] ?? false)
-                    @php $socialCount = collect(['welfare_behavior_problem','welfare_escape','welfare_outside_followup','welfare_discharge','welfare_job_agency','welfare_help_items','welfare_followup','welfare_client_activity','welfare_stateless_person'])->filter(fn($k) => $canForm($k))->count(); @endphp
                     <li class="menu-title mt-2">สังคมสงเคราะห์</li>
                     <li>
                         <a href="#sidebarSocial" data-bs-toggle="collapse" aria-expanded="{{ $isSocialOpen ? 'true' : 'false' }}" class="{{ $isSocialOpen ? 'active' : '' }}">
-                            <i class="fas fa-users sidebar-fa-icon"></i><span>สังคมสงเคราะห์</span><span class="permission-menu-count">{{ $socialCount }}</span><span class="menu-arrow"></span>
+                            <i class="fas fa-users sidebar-fa-icon"></i><span>สังคมสงเคราะห์</span><span class="menu-arrow"></span>
                         </a>
                         <div class="collapse {{ $isSocialOpen ? 'show' : '' }}" id="sidebarSocial"><ul class="nav-second-level">
                             @if ($clientId && $isStatelessClient && $canForm('welfare_stateless_person'))<li><a href="{{ route('idstation.index', $clientId) }}" class="tp-link {{ Request::routeIs('idstation.*') ? 'active' : '' }}">ช่วยเหลือด้านสถานะบุคคล</a></li>@endif
@@ -217,3 +211,6 @@
         </div>
     </div>
 </div>
+
+{{-- FORM_PERMISSION_UI_V6 --}}
+@include('components.form_permission_ui')

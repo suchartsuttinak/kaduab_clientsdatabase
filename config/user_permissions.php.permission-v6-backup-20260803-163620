@@ -28,42 +28,42 @@ return [
     */
     'groups' => [
         'registration' => [
-            'label' => 'ทะเบียนแรกเข้า',
+            'label' => '1. ทะเบียนแรกเข้า',
             'icon' => 'bi-person-vcard-fill',
             'description' => 'ข้อมูลพื้นฐาน การรับเข้า ครอบครัว เอกสาร และรายงานผู้รับบริการ',
             'items' => [
                 'registration_client_profile' => [
-                    'label' => 'ประวัติผู้รับบริการ',
+                    'label' => '1.1 ประวัติผู้รับบริการ',
                     'description' => 'ข้อมูลทะเบียนและข้อมูลประจำตัวผู้รับบริการ',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'registration_factfinding' => [
-                    'label' => 'สอบข้อเท็จจริงเบื้องต้น',
+                    'label' => '1.2 สอบข้อเท็จจริงเบื้องต้น',
                     'description' => 'แบบสอบข้อเท็จจริงและเอกสารประกอบ',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'registration_family' => [
-                    'label' => 'บันทึกข้อมูลครอบครัว',
+                    'label' => '1.3 บันทึกข้อมูลครอบครัว',
                     'description' => 'ข้อมูลบิดา มารดา ผู้ปกครอง และสภาพครอบครัว',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'registration_family_visit' => [
-                    'label' => 'เยี่ยมครอบครัว',
+                    'label' => '1.4 เยี่ยมครอบครัว',
                     'description' => 'บันทึกการเยี่ยมบ้านและภาพประกอบ',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'registration_family_members' => [
-                    'label' => 'บันทึกสมาชิกครอบครัว',
+                    'label' => '1.5 บันทึกสมาชิกครอบครัว',
                     'description' => 'รายชื่อและรายละเอียดสมาชิกในครอบครัว',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'registration_client_files' => [
-                    'label' => 'จัดเก็บไฟล์เอกสาร',
+                    'label' => '1.6 จัดเก็บไฟล์เอกสาร',
                     'description' => 'ดู อัปโหลด ดาวน์โหลด และลบเอกสารแนบ',
                     'actions' => ['view', 'create', 'delete', 'print'],
                 ],
                 'registration_client_reports' => [
-                    'label' => 'รายงานผู้รับบริการ',
+                    'label' => '1.7 รายงานผู้รับบริการ',
                     'description' => 'ดูและพิมพ์รายงานข้อมูลผู้รับบริการ',
                     'actions' => ['view', 'print'],
                 ],
@@ -71,27 +71,27 @@ return [
         ],
 
         'education' => [
-            'label' => 'การศึกษา',
+            'label' => '2. การศึกษา',
             'icon' => 'bi-mortarboard-fill',
             'description' => 'ผลการเรียน ประวัติการศึกษา การติดตาม และการขาดเรียน',
             'items' => [
                 'education_grade_entry' => [
-                    'label' => 'บันทึกผลการเรียน',
+                    'label' => '2.1 บันทึกผลการเรียน',
                     'description' => 'เพิ่มและจัดการข้อมูลผลการเรียนรายภาคเรียน',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'education_results' => [
-                    'label' => 'แสดงผลการเรียน',
+                    'label' => '2.2 แสดงผลการเรียน',
                     'description' => 'ดูประวัติและรายงานผลการเรียน',
                     'actions' => ['view', 'print'],
                 ],
                 'education_followup' => [
-                    'label' => 'ติดตามการศึกษา',
+                    'label' => '2.3 ติดตามการศึกษา',
                     'description' => 'ติดตามสถานศึกษา ครู และผลการดำเนินงาน',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'education_absence' => [
-                    'label' => 'บันทึกการขาดเรียน',
+                    'label' => '2.4 บันทึกการขาดเรียน',
                     'description' => 'บันทึก แก้ไข และรายงานการขาดเรียน',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
@@ -99,42 +99,42 @@ return [
         ],
 
         'health' => [
-            'label' => 'สุขภาพ',
+            'label' => '3. สุขภาพ',
             'icon' => 'bi-heart-pulse-fill',
             'description' => 'การบาดเจ็บ การตรวจร่างกาย การรักษา วัคซีน และสุขภาพจิต',
             'items' => [
                 'health_accident' => [
-                    'label' => 'บันทึกการบาดเจ็บ',
+                    'label' => '3.1 บันทึกการบาดเจ็บ',
                     'description' => 'เหตุการณ์บาดเจ็บ การรักษา และการนัดหมาย',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'health_body_check' => [
-                    'label' => 'บันทึกการตรวจร่างกาย',
+                    'label' => '3.2 บันทึกการตรวจร่างกาย',
                     'description' => 'ผลการตรวจสภาพร่างกายและบาดแผล',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'health_medical' => [
-                    'label' => 'บันทึกการรักษาพยาบาล',
+                    'label' => '3.3 บันทึกการรักษาพยาบาล',
                     'description' => 'ประวัติการเจ็บป่วยและการรักษาพยาบาล',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'health_vaccination' => [
-                    'label' => 'ประวัติการรับวัคซีน',
+                    'label' => '3.4 ประวัติการรับวัคซีน',
                     'description' => 'ข้อมูลวัคซีน เข็มที่ได้รับ และสถานพยาบาล',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'health_psychiatric' => [
-                    'label' => 'การวินิจฉัยทางจิตเวช',
+                    'label' => '3.5 การวินิจฉัยทางจิตเวช',
                     'description' => 'การวินิจฉัย การรักษา และการนัดหมายทางจิตเวช',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'health_addictive' => [
-                    'label' => 'การตรวจสารเสพติด',
+                    'label' => '3.6 การตรวจสารเสพติด',
                     'description' => 'ผลตรวจสารเสพติดและการติดตามผล',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'health_annual_checkup' => [
-                    'label' => 'ตรวจสุขภาพประจำปี',
+                    'label' => '3.7 ตรวจสุขภาพประจำปี',
                     'description' => 'บันทึกผลตรวจสุขภาพประจำปีและรายงานภาพรวม',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
@@ -142,27 +142,27 @@ return [
         ],
 
         'screening' => [
-            'label' => 'แบบคัดกรอง',
+            'label' => '4. แบบคัดกรอง',
             'icon' => 'bi-clipboard2-pulse-fill',
             'description' => 'แบบสังเกตพฤติกรรม สุขภาพจิต และภาวะโภชนาการ',
             'items' => [
                 'screening_behavior_four_diseases' => [
-                    'label' => 'แบบสังเกตพฤติกรรม 4 โรค',
+                    'label' => '4.1 แบบสังเกตพฤติกรรม 4 โรค',
                     'description' => 'แบบสังเกตพฤติกรรมและการติดตามผล',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'screening_snap_iv' => [
-                    'label' => 'แบบประเมิน SNAP-IV',
+                    'label' => '4.2 แบบประเมิน SNAP-IV',
                     'description' => 'แบบประเมิน SNAP-IV และรายงานผล',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'screening_depression' => [
-                    'label' => 'แบบคัดกรองภาวะซึมเศร้า',
+                    'label' => '4.3 แบบคัดกรองภาวะซึมเศร้า',
                     'description' => 'แบบคัดกรองภาวะซึมเศร้าและผลประเมิน',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'screening_nutrition' => [
-                    'label' => 'แบบประเมินโภชนาการ',
+                    'label' => '4.4 แบบประเมินโภชนาการ',
                     'description' => 'ส่วนสูง น้ำหนัก BMI และผลประเมินโภชนาการ',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
@@ -170,134 +170,55 @@ return [
         ],
 
         'social_welfare' => [
-            'label' => 'สังคมสงเคราะห์',
+            'label' => '5. สังคมสงเคราะห์',
             'icon' => 'bi-people-fill',
             'description' => 'พฤติกรรม การหลบหนี การจำหน่าย การช่วยเหลือ และการติดตาม',
             'items' => [
                 'welfare_behavior_problem' => [
-                    'label' => 'บันทึกปัญหาพฤติกรรม',
+                    'label' => '5.1 บันทึกปัญหาพฤติกรรม',
                     'description' => 'บันทึกปัญหาพฤติกรรมและการดำเนินการที่เกี่ยวข้อง',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'welfare_escape' => [
-                    'label' => 'การหลบหนีจากที่พักพิง',
+                    'label' => '5.2 การหลบหนีจากที่พักพิง',
                     'description' => 'เหตุการณ์หลบหนีและการติดตามค้นหา',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'welfare_outside_followup' => [
-                    'label' => 'การติดตามเด็กที่อยู่ภายนอก',
+                    'label' => '5.3 การติดตามเด็กที่อยู่ภายนอก',
                     'description' => 'ข้อมูลการส่งต่อ การอยู่ภายนอก และการติดตาม',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'welfare_discharge' => [
-                    'label' => 'บันทึกการจำหน่าย',
+                    'label' => '5.4 บันทึกการจำหน่าย',
                     'description' => 'การจำหน่าย ส่งต่อ คืนครอบครัว หรือสิ้นสุดการช่วยเหลือ',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'welfare_job_agency' => [
-                    'label' => 'การหางานให้ผู้รับบริการ',
+                    'label' => '5.5 การหางานให้ผู้รับบริการ',
                     'description' => 'ข้อมูลการประสานงานและการจัดหางาน',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'welfare_help_items' => [
-                    'label' => 'ช่วยเหลือสิ่งของเครื่องใช้',
+                    'label' => '5.6 ช่วยเหลือสิ่งของเครื่องใช้',
                     'description' => 'การให้ความช่วยเหลือ สิ่งของ และค่าใช้จ่าย',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'welfare_followup' => [
-                    'label' => 'บันทึกการติดตาม',
+                    'label' => '5.7 บันทึกการติดตาม',
                     'description' => 'บันทึกติดตามด้านสังคมสงเคราะห์และรายงาน',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'welfare_client_activity' => [
-                    'label' => 'ความเคลื่อนไหวผู้รับบริการ',
+                    'label' => '5.8 ความเคลื่อนไหวผู้รับบริการ',
                     'description' => 'กิจกรรมและความเคลื่อนไหวล่าสุดของผู้รับบริการ',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'welfare_stateless_person' => [
-                    'label' => 'บุคคลไร้สัญชาติ',
+                    'label' => '5.9 บุคคลไร้สัญชาติ',
                     'description' => 'ข้อมูลและการดำเนินงานด้านสถานะบุคคลและสัญชาติ',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
-            ],
-        ],
-
-
-        'registration_central' => [
-            'label' => 'งานทะเบียนส่วนกลาง',
-            'icon' => 'bi-folder2-open',
-            'description' => 'ทะเบียนกลาง การย้ายโครงการ และการย้ายสถานที่พักพิง โดยไม่ซ้ำกับทะเบียนผู้รับบริการเดิม',
-            'items' => [
-                'registration_central_cases' => [
-                    'label' => 'ทะเบียนกลางเคสทั้งหมด',
-                    'description' => 'ดูทะเบียนกลางของผู้รับบริการตามขอบเขตบทบาท โครงการ และบ้าน',
-                    'actions' => ['view', 'print'],
-                ],
-                'registration_project_transfer' => [
-                    'label' => 'ย้ายโครงการ',
-                    'description' => 'ดู บันทึก และอนุมัติการย้ายโครงการของผู้รับบริการ',
-                    'actions' => ['view', 'create', 'update'],
-                ],
-                'registration_house_transfer' => [
-                    'label' => 'ย้ายสถานที่พักพิง',
-                    'description' => 'ดูและบันทึกการย้ายบ้านหรือสถานที่พักพิง',
-                    'actions' => ['view', 'update'],
-                ],
-            ],
-        ],
-
-        'dashboard' => [
-            'label' => 'หน้ายินดีต้อนรับ',
-            'icon' => 'bi-speedometer2',
-            'description' => 'ภาพรวมระบบ งานประชาสัมพันธ์ ทุนการศึกษา และรายงานวิเคราะห์ข้อมูลเด็ก',
-            'items' => [
-                'dashboard_overview' => ['label' => 'หน้าภาพรวม Dashboard', 'description' => 'ดูภาพรวมและสถิติหลักของระบบ หากปิดสิทธิ์ ระบบจะนำผู้ใช้ไปหน้าทะเบียนผู้รับบริการ', 'actions' => ['view', 'print']],
-                'dashboard_issues' => ['label' => 'แจ้งเรื่องช่วยเหลือ', 'description' => 'ดูรายการเรื่องที่ประชาชนแจ้งขอรับความช่วยเหลือ', 'actions' => ['view']],
-                'dashboard_news' => ['label' => 'จัดการข่าวสาร', 'description' => 'ดูหน้าเพิ่มข่าวและบันทึกข่าวสารประชาสัมพันธ์', 'actions' => ['view', 'create']],
-                'dashboard_about' => ['label' => 'ประวัติความเป็นมา', 'description' => 'ดู เพิ่ม และลบข้อมูลประวัติ วัตถุประสงค์ และภารกิจ', 'actions' => ['view', 'create', 'delete']],
-                'dashboard_scholarship_sponsors' => ['label' => 'ผู้สนับสนุนทุนการศึกษา', 'description' => 'ดูและบันทึกรายการผู้สนับสนุนและการบริจาคทุน', 'actions' => ['view', 'create', 'update', 'print']],
-                'dashboard_scholarship_children' => ['label' => 'ทุนการศึกษาเด็ก', 'description' => 'ดู เพิ่ม แก้ไข ลบ และออกรายงานทุนการศึกษาเด็ก', 'actions' => ['view', 'create', 'update', 'delete', 'print']],
-                'dashboard_child_analytics' => ['label' => 'รายงานวิเคราะห์ข้อมูลเด็กตามเงื่อนไข', 'description' => 'ดูและพิมพ์รายงานวิเคราะห์ข้อมูลเด็กตามตัวกรอง', 'actions' => ['view', 'print']],
-            ],
-        ],
-
-        'master_data' => [
-            'label' => 'ประเภทและหมวดหมู่',
-            'icon' => 'bi-grid-fill',
-            'description' => 'ข้อมูลอ้างอิงส่วนกลางสำหรับใช้เป็นตัวเลือกในฟอร์มต่าง ๆ',
-            'items' => [
-                'master_institutions' => ['label' => 'รายการสถานศึกษา', 'description' => 'จัดการข้อมูลสถานศึกษา', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_subjects' => ['label' => 'รายการวิชาเรียน', 'description' => 'จัดการข้อมูลวิชาเรียน', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_houses' => ['label' => 'รายการบ้านพัก', 'description' => 'จัดการข้อมูลบ้านและสถานที่พักพิง', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_education_levels' => ['label' => 'รายการระดับการศึกษา', 'description' => 'จัดการระดับการศึกษา', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_semesters' => ['label' => 'รายการปีการศึกษา', 'description' => 'จัดการปีการศึกษาและภาคเรียน', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_psychiatric_diseases' => ['label' => 'รายการโรคทางจิตเวช', 'description' => 'จัดการรายการโรคทางจิตเวช', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_behaviors' => ['label' => 'รายการพฤติกรรม', 'description' => 'จัดการรายการพฤติกรรม', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_outside_types' => ['label' => 'รายการเด็กที่อยู่ภายนอก', 'description' => 'จัดการประเภทการอยู่ภายนอก', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_documents' => ['label' => 'รายการเอกสาร', 'description' => 'จัดการประเภทเอกสาร', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_incomes' => ['label' => 'รายการรายได้', 'description' => 'จัดการประเภทรายได้', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_help_types' => ['label' => 'ประเภทการช่วยเหลือ', 'description' => 'จัดการประเภทการช่วยเหลือ', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_citizenships' => ['label' => 'รายการทางทะเบียน', 'description' => 'จัดการรายการสถานะทางทะเบียน', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_citizen_statuses' => ['label' => 'ได้รับสถานะทางทะเบียน', 'description' => 'จัดการผลการได้รับสถานะทางทะเบียน', 'actions' => ['view', 'create', 'update', 'delete']],
-                'master_release_types' => ['label' => 'ประเภทการพ้นอุปการะ', 'description' => 'จัดการประเภทการพ้นอุปการะ', 'actions' => ['view', 'create', 'update', 'delete']],
-            ],
-        ],
-
-        'central_reports' => [
-            'label' => 'รายงานส่วนกลาง',
-            'icon' => 'bi-file-earmark-bar-graph-fill',
-            'description' => 'รายงานภาพรวมที่แยกจากฟอร์มรายบุคคล',
-            'items' => [
-                'report_discharge_all' => ['label' => 'รายงานการจำหน่าย', 'description' => 'ดูและพิมพ์รายงานการจำหน่ายรวมทุกผู้รับบริการตามขอบเขตข้อมูล', 'actions' => ['view', 'print']],
-            ],
-        ],
-
-        'system_management' => [
-            'label' => 'การจัดการระบบ',
-            'icon' => 'bi-person-gear',
-            'description' => 'งานดูแลบัญชีผู้ใช้งานและสิทธิ์การเข้าถึงระบบ',
-            'items' => [
-                'system_users' => ['label' => 'จัดการผู้ใช้งาน', 'description' => 'ดูรายชื่อ เพิ่ม แก้ไข ปิดใช้งาน และลบบัญชีผู้ใช้งาน โดยยังคงการป้องกันผู้ดูแลระบบคนสุดท้าย', 'actions' => ['view', 'create', 'update', 'delete']],
             ],
         ],
     ],
@@ -312,94 +233,6 @@ return [
     |
     */
     'route_permissions' => [
-        // สิทธิ์ส่วนกลางเพิ่มเติม
-        ['routes' => ['client.cases'], 'permissions' => ['registration_central_cases'], 'action' => 'view'],
-        ['routes' => ['client.transfers'], 'permissions' => ['registration_project_transfer'], 'action' => 'view'],
-        ['routes' => ['client.transfer.create', 'client.transfer.store'], 'permissions' => ['registration_project_transfer'], 'action' => 'create'],
-        ['routes' => ['client.transfer.approve', 'client.transfer.reject'], 'permissions' => ['registration_project_transfer'], 'action' => 'update'],
-        ['routes' => ['client-house-transfers.index'], 'permissions' => ['registration_house_transfer'], 'action' => 'view'],
-        ['routes' => ['client-house-transfers.update'], 'permissions' => ['registration_house_transfer'], 'action' => 'update'],
-
-        ['routes' => ['dashboard', 'statistics.index'], 'permissions' => ['dashboard_overview'], 'action' => 'view'],
-        ['routes' => ['statistics.report'], 'permissions' => ['dashboard_overview'], 'action' => 'print'],
-        ['routes' => ['issues.index'], 'permissions' => ['dashboard_issues'], 'action' => 'view'],
-        ['routes' => ['news.create'], 'permissions' => ['dashboard_news'], 'action' => 'view'],
-        ['routes' => ['news.store'], 'permissions' => ['dashboard_news'], 'action' => 'create'],
-        ['routes' => ['landing.about.index'], 'permissions' => ['dashboard_about'], 'action' => 'view'],
-        ['routes' => ['landing.about.store'], 'permissions' => ['dashboard_about'], 'action' => 'create'],
-        ['routes' => ['landing.about.delete'], 'permissions' => ['dashboard_about'], 'action' => 'delete'],
-        ['routes' => ['scholarship.index', 'scholarship.donation.index'], 'permissions' => ['dashboard_scholarship_sponsors'], 'action' => 'view'],
-        ['routes' => ['scholarship.donation.create', 'scholarship.donation.store'], 'permissions' => ['dashboard_scholarship_sponsors'], 'action' => 'create'],
-        ['routes' => ['scholarship.children.index'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'view'],
-        ['routes' => ['scholarship.children.store', 'scholarship.children.applications.store', 'scholarship.children.expenses.store'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'create'],
-        ['routes' => ['scholarship.children.update', 'scholarship.children.status', 'scholarship.children.expenses.update'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'update'],
-        ['routes' => ['scholarship.children.delete', 'scholarship.children.expenses.destroy'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'delete'],
-        ['routes' => ['scholarship.children.report'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'print'],
-        ['routes' => ['child.analytics.report.index'], 'permissions' => ['dashboard_child_analytics'], 'action' => 'view'],
-
-        ['routes' => ['institution.all'], 'permissions' => ['master_institutions'], 'action' => 'view'],
-        ['routes' => ['institution.store'], 'permissions' => ['master_institutions'], 'action' => 'create'],
-        ['routes' => ['institution.edit', 'institution.update'], 'permissions' => ['master_institutions'], 'action' => 'update'],
-        ['routes' => ['institution.delete'], 'permissions' => ['master_institutions'], 'action' => 'delete'],
-        ['routes' => ['subject.show'], 'permissions' => ['master_subjects'], 'action' => 'view'],
-        ['routes' => ['subject.store'], 'permissions' => ['master_subjects'], 'action' => 'create'],
-        ['routes' => ['subject.edit', 'subject.update'], 'permissions' => ['master_subjects'], 'action' => 'update'],
-        ['routes' => ['subject.delete'], 'permissions' => ['master_subjects'], 'action' => 'delete'],
-        ['routes' => ['house.show'], 'permissions' => ['master_houses'], 'action' => 'view'],
-        ['routes' => ['house.store'], 'permissions' => ['master_houses'], 'action' => 'create'],
-        ['routes' => ['house.edit', 'house.update'], 'permissions' => ['master_houses'], 'action' => 'update'],
-        ['routes' => ['house.delete'], 'permissions' => ['master_houses'], 'action' => 'delete'],
-        ['routes' => ['education.show'], 'permissions' => ['master_education_levels'], 'action' => 'view'],
-        ['routes' => ['education.store'], 'permissions' => ['master_education_levels'], 'action' => 'create'],
-        ['routes' => ['education.edit', 'education.update'], 'permissions' => ['master_education_levels'], 'action' => 'update'],
-        ['routes' => ['education.delete'], 'permissions' => ['master_education_levels'], 'action' => 'delete'],
-        ['routes' => ['semester.show'], 'permissions' => ['master_semesters'], 'action' => 'view'],
-        ['routes' => ['semester.store'], 'permissions' => ['master_semesters'], 'action' => 'create'],
-        ['routes' => ['semester.edit', 'semester.update'], 'permissions' => ['master_semesters'], 'action' => 'update'],
-        ['routes' => ['semester.delete'], 'permissions' => ['master_semesters'], 'action' => 'delete'],
-        ['routes' => ['psycho.show'], 'permissions' => ['master_psychiatric_diseases'], 'action' => 'view'],
-        ['routes' => ['psycho.store'], 'permissions' => ['master_psychiatric_diseases'], 'action' => 'create'],
-        ['routes' => ['psycho.edit', 'psycho.update'], 'permissions' => ['master_psychiatric_diseases'], 'action' => 'update'],
-        ['routes' => ['psycho.delete'], 'permissions' => ['master_psychiatric_diseases'], 'action' => 'delete'],
-        ['routes' => ['misbehavior.show'], 'permissions' => ['master_behaviors'], 'action' => 'view'],
-        ['routes' => ['misbehavior.store'], 'permissions' => ['master_behaviors'], 'action' => 'create'],
-        ['routes' => ['misbehavior.edit', 'misbehavior.update'], 'permissions' => ['master_behaviors'], 'action' => 'update'],
-        ['routes' => ['misbehavior.delete'], 'permissions' => ['master_behaviors'], 'action' => 'delete'],
-        ['routes' => ['outside.show'], 'permissions' => ['master_outside_types'], 'action' => 'view'],
-        ['routes' => ['outside.store'], 'permissions' => ['master_outside_types'], 'action' => 'create'],
-        ['routes' => ['outside.edit', 'outside.update'], 'permissions' => ['master_outside_types'], 'action' => 'update'],
-        ['routes' => ['outside.delete'], 'permissions' => ['master_outside_types'], 'action' => 'delete'],
-        ['routes' => ['document.show'], 'permissions' => ['master_documents'], 'action' => 'view'],
-        ['routes' => ['document.store'], 'permissions' => ['master_documents'], 'action' => 'create'],
-        ['routes' => ['document.edit', 'document.update'], 'permissions' => ['master_documents'], 'action' => 'update'],
-        ['routes' => ['document.delete'], 'permissions' => ['master_documents'], 'action' => 'delete'],
-        ['routes' => ['income.show'], 'permissions' => ['master_incomes'], 'action' => 'view'],
-        ['routes' => ['income.store'], 'permissions' => ['master_incomes'], 'action' => 'create'],
-        ['routes' => ['income.edit', 'income.update'], 'permissions' => ['master_incomes'], 'action' => 'update'],
-        ['routes' => ['income.delete'], 'permissions' => ['master_incomes'], 'action' => 'delete'],
-        ['routes' => ['help_type.show'], 'permissions' => ['master_help_types'], 'action' => 'view'],
-        ['routes' => ['help_type.store'], 'permissions' => ['master_help_types'], 'action' => 'create'],
-        ['routes' => ['help_type.edit', 'help_type.update'], 'permissions' => ['master_help_types'], 'action' => 'update'],
-        ['routes' => ['help_type.delete'], 'permissions' => ['master_help_types'], 'action' => 'delete'],
-        ['routes' => ['citizenship.show'], 'permissions' => ['master_citizenships'], 'action' => 'view'],
-        ['routes' => ['citizenship.store'], 'permissions' => ['master_citizenships'], 'action' => 'create'],
-        ['routes' => ['citizenship.edit', 'citizenship.update'], 'permissions' => ['master_citizenships'], 'action' => 'update'],
-        ['routes' => ['citizenship.delete'], 'permissions' => ['master_citizenships'], 'action' => 'delete'],
-        ['routes' => ['citizen.show'], 'permissions' => ['master_citizen_statuses'], 'action' => 'view'],
-        ['routes' => ['citizen.store'], 'permissions' => ['master_citizen_statuses'], 'action' => 'create'],
-        ['routes' => ['citizen.edit', 'citizen.update'], 'permissions' => ['master_citizen_statuses'], 'action' => 'update'],
-        ['routes' => ['citizen.delete'], 'permissions' => ['master_citizen_statuses'], 'action' => 'delete'],
-        ['routes' => ['translate.show'], 'permissions' => ['master_release_types'], 'action' => 'view'],
-        ['routes' => ['translate.store'], 'permissions' => ['master_release_types'], 'action' => 'create'],
-        ['routes' => ['translate.edit', 'translate.update'], 'permissions' => ['master_release_types'], 'action' => 'update'],
-        ['routes' => ['translate.delete'], 'permissions' => ['master_release_types'], 'action' => 'delete'],
-
-        ['routes' => ['refers.all'], 'permissions' => ['report_discharge_all'], 'action' => 'view'],
-        ['routes' => ['users.index'], 'permissions' => ['system_users'], 'action' => 'view'],
-        ['routes' => ['users.create', 'users.store'], 'permissions' => ['system_users'], 'action' => 'create'],
-        ['routes' => ['users.edit', 'users.update', 'users.toggle-status'], 'permissions' => ['system_users'], 'action' => 'update'],
-        ['routes' => ['users.destroy'], 'permissions' => ['system_users'], 'action' => 'delete'],
-
         // ทางเข้าแฟ้มผู้รับบริการ: ต้องมีสิทธิ์ดูอย่างน้อยหนึ่งฟอร์ม
         ['routes' => ['client.show', 'admin.index', 'admin.client.overview'], 'permissions' => [
             'registration_client_profile',
@@ -596,7 +429,7 @@ return [
         ['routes' => ['case_outside.report'], 'permissions' => ['welfare_outside_followup'], 'action' => 'print'],
 
         // 5.4 จำหน่าย
-        ['routes' => ['refers.index'], 'permissions' => ['welfare_discharge'], 'action' => 'view'],
+        ['routes' => ['refers.index', 'refers.all'], 'permissions' => ['welfare_discharge'], 'action' => 'view'],
         ['routes' => ['refers.store'], 'permissions' => ['welfare_discharge'], 'action' => 'create'],
         ['routes' => ['refers.approve', 'refers.restore'], 'permissions' => ['welfare_discharge'], 'action' => 'update'],
         ['routes' => ['refers.report'], 'permissions' => ['welfare_discharge'], 'action' => 'print'],

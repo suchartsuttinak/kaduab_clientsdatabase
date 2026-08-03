@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
     Route::middleware('auth')->group(function () {
     Route::get('/misbehavior', [MisbehaviorController::class, 'ShowMisbehavior'])->name('misbehavior.show');
     Route::post('/store/misbehavior', [MisbehaviorController::class, 'StoreMisbehavior'])->name('misbehavior.store');
-    Route::get('/edit/misbehavior/{id}', [MisbehaviorController::class, 'EditMisbehavior'])->name('misbehavior.edit');
+    Route::get('/edit/misbehavior/{id}', [MisbehaviorController::class, 'EditMisbehavior']);
     Route::post('/update/misbehavior', [MisbehaviorController::class, 'UpdateMisbehavior'])->name('misbehavior.update');
     Route::get('/delete/misbehavior/{id}', [MisbehaviorController::class, 'DeleteMisbehavior'])->name('misbehavior.delete');
 

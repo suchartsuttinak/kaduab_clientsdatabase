@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
     Route::middleware('auth')->group(function () {
     Route::get('/psycho', [PsychoController::class, 'ShowPsycho'])->name('psycho.show');
     Route::post('/store/psycho', [PsychoController::class, 'StorePsycho'])->name('psycho.store');
-    Route::get('/edit/psycho/{id}', [PsychoController::class, 'EditPsycho'])->name('psycho.edit');
+    Route::get('/edit/psycho/{id}', [PsychoController::class, 'EditPsycho']);
     Route::post('/update/psycho', [PsychoController::class, 'UpdatePsycho'])->name('psycho.update');
     Route::get('/delete/psycho/{id}', [PsychoController::class, 'DeletePsycho'])->name('psycho.delete');
 

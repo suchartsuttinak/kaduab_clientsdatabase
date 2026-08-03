@@ -37,10 +37,10 @@ class UserManagementController extends Controller
 
     public function create()
     {
-        $roles = $this->availableRolesForActor();
+        $roles = User::roleOptions();
         $projects = Project::orderBy('project_name')->get();
         $houses = House::orderBy('house_name')->get();
-        $permissionGroups = $this->permissionGroupsForActor();
+        $permissionGroups = config('user_permissions.groups', []);
 
         return view('backend.users.create', compact(
             'roles',
@@ -53,7 +53,6 @@ class UserManagementController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validateUser($request);
-        $this->guardDelegatedRole($validated['role']);
         $formPermissionsEnabled = $request->boolean('form_permissions_enabled');
 
         $user = DB::transaction(function () use ($request, $validated, $formPermissionsEnabled) {
@@ -89,11 +88,10 @@ class UserManagementController extends Controller
     public function edit($id)
     {
         $user = User::with(['houses', 'formPermissions'])->findOrFail($id);
-        $this->ensureActorCanManageTarget($user);
-        $roles = $this->availableRolesForActor();
+        $roles = User::roleOptions();
         $projects = Project::orderBy('project_name')->get();
         $houses = House::orderBy('house_name')->get();
-        $permissionGroups = $this->permissionGroupsForActor();
+        $permissionGroups = config('user_permissions.groups', []);
 
         return view('backend.users.edit', compact(
             'user',
@@ -107,9 +105,7 @@ class UserManagementController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::with('formPermissions')->findOrFail($id);
-        $this->ensureActorCanManageTarget($user);
         $validated = $this->validateUser($request, $user);
-        $this->guardDelegatedRole($validated['role']);
         $formPermissionsEnabled = $request->boolean('form_permissions_enabled');
 
         $this->protectLastAdmin(
@@ -157,7 +153,6 @@ class UserManagementController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        $this->ensureActorCanManageTarget($user);
 
         if ((int) auth()->id() === (int) $user->id) {
             return back()->with('error', 'ไม่สามารถลบบัญชีของตนเองได้');
@@ -182,7 +177,6 @@ class UserManagementController extends Controller
     public function toggleStatus($id)
     {
         $user = User::findOrFail($id);
-        $this->ensureActorCanManageTarget($user);
 
         if ((int) auth()->id() === (int) $user->id) {
             return back()->with('error', 'ไม่สามารถเปลี่ยนสถานะบัญชีของตนเองได้');
@@ -279,15 +273,6 @@ class UserManagementController extends Controller
                     'print' => in_array('print', $allowedActions, true) && !empty($submitted['print']),
                 ];
 
-                // ผู้ดูแลที่ได้รับมอบหมายแบบจำกัด ไม่สามารถมอบสิทธิ์สูงกว่าสิทธิ์ของตนเอง
-                $actor = auth()->user();
-                if ($actor && !$actor->isAdmin()) {
-                    foreach (array_keys($values) as $action) {
-                        $values[$action] = $values[$action]
-                            && $actor->hasFormPermission($permissionKey, $action);
-                    }
-                }
-
                 // สิทธิ์ทำรายการทุกชนิดต้องดูฟอร์มได้ด้วย
                 if ($values['create'] || $values['update'] || $values['delete'] || $values['print']) {
                     $values['view'] = true;
@@ -318,77 +303,6 @@ class UserManagementController extends Controller
         }
 
         $user->unsetRelation('formPermissions');
-    }
-
-    private function availableRolesForActor(): array
-    {
-        $roles = User::roleOptions();
-        $actor = auth()->user();
-
-        if ($actor && !$actor->isAdmin()) {
-            unset($roles[User::ROLE_ADMIN]);
-        }
-
-        return $roles;
-    }
-
-    private function permissionGroupsForActor(): array
-    {
-        $groups = config('user_permissions.groups', []);
-        $actor = auth()->user();
-
-        if (!$actor || $actor->isAdmin()) {
-            return $groups;
-        }
-
-        foreach ($groups as $groupKey => &$group) {
-            foreach (($group['items'] ?? []) as $permissionKey => &$item) {
-                $item['actions'] = array_values(array_filter(
-                    $item['actions'] ?? [],
-                    fn (string $action): bool => $actor->hasFormPermission($permissionKey, $action)
-                ));
-
-                if ($item['actions'] === []) {
-                    unset($group['items'][$permissionKey]);
-                }
-            }
-            unset($item);
-
-            if (empty($group['items'])) {
-                unset($groups[$groupKey]);
-            }
-        }
-        unset($group);
-
-        return $groups;
-    }
-
-    private function guardDelegatedRole(string $role): void
-    {
-        $actor = auth()->user();
-
-        if ($actor && !$actor->isAdmin() && $role === User::ROLE_ADMIN) {
-            throw ValidationException::withMessages([
-                'role' => 'เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถกำหนดบทบาทผู้ดูแลระบบได้',
-            ]);
-        }
-    }
-
-    private function ensureActorCanManageTarget(User $target): void
-    {
-        $actor = auth()->user();
-
-        if (!$actor || $actor->isAdmin()) {
-            return;
-        }
-
-        if ($target->isAdmin()) {
-            abort(403, 'บัญชีที่ได้รับมอบหมายไม่สามารถจัดการผู้ดูแลระบบได้');
-        }
-
-        if ((int) $actor->id === (int) $target->id) {
-            abort(403, 'กรุณาแก้ไขบัญชีของตนเองผ่านหน้าโปรไฟล์');
-        }
     }
 
     private function protectLastAdmin(User $user, string $newRole, string $newStatus): void

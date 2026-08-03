@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
     Route::middleware('auth')->group(function () {
     Route::get('/translate', [TranslateController::class, 'ShowTranslate'])->name('translate.show');
     Route::post('/store/translate', [TranslateController::class, 'StoreTranslate'])->name('translate.store');
-    Route::get('/edit/translate/{id}', [TranslateController::class, 'EditTranslate'])->name('translate.edit');
+    Route::get('/edit/translate/{id}', [TranslateController::class, 'EditTranslate']);
     Route::post('/update/translate', [TranslateController::class, 'UpdateTranslate'])->name('translate.update');
     Route::get('/delete/translate/{id}', [TranslateController::class, 'DeleteTranslate'])->name('translate.delete');
 });
