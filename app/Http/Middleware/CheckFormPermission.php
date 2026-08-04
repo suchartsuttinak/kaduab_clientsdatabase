@@ -20,10 +20,34 @@ class CheckFormPermission
             abort(401);
         }
 
-        if (!$user->hasFormPermission($permissionKey, $action)) {
-            abort(403, 'คุณไม่มีสิทธิ์ใช้งานส่วนนี้');
+        if ($user->hasFormPermission($permissionKey, $action)) {
+            return $next($request);
         }
 
-        return $next($request);
+        /* เปิด GET ของหน้าแก้ไขเพื่อดูข้อมูลเดิมแบบอ่านอย่างเดียว */
+        if (
+            $action === 'update'
+            && $request->isMethodSafe()
+            && $user->hasFormPermission($permissionKey, 'view')
+        ) {
+            $request->attributes->set('form_permission_readonly', true);
+            $request->attributes->set('form_permission_keys', [$permissionKey]);
+
+            return $next($request);
+        }
+
+        $message = match ($action) {
+            'create' => 'บัญชีนี้ไม่มีสิทธิ์เพิ่มข้อมูล',
+            'update' => 'บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูล',
+            'delete' => 'บัญชีนี้ไม่มีสิทธิ์ลบข้อมูล',
+            'print' => 'บัญชีนี้ไม่มีสิทธิ์พิมพ์หรือเปิดรายงาน',
+            default => 'คุณไม่มีสิทธิ์ใช้งานส่วนนี้',
+        };
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message], 403);
+        }
+
+        abort(403, $message);
     }
 }

@@ -2,128 +2,245 @@
 
 namespace App\Support;
 
-use App\Models\User;
 use Illuminate\Routing\Route as LaravelRoute;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Throwable;
 
 final class FormPermissionUi
 {
+    /** @var array<string, array<string, mixed>|null> */
+    private static array $resolvedRuleCache = [];
+
     /**
-     * สร้างข้อมูลสำหรับซ่อนปุ่ม/ลิงก์ที่ผู้ใช้ไม่มีสิทธิ์
-     * โดยใช้ route_permissions ชุดเดียวกับ Middleware
+     * สร้างสถานะสิทธิ์สำหรับส่วนติดต่อผู้ใช้จาก Route ปัจจุบัน
+     *
+     * โครงสร้างนี้รองรับ config/user_permissions.php รูปแบบเดิมของระบบ:
+     * - route_permissions[*].routes
+     * - route_permissions[*].permissions หรือ permission
+     * - route_permissions[*].action
      */
-    public static function forUser(?User $user, ?string $currentRouteName = null): array
+    public static function forUser(mixed $user, ?string $routeName): array
     {
-        if (!$user || $user->isAdmin() || !$user->form_permissions_enabled) {
-            return [
-                'enabled' => false,
-                'denied_routes' => [],
-                'current' => null,
-            ];
+        if (!$user || !method_exists($user, 'hasFormPermission')) {
+            return self::disabledState($routeName);
         }
 
-        $user->loadMissing('formPermissions');
-        $rules = config('user_permissions.route_permissions', []);
-        $denied = [];
-        $current = null;
+        $enabled = (bool) ($user->form_permissions_enabled ?? false);
 
-        foreach ($rules as $rule) {
+        if (!$enabled) {
+            return self::disabledState($routeName);
+        }
+
+        $currentRule = $routeName ? self::findRule($routeName) : null;
+
+        if ($currentRule === null) {
+            return self::disabledState($routeName);
+        }
+
+        $permissionKeys = self::permissionKeys($currentRule);
+        $current = [
+            'view'   => self::isAllowed($user, $permissionKeys, 'view'),
+            'create' => self::isAllowed($user, $permissionKeys, 'create'),
+            'update' => self::isAllowed($user, $permissionKeys, 'update'),
+            'delete' => self::isAllowed($user, $permissionKeys, 'delete'),
+            'print'  => self::isAllowed($user, $permissionKeys, 'print'),
+        ];
+
+        $current['readonly'] = $current['view']
+            && !$current['create']
+            && !$current['update']
+            && !$current['delete'];
+
+        return [
+            'enabled'         => true,
+            'route_name'      => $routeName,
+            'route_action'    => (string) ($currentRule['action'] ?? 'view'),
+            'permission_keys' => $permissionKeys,
+            'current'         => $current,
+            'denied_routes'   => self::deniedRoutes($user),
+        ];
+    }
+
+    private static function disabledState(?string $routeName): array
+    {
+        return [
+            'enabled'         => false,
+            'route_name'      => $routeName,
+            'route_action'    => null,
+            'permission_keys' => [],
+            'current'         => null,
+            'denied_routes'   => [],
+        ];
+    }
+
+    /**
+     * เลือกกฎที่เฉพาะเจาะจงที่สุด ไม่ใช้กฎแรกที่พบเพียงอย่างเดียว
+     * เพื่อป้องกัน wildcard กว้าง เช่น module.* ไปทับ module.edit/module.destroy
+     */
+    public static function findRule(string $routeName): ?array
+    {
+        if (array_key_exists($routeName, self::$resolvedRuleCache)) {
+            return self::$resolvedRuleCache[$routeName];
+        }
+
+        $bestRule = null;
+        $bestScore = PHP_INT_MIN;
+
+        foreach ((array) config('user_permissions.route_permissions', []) as $rule) {
+            if (!is_array($rule)) {
+                continue;
+            }
+
+            foreach ((array) ($rule['routes'] ?? []) as $pattern) {
+                $pattern = trim((string) $pattern);
+
+                if ($pattern === '' || !Str::is($pattern, $routeName)) {
+                    continue;
+                }
+
+                $wildcards = substr_count($pattern, '*') + substr_count($pattern, '?');
+                $exactBonus = $pattern === $routeName ? 100000 : 0;
+                $score = $exactBonus + (strlen($pattern) * 10) - ($wildcards * 1000);
+
+                if ($score > $bestScore) {
+                    $bestScore = $score;
+                    $bestRule = $rule;
+                }
+            }
+        }
+
+        return self::$resolvedRuleCache[$routeName] = $bestRule;
+    }
+
+    /** @return list<string> */
+    private static function permissionKeys(array $rule): array
+    {
+        $keys = $rule['permissions'] ?? $rule['permission'] ?? [];
+
+        return array_values(array_unique(array_filter(
+            array_map(static fn ($key): string => trim((string) $key), (array) $keys),
+            static fn (string $key): bool => $key !== ''
+        )));
+    }
+
+    private static function isAllowed(mixed $user, array $permissionKeys, string $action): bool
+    {
+        if ($permissionKeys === []) {
+            return true;
+        }
+
+        try {
+            if (count($permissionKeys) === 1) {
+                return (bool) $user->hasFormPermission($permissionKeys[0], $action);
+            }
+
+            if (method_exists($user, 'hasAnyFormPermission')) {
+                return (bool) $user->hasAnyFormPermission($permissionKeys, $action);
+            }
+
+            foreach ($permissionKeys as $permissionKey) {
+                if ($user->hasFormPermission($permissionKey, $action)) {
+                    return true;
+                }
+            }
+        } catch (Throwable) {
+            // หาก helper ของระบบเดิมผิดพลาด ให้ฝั่ง Middleware เป็นผู้ตัดสินขั้นสุดท้าย
+            return false;
+        }
+
+        return false;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function deniedRoutes(mixed $user): array
+    {
+        $denied = [];
+
+        foreach (Route::getRoutes() as $route) {
+            $routeName = $route->getName();
+
+            if (!$routeName) {
+                continue;
+            }
+
+            $rule = self::findRule($routeName);
+
+            if ($rule === null) {
+                continue;
+            }
+
+            $permissionKeys = self::permissionKeys($rule);
             $action = (string) ($rule['action'] ?? 'view');
-            $permissionKeys = array_values(array_filter((array) ($rule['permissions'] ?? [])));
+            $methods = array_values(array_filter(
+                array_map('strtoupper', $route->methods()),
+                static fn (string $method): bool => $method !== 'HEAD'
+            ));
+
             $allowed = self::isAllowed($user, $permissionKeys, $action);
 
-            if ($currentRouteName && self::matchesAnyPattern($currentRouteName, (array) ($rule['routes'] ?? []))) {
-                $current ??= self::currentPermissionState($user, $permissionKeys);
+            /*
+             * GET ของหน้าแก้ไขยังเปิดได้เมื่อมีสิทธิ์ดู เพื่อแสดงข้อมูลแบบอ่านอย่างเดียว
+             * แต่ PUT/PATCH/POST ของการอัปเดตยังถูกปฏิเสธตามสิทธิ์จริง
+             */
+            if (
+                !$allowed
+                && $action === 'update'
+                && self::containsSafeReadMethod($methods)
+                && self::isAllowed($user, $permissionKeys, 'view')
+            ) {
+                $allowed = true;
             }
 
             if ($allowed) {
                 continue;
             }
 
-            foreach (Route::getRoutes() as $route) {
-                $routeName = $route->getName();
-
-                if (!$routeName || !self::matchesAnyPattern($routeName, (array) ($rule['routes'] ?? []))) {
-                    continue;
-                }
-
-                $denied[$routeName . '|' . $action] = [
-                    'name' => $routeName,
-                    'action' => $action,
-                    'methods' => array_values(array_diff($route->methods(), ['HEAD'])),
-                    'pattern' => self::uriRegex($route),
-                ];
-            }
+            $denied[] = [
+                'name'        => $routeName,
+                'methods'     => $methods,
+                'pattern'     => self::routePathPattern($route),
+                'action'      => $action,
+                'permissions' => $permissionKeys,
+            ];
         }
 
-        return [
-            'enabled' => true,
-            'denied_routes' => array_values($denied),
-            'current' => $current,
-        ];
+        return $denied;
     }
 
-    private static function currentPermissionState(User $user, array $permissionKeys): ?array
+    /** @param list<string> $methods */
+    private static function containsSafeReadMethod(array $methods): bool
     {
-        if (count($permissionKeys) !== 1) {
-            return null;
-        }
-
-        $key = $permissionKeys[0];
-
-        return [
-            'permission_key' => $key,
-            'view' => $user->canViewForm($key),
-            'create' => $user->canCreateForm($key),
-            'update' => $user->canUpdateForm($key),
-            'delete' => $user->canDeleteForm($key),
-            'print' => $user->canPrintForm($key),
-        ];
+        return in_array('GET', $methods, true) || in_array('HEAD', $methods, true);
     }
 
-    private static function isAllowed(User $user, array $permissionKeys, string $action): bool
+    private static function routePathPattern(LaravelRoute $route): string
     {
-        if ($permissionKeys === []) {
-            return true;
-        }
-
-        return count($permissionKeys) === 1
-            ? $user->hasFormPermission($permissionKeys[0], $action)
-            : $user->hasAnyFormPermission($permissionKeys, $action);
-    }
-
-    private static function matchesAnyPattern(string $routeName, array $patterns): bool
-    {
-        foreach ($patterns as $pattern) {
-            if (Str::is((string) $pattern, $routeName)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static function uriRegex(LaravelRoute $route): string
-    {
-        $uri = trim($route->uri(), '/');
+        $uri = trim((string) $route->uri(), '/');
 
         if ($uri === '') {
-            return '^/$';
+            return '^/?$';
         }
 
-        $regex = '^';
+        $segments = explode('/', $uri);
+        $pattern = '^';
 
-        foreach (explode('/', $uri) as $segment) {
-            if (preg_match('/^\{[^}]+\?\}$/', $segment)) {
-                $regex .= '(?:/[^/]+)?';
-            } elseif (preg_match('/^\{[^}]+\}$/', $segment)) {
-                $regex .= '/[^/]+';
-            } else {
-                $regex .= '/' . preg_quote($segment, '/');
+        foreach ($segments as $segment) {
+            if (preg_match('/^\{[^}]+\?\}$/', $segment) === 1) {
+                $pattern .= '(?:/[^/?#]+)?';
+                continue;
             }
+
+            if (preg_match('/^\{[^}]+\}$/', $segment) === 1) {
+                $pattern .= '/[^/?#]+';
+                continue;
+            }
+
+            $literal = preg_quote($segment, '/');
+            $literal = preg_replace('/\\\{[^}]+\\\}/', '[^/?#]+', $literal) ?? $literal;
+            $pattern .= '/' . $literal;
         }
 
-        return $regex . '/?$';
+        return $pattern . '/?$';
     }
 }

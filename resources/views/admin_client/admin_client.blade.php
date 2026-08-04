@@ -1657,6 +1657,9 @@
         });
     </script>
 
+    {{-- FORM_PERMISSION_UI_V7: centralized, global read-only protection --}}
+    @include('components.form_permission_ui')
+
 </body>
 
 </html

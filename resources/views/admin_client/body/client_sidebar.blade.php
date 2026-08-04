@@ -212,5 +212,3 @@
     </div>
 </div>
 
-{{-- FORM_PERMISSION_UI_V6 --}}
-@include('components.form_permission_ui')

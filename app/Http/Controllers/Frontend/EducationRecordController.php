@@ -25,6 +25,19 @@ class EducationRecordController extends Controller
     {
         $client = Client::forUser(auth()->user())->findOrFail($client_id);
 
+        /*
+         * ผู้ใช้อ่านอย่างเดียวต้องเห็นข้อมูลเดิม ไม่ใช่ฟอร์มเพิ่มที่ว่างเปล่า
+         * จึงใช้หน้ารายการเดิม และส่วนกลางจะเปลี่ยนปุ่มแก้ไขเป็น “ดูข้อมูล”
+         */
+        if ($this->isGradeEntryReadOnly()) {
+            $educationRecords = $this->orderedEducationRecords($client->id);
+
+            return view(
+                'frontend.client.education_record.education_record_show',
+                compact('client', 'educationRecords')
+            );
+        }
+
         return view(
             'frontend.client.education_record.education_record_create',
             array_merge(['client' => $client], $this->formOptions())
@@ -196,16 +209,9 @@ class EducationRecordController extends Controller
     {
         $client = Client::forUser(auth()->user())->findOrFail($client_id);
 
-        $educationRecords = $this->educationRecordsWithSemesterQuery($client->id)
-            ->orderByRaw("
-                CAST(SUBSTRING_INDEX(semesters.semester_name, '/', -1) AS UNSIGNED) DESC,
-                CAST(SUBSTRING_INDEX(semesters.semester_name, '/', 1) AS UNSIGNED) DESC
-            ")
-            ->orderByDesc('education_records.record_date')
-            ->orderByDesc('education_records.id')
-            ->get();
+        $educationRecords = $this->orderedEducationRecords($client->id);
 
-        if ($educationRecords->isEmpty()) {
+        if ($educationRecords->isEmpty() && $this->canGradeEntry('create')) {
             return redirect()
                 ->route('education_record_add', ['client_id' => $client->id])
                 ->with('info', 'ยังไม่มีข้อมูลผลการเรียน กรุณาบันทึกข้อมูลก่อน');
@@ -242,7 +248,7 @@ class EducationRecordController extends Controller
             ->where('client_id', $clientId)
             ->exists();
 
-        $routeName = $hasRemainingRecords
+        $routeName = $hasRemainingRecords || !$this->canGradeEntry('create')
             ? 'education_record_show'
             : 'education_record_add';
 
@@ -315,6 +321,34 @@ class EducationRecordController extends Controller
      * Query กลางสำหรับดึงผลการเรียนพร้อมชื่อภาคเรียนโดยตรงจากตาราง semesters
      * ไม่พึ่งความสัมพันธ์เพียงอย่างเดียว และใช้ซ้ำได้ทั้งหน้ารายการ/รายงาน
      */
+    private function orderedEducationRecords(int $clientId)
+    {
+        return $this->educationRecordsWithSemesterQuery($clientId)
+            ->orderByRaw("
+                CAST(SUBSTRING_INDEX(semesters.semester_name, '/', -1) AS UNSIGNED) DESC,
+                CAST(SUBSTRING_INDEX(semesters.semester_name, '/', 1) AS UNSIGNED) DESC
+            ")
+            ->orderByDesc('education_records.record_date')
+            ->orderByDesc('education_records.id')
+            ->get();
+    }
+
+    private function isGradeEntryReadOnly(): bool
+    {
+        return $this->canGradeEntry('view') && !$this->canGradeEntry('create');
+    }
+
+    private function canGradeEntry(string $action): bool
+    {
+        $user = auth()->user();
+
+        if (!$user || !method_exists($user, 'hasFormPermission')) {
+            return true;
+        }
+
+        return (bool) $user->hasFormPermission('education_grade_entry', $action);
+    }
+
     private function educationRecordsWithSemesterQuery(int $clientId)
     {
         return EducationRecord::query()

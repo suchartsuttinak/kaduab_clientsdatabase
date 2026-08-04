@@ -1,6 +1,24 @@
 @extends('admin.admin_master')
 @section('admin')
 
+@php
+    /*
+     * สิทธิ์สำหรับปุ่มในคอลัมน์ “การจัดการ”
+     * ผู้ใช้อ่านอย่างเดียวต้องยังเปิดหน้า client.edit เพื่อดูข้อมูลได้
+     * แต่ปุ่มจะถูกแสดงเป็น “ดูทะเบียนประวัติ” แทนปุ่มแก้ไข
+     */
+    $clientPermissionUser = auth()->user();
+    $clientPermissionEnabled = $clientPermissionUser
+        && method_exists($clientPermissionUser, 'hasFormPermission')
+        && (bool) ($clientPermissionUser->form_permissions_enabled ?? false);
+
+    $canUpdateClientProfile = !$clientPermissionEnabled
+        || $clientPermissionUser->hasFormPermission('registration_client_profile', 'update');
+
+    $canDeleteClientProfile = !$clientPermissionEnabled
+        || $clientPermissionUser->hasFormPermission('registration_client_profile', 'delete');
+@endphp
+
 <style>
     .client-page{padding-top:.5rem}
     .client-toolbar{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;justify-content:space-between;margin-bottom:1rem}
@@ -29,10 +47,68 @@
     .client-subtext{font-size:12px;color:#6b7280}
     .problem-list{margin:0;padding-left:1rem;font-size:13px}
     .status-badge{padding:.45rem .7rem;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
-    .action-cell{width:190px;min-width:190px;white-space:nowrap;text-align:center}
-    .action-group{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;white-space:nowrap}
-    .action-btn{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;padding:0;flex:0 0 34px;border:none}
-    .action-btn span{line-height:1;font-size:18px}
+    .action-cell{
+        width:210px;
+        min-width:210px;
+        white-space:nowrap;
+        text-align:center;
+    }
+    .action-group{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        flex-wrap:nowrap;
+        gap:.42rem;
+        white-space:nowrap;
+        vertical-align:middle;
+    }
+    .action-group .action-btn{
+        width:36px !important;
+        min-width:36px !important;
+        height:36px !important;
+        min-height:36px !important;
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        flex:0 0 36px !important;
+        margin:0 !important;
+        padding:0 !important;
+        border:1px solid transparent !important;
+        border-radius:10px !important;
+        box-shadow:0 3px 9px rgba(15,23,42,.10) !important;
+        line-height:1 !important;
+        text-decoration:none !important;
+        vertical-align:middle !important;
+        transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
+    }
+    .action-group .action-btn:hover{
+        transform:translateY(-1px);
+        box-shadow:0 5px 13px rgba(15,23,42,.16) !important;
+        filter:brightness(.98);
+    }
+    .action-group .action-btn:focus-visible{
+        outline:3px solid rgba(59,130,246,.22) !important;
+        outline-offset:2px;
+    }
+    .action-group .action-btn span{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        margin:0 !important;
+        line-height:1 !important;
+        font-size:19px !important;
+    }
+    .action-group .action-btn-readonly{
+        color:#fff !important;
+        background:#2563eb !important;
+        border-color:#2563eb !important;
+    }
+    .action-group .action-btn-readonly:hover,
+    .action-group .action-btn-readonly:focus{
+        color:#fff !important;
+        background:#1d4ed8 !important;
+        border-color:#1d4ed8 !important;
+    }
     .client-pagination-wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem;margin-top:1rem}
     .client-pagination-wrap nav{margin-left:auto}
     .client-pagination-wrap .pagination{margin:0;gap:.25rem;flex-wrap:wrap}
@@ -183,15 +259,78 @@
                                             @endif
                                         </td>
                                         <td class="action-cell">
-                                            <div class="action-group">
-                                                <a title="ดูข้อมูล" href="{{ route('admin.index', $client->id) }}" class="btn btn-primary btn-sm action-btn"><span class="mdi mdi-eye-circle mdi-18px"></span></a>
-                                                <a title="แก้ไข" href="{{ route('client.edit', $client->id) }}" class="btn btn-success btn-sm action-btn"><span class="mdi mdi-book-edit-outline mdi-18px"></span></a>
-                                                @if(in_array(auth()->user()->role, ['admin', 'social_worker']))
-                                                    <button type="button" title="ลบ" class="btn btn-danger btn-sm action-btn client-delete-btn" data-url="{{ route('client.delete', $client->id) }}"><span class="mdi mdi-trash-can-outline mdi-18px"></span></button>
+                                            <div class="action-group" role="group" aria-label="การจัดการข้อมูลผู้รับบริการ">
+                                                <a
+                                                    href="{{ route('admin.index', $client->id) }}"
+                                                    class="btn btn-primary btn-sm action-btn"
+                                                    title="ดูข้อมูล"
+                                                    aria-label="ดูข้อมูล {{ $client->full_name }}"
+                                                    data-permission-action="view"
+                                                    data-permission-keep
+                                                >
+                                                    <span class="mdi mdi-eye-circle mdi-18px" aria-hidden="true"></span>
+                                                </a>
+
+                                                @if($canUpdateClientProfile)
+                                                    <a
+                                                        href="{{ route('client.edit', $client->id) }}"
+                                                        class="btn btn-success btn-sm action-btn"
+                                                        title="แก้ไขทะเบียนประวัติ"
+                                                        aria-label="แก้ไขทะเบียนประวัติ {{ $client->full_name }}"
+                                                        data-permission-action="update"
+                                                    >
+                                                        <span class="mdi mdi-book-edit-outline mdi-18px" aria-hidden="true"></span>
+                                                    </a>
+                                                @else
+                                                    <a
+                                                        href="{{ route('client.edit', $client->id) }}"
+                                                        class="btn btn-sm action-btn action-btn-readonly"
+                                                        title="ดูทะเบียนประวัติ (อ่านอย่างเดียว)"
+                                                        aria-label="ดูทะเบียนประวัติ {{ $client->full_name }} แบบอ่านอย่างเดียว"
+                                                        data-permission-action="view"
+                                                        data-permission-keep
+                                                    >
+                                                        <span class="mdi mdi-book-open-page-variant-outline mdi-18px" aria-hidden="true"></span>
+                                                    </a>
                                                 @endif
-                                                <a title="จำหน่าย" href="{{ route('refers.index', $client->id) }}" class="btn btn-secondary btn-sm action-btn"><span class="mdi mdi-file-export-outline mdi-18px"></span></a>
+
+                                                @if(
+                                                    in_array(auth()->user()->role, ['admin', 'social_worker'], true)
+                                                    && $canDeleteClientProfile
+                                                )
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-danger btn-sm action-btn client-delete-btn"
+                                                        title="ลบ"
+                                                        aria-label="ลบข้อมูล {{ $client->full_name }}"
+                                                        data-url="{{ route('client.delete', $client->id) }}"
+                                                        data-permission-action="delete"
+                                                    >
+                                                        <span class="mdi mdi-trash-can-outline mdi-18px" aria-hidden="true"></span>
+                                                    </button>
+                                                @endif
+
+                                                <a
+                                                    href="{{ route('refers.index', $client->id) }}"
+                                                    class="btn btn-secondary btn-sm action-btn"
+                                                    title="ดูข้อมูลการจำหน่าย"
+                                                    aria-label="ดูข้อมูลการจำหน่าย {{ $client->full_name }}"
+                                                    data-permission-action="view"
+                                                    data-permission-keep
+                                                >
+                                                    <span class="mdi mdi-file-export-outline mdi-18px" aria-hidden="true"></span>
+                                                </a>
+
                                                 @if(auth()->user()->role === 'admin')
-                                                    <a title="ย้ายเคส" href="{{ route('client.transfer.create', $client->id) }}" class="btn btn-warning btn-sm action-btn"><span class="mdi mdi-arrow-right-bold mdi-18px"></span></a>
+                                                    <a
+                                                        href="{{ route('client.transfer.create', $client->id) }}"
+                                                        class="btn btn-warning btn-sm action-btn"
+                                                        title="ย้ายเคส"
+                                                        aria-label="ย้ายเคส {{ $client->full_name }}"
+                                                        data-permission-action="update"
+                                                    >
+                                                        <span class="mdi mdi-arrow-right-bold mdi-18px" aria-hidden="true"></span>
+                                                    </a>
                                                 @endif
                                             </div>
                                         </td>

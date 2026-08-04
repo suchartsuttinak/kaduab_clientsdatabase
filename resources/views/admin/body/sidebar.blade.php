@@ -218,7 +218,7 @@
     </div>
 </div>
 
-@include('components.form_permission_ui')
+
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
