@@ -12,19 +12,29 @@
         display: none !important;
     }
 
+    /*
+     * PERMISSION_READONLY_COMPACT_RIGHT_V74
+     * แสดงสถานะอ่านอย่างเดียวเป็นข้อความขนาดเล็กที่มุมขวา
+     * ไม่ใช้การ์ด พื้นหลัง กรอบ หรือเงา เพื่อลดพื้นที่แนวตั้งของทุกหน้า
+     */
     .permission-readonly-banner {
         display: flex;
-        align-items: flex-start;
-        gap: .8rem;
-        margin: 0 0 1rem;
-        padding: .95rem 1rem;
-        color: #163a63;
-        background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
-        border: 1px solid #bfdbfe;
-        border-radius: 14px;
-        box-shadow: 0 8px 20px rgba(37, 99, 235, .07);
-        font-size: .92rem;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .38rem;
+        width: 100%;
+        min-height: 20px;
+        margin: 0 0 .35rem;
+        padding: 0 .2rem;
+        color: #64748b;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        font-size: .78rem;
         font-weight: 700;
+        line-height: 1.25;
+        text-align: right;
     }
 
     .permission-readonly-banner .permission-banner-icon {
@@ -32,20 +42,13 @@
         align-items: center;
         justify-content: center;
         flex: 0 0 auto;
-        width: 34px;
-        height: 34px;
-        color: #1d4ed8;
-        background: #dbeafe;
-        border-radius: 10px;
-    }
-
-    .permission-readonly-banner small {
-        display: block;
-        margin-top: .12rem;
-        color: #52657c;
+        width: auto;
+        height: auto;
+        color: #2563eb;
+        background: transparent;
+        border-radius: 0;
         font-size: .82rem;
-        font-weight: 400;
-        line-height: 1.55;
+        line-height: 1;
     }
 
     .permission-readonly-form {
@@ -54,9 +57,17 @@
         --permission-field-border: #dbe4ef;
     }
 
+    /*
+     * PERMISSION_CHECKABLE_VISUAL_INTEGRITY_V73
+     *
+     * ห้ามนำ background ของ input:disabled ทั่วไปไปทับ checkbox/radio
+     * เพราะ Bootstrap และฟอร์มแบบ custom ใช้ background-color/background-image
+     * แสดงเครื่องหมาย checked หากถูกทับจะดูเหมือนข้อมูลไม่ได้เลือก ทั้งที่ค่า
+     * checked ใน DOM และฐานข้อมูลยังอยู่ครบ
+     */
     .permission-readonly-form input[readonly],
     .permission-readonly-form textarea[readonly],
-    .permission-readonly-form input:disabled,
+    .permission-readonly-form input:disabled:not([type="checkbox"]):not([type="radio"]),
     .permission-readonly-form textarea:disabled,
     .permission-readonly-form select:disabled,
     .permission-readonly-form .form-control:disabled,
@@ -70,10 +81,24 @@
         cursor: default !important;
     }
 
+    /*
+     * คงรูปลักษณ์ checked เดิมของแต่ละหน้าไว้ทั้งหมด
+     * ไม่กำหนด background หรือ background-image ใหม่ เพื่อไม่ทำลาย
+     * Bootstrap, accent-color และ custom radio/checkbox card ของแต่ละโมดูล
+     */
     .permission-readonly-form input[type="checkbox"]:disabled,
     .permission-readonly-form input[type="radio"]:disabled {
         opacity: 1 !important;
         filter: none !important;
+        cursor: default !important;
+        pointer-events: none !important;
+    }
+
+    /* Bootstrap ลดความทึบของ label เมื่อ input ถูก disabled โดยค่าเริ่มต้น */
+    .permission-readonly-form .form-check-input:disabled ~ .form-check-label,
+    .permission-readonly-form .form-check-input[disabled] ~ .form-check-label {
+        opacity: 1 !important;
+        color: inherit !important;
         cursor: default !important;
     }
 
@@ -118,7 +143,11 @@
         border-color: #93c5fd !important;
     }
 
-    .permission-readonly-modal .modal-title::after {
+    /*
+     * เติมคำว่า “อ่านอย่างเดียว” เฉพาะ Modal ที่ยังไม่มีข้อความนี้ในหัวข้อ
+     * ป้องกันการแสดงซ้ำกับ Modal ที่กำหนดข้อความอ่านอย่างเดียวเอง
+     */
+    .permission-readonly-modal:not(.permission-readonly-title-supplied) .modal-title::after {
         content: ' · อ่านอย่างเดียว';
         color: #2563eb;
         font-size: .78em;
@@ -127,8 +156,10 @@
 
     @media (max-width: 575.98px) {
         .permission-readonly-banner {
-            padding: .85rem;
-            border-radius: 12px;
+            min-height: 18px;
+            margin-bottom: .25rem;
+            padding-right: .1rem;
+            font-size: .74rem;
         }
     }
 </style>
@@ -137,7 +168,7 @@
 (function () {
     'use strict';
 
-    // Permission Read-only V7.2 — Menu Integrity Hotfix
+    // Permission Read-only V7.4 — Compact Right Status + Checkbox/Radio Visual Integrity
     const state = @json($permissionUi, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     window.__FORM_PERMISSION_UI__ = state;
 
@@ -402,6 +433,29 @@
         element.dataset.permissionUiHidden = '1';
     }
 
+    /*
+     * ตรวจว่าหัวข้อ Modal มีคำว่า “อ่านอย่างเดียว” จากหน้าเดิมอยู่แล้วหรือไม่
+     * หากมี จะไม่ให้ CSS ของระบบกลางเติมข้อความซ้ำอีกครั้ง
+     */
+    function syncReadonlyModalTitle(modal) {
+        if (!modal) return;
+
+        const title = modal.querySelector?.('.modal-title');
+        if (!title) {
+            modal.classList.remove('permission-readonly-title-supplied');
+            return;
+        }
+
+        const hasReadonlyText = /อ่านอย่างเดียว/i.test(
+            String(title.textContent || '').replace(/\s+/g, ' ').trim()
+        );
+
+        modal.classList.toggle(
+            'permission-readonly-title-supplied',
+            hasReadonlyText
+        );
+    }
+
     function showReadOnlyNotice() {
         if (window.Swal) {
             window.Swal.fire({
@@ -516,6 +570,7 @@
         const modal = form.closest('.modal');
         if (modal) {
             modal.classList.add('permission-readonly-modal');
+            syncReadonlyModalTitle(modal);
         }
 
         lockRichTextEditors(form);
@@ -648,6 +703,8 @@
     function processModal(modal) {
         if (!modal) return;
 
+        syncReadonlyModalTitle(modal);
+
         const forms = Array.from(modal.querySelectorAll('form'));
         if (forms.length === 0) return;
 
@@ -709,9 +766,7 @@
         banner.setAttribute('role', 'status');
         banner.innerHTML =
             '<span class="permission-banner-icon"><i class="bi bi-eye-fill" aria-hidden="true"></i></span>' +
-            '<span>โหมดอ่านอย่างเดียว' +
-            '<small>ข้อมูลยังแสดงตามปกติและสามารถคัดลอกได้ แต่ระบบปิดการเพิ่ม แก้ไข บันทึก และลบจากทั้งหน้าจอและฝั่งเซิร์ฟเวอร์</small>' +
-            '</span>';
+            '<span>โหมดอ่านอย่างเดียว</span>';
 
         container.prepend(banner);
     }

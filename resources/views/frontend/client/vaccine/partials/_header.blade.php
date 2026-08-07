@@ -30,11 +30,40 @@
         </div>
 
         <div class="vaccine-hero__actions">
+            @if($canShowVaccineFilter ?? false)
+                <button type="button"
+                        class="vaccine-hero__btn vaccine-hero__btn-filter"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#vaccineFilterPanel"
+                        data-vaccine-filter-toggle
+                        data-permission-keep
+                        aria-controls="vaccineFilterPanel"
+                        aria-expanded="{{ ($showVaccineFilter ?? false) ? 'true' : 'false' }}">
+                    <i class="bi {{ ($showVaccineFilter ?? false) ? 'bi-chevron-up' : 'bi-funnel' }}"
+                       data-filter-toggle-icon></i>
+                    <span data-filter-toggle-label>
+                        {{ ($showVaccineFilter ?? false) ? 'ซ่อนการค้นหา' : 'ค้นหารายการ' }}
+                    </span>
+                </button>
+            @endif
+
             @unless($isVaccineFirstEmptyState ?? false)
+                <a href="{{ route('vaccine.report', [
+                        'client_id'  => $client->id,
+                        'start_date' => request('start_date'),
+                        'end_date'   => request('end_date'),
+                    ]) }}"
+                   class="vaccine-hero__btn vaccine-hero__btn-report"
+                   data-permission-action="print">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>รายงานรวม</span>
+                </a>
+
                 <button type="button"
                         class="vaccine-hero__btn vaccine-hero__btn-primary"
                         data-bs-toggle="modal"
-                        data-bs-target="#add-vaccine-modal">
+                        data-bs-target="#add-vaccine-modal"
+                        data-permission-action="create">
                     <i class="bi bi-plus-circle"></i>
                     <span>เพิ่มข้อมูลวัคซีน</span>
                 </button>
@@ -42,6 +71,7 @@
 
             <a href="{{ route('admin.index', $client->id) }}"
                class="vaccine-hero__btn vaccine-hero__btn-back"
+               data-permission-keep
                aria-label="กลับหน้าหลักผู้รับบริการ">
                 <i class="bi bi-arrow-left-circle"></i>
                 <span>กลับ</span>
@@ -213,6 +243,37 @@
     background: linear-gradient(135deg, #1d4ed8, #1e40af);
     border-color: #1d4ed8;
     box-shadow: 0 11px 22px rgba(37, 99, 235, .26);
+}
+
+.vaccine-page .vaccine-hero__btn-filter {
+    color: #334155;
+    background: rgba(255, 255, 255, .94);
+    border-color: #cbd5e1;
+    box-shadow: 0 5px 12px rgba(15, 23, 42, .06);
+}
+
+.vaccine-page .vaccine-hero__btn-filter:hover,
+.vaccine-page .vaccine-hero__btn-filter:focus,
+.vaccine-page .vaccine-hero__btn-filter[aria-expanded="true"] {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border-color: #93c5fd;
+    box-shadow: 0 8px 16px rgba(37, 99, 235, .12);
+}
+
+.vaccine-page .vaccine-hero__btn-report {
+    color: #1e40af;
+    background: rgba(255, 255, 255, .94);
+    border-color: #bfdbfe;
+    box-shadow: 0 5px 12px rgba(37, 99, 235, .08);
+}
+
+.vaccine-page .vaccine-hero__btn-report:hover,
+.vaccine-page .vaccine-hero__btn-report:focus {
+    color: #1d4ed8;
+    background: #f8fbff;
+    border-color: #60a5fa;
+    box-shadow: 0 8px 16px rgba(37, 99, 235, .13);
 }
 
 .vaccine-page .vaccine-hero__btn-back {

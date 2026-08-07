@@ -7,6 +7,12 @@
         ?? ((isset($psychiatrics) && $psychiatrics->isEmpty())
             && !request()->filled('start_date')
             && !request()->filled('end_date'));
+
+    $canShowPsychiatricFilter = $canShowPsychiatricFilter
+        ?? (isset($psychiatrics) && $psychiatrics->isNotEmpty());
+    $showPsychiatricFilter = $showPsychiatricFilter ?? false;
+    $canPsychiatricCreate = $canPsychiatricCreate ?? true;
+    $canPsychiatricPrint = $canPsychiatricPrint ?? true;
 @endphp
 
 <div class="card-header psychiatric-header p-0 border-0 bg-transparent">
@@ -124,6 +130,39 @@
                 color .2s ease;
         }
 
+        .psy-header-pro-btn-filter {
+            color: #334155;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 5px 12px rgba(15, 23, 42, 0.06);
+        }
+
+        .psy-header-pro-btn-filter:hover,
+        .psy-header-pro-btn-filter:focus,
+        .psy-header-pro-btn-filter[aria-expanded="true"] {
+            color: #1d4ed8;
+            background: #eff6ff;
+            border-color: #93c5fd;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.12);
+        }
+
+        .psy-header-pro-btn-report {
+            color: #1d4ed8;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid #93c5fd;
+            box-shadow: 0 5px 12px rgba(37, 99, 235, 0.08);
+        }
+
+        .psy-header-pro-btn-report:hover,
+        .psy-header-pro-btn-report:focus {
+            color: #1e40af;
+            background: #eff6ff;
+            border-color: #60a5fa;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.14);
+        }
+
         .psy-header-pro-btn-add {
             border: 0;
             color: #ffffff;
@@ -229,19 +268,52 @@
             </div>
 
             <div class="psy-header-pro-actions">
-                @unless($isPsychiatricFirstEmptyState)
+                @if($canShowPsychiatricFilter)
+                    <button type="button"
+                            class="btn psy-header-pro-btn psy-header-pro-btn-filter"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#psychiatricFilterPanel"
+                            data-psychiatric-filter-toggle
+                            data-permission-keep
+                            aria-controls="psychiatricFilterPanel"
+                            aria-expanded="{{ $showPsychiatricFilter ? 'true' : 'false' }}">
+                        <i class="bi {{ $showPsychiatricFilter ? 'bi-chevron-up' : 'bi-funnel' }}"
+                           data-filter-toggle-icon
+                           aria-hidden="true"></i>
+                        <span data-filter-toggle-label>
+                            {{ $showPsychiatricFilter ? 'ซ่อนการค้นหา' : 'ค้นหารายการ' }}
+                        </span>
+                    </button>
+                @endif
+
+                @if(!$isPsychiatricFirstEmptyState && $canPsychiatricPrint)
+                    <a href="{{ route('psychiatric.report', [
+                            'client_id' => $client->id,
+                            'start_date' => request('start_date'),
+                            'end_date' => request('end_date'),
+                        ]) }}"
+                       class="psy-header-pro-btn psy-header-pro-btn-report"
+                       data-permission-action="print">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>รายงานรวม</span>
+                    </a>
+                @endif
+
+                @if(!$isPsychiatricFirstEmptyState && $canPsychiatricCreate)
                     <button type="button"
                             class="btn psy-header-pro-btn psy-header-pro-btn-add"
                             data-bs-toggle="modal"
                             data-bs-target="#createPsychiatricModal"
+                            data-permission-action="create"
                             id="btn-create-psychiatric">
                         <i class="bi bi-plus-circle"></i>
                         <span>เพิ่มข้อมูล</span>
                     </button>
-                @endunless
+                @endif
 
                 <a href="{{ route('client.show', $client->id) }}"
                    class="psy-header-pro-btn psy-header-pro-btn-back"
+                   data-permission-keep
                    aria-label="กลับหน้าผู้รับบริการ">
                     <i class="bi bi-arrow-left-circle"></i>
                     <span>กลับ</span>

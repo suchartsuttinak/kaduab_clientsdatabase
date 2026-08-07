@@ -22,6 +22,7 @@
                     <th style="width: 13%;">การดำเนินงาน</th>
                     <th>ผลการติดตาม</th>
                     <th style="width: 12%;">ผู้ติดตาม</th>
+                    <th>หมายเหตุ</th>
                     <th style="width: 16%;">จัดการ</th>
                 </tr>
             </thead>
@@ -56,18 +57,18 @@
                         <td>
                             <div class="co-cell-result">
                                 {{ $case->results ?: '-' }}
-
-                                @if(filled($case->remerk))
-                                    <span class="co-cell-note">
-                                        <strong>หมายเหตุ:</strong> {{ $case->remerk }}
-                                    </span>
-                                @endif
                             </div>
                         </td>
 
                         <td>
                             <div class="co-cell">
                                 {{ $case->teacher ?: '-' }}
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="co-cell">
+                                {{ $case->remerk ?: '-' }}
                             </div>
                         </td>
 

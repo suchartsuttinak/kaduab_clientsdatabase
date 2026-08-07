@@ -134,7 +134,7 @@
             @include('frontend.client.case_outside.partials._header')
 
             <div class="co-body">
-                @include('frontend.client.case_outside.partials.info-card')
+                {{-- @include('frontend.client.case_outside.partials.info-card') --}}
                 @include('frontend.client.case_outside.partials._table')
             </div>
         </div>

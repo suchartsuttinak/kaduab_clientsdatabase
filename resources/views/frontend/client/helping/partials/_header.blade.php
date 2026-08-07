@@ -1,6 +1,8 @@
 @php
     $hasAnySessions = $hasAnySessions ?? $sessions->isNotEmpty();
     $hasDateFilter = request()->filled('from') || request()->filled('to');
+    $hasFilterErrors = isset($errors) && $errors->getBag('filter')->any();
+    $showFilterPanel = $hasDateFilter || $hasFilterErrors;
     $clientName = $client->fullname ?? $client->full_name ?? '-';
 @endphp
 
@@ -94,6 +96,29 @@
         transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
     }
 
+    .help-page .hp-btn-filter {
+        color: #1d4ed8;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+    }
+
+    .help-page .hp-btn-filter:hover,
+    .help-page .hp-btn-filter:focus,
+    .help-page .hp-btn-filter[aria-expanded="true"] {
+        color: #1e40af;
+        background: #dbeafe;
+        border-color: #93c5fd;
+        transform: translateY(-1px);
+    }
+
+    .help-page .hp-btn-filter .hp-filter-chevron {
+        transition: transform .2s ease;
+    }
+
+    .help-page .hp-btn-filter[aria-expanded="true"] .hp-filter-chevron {
+        transform: rotate(180deg);
+    }
+
     .help-page .hp-btn-primary {
         color: #fff;
         border: 1px solid #1d4ed8;
@@ -121,8 +146,12 @@
         transform: translateY(-1px);
     }
 
-    .help-page .hp-filter-card {
+    .help-page .hp-filter-collapse {
         margin: 1rem 0;
+    }
+
+    .help-page .hp-filter-collapse .hp-filter-card {
+        margin: 0;
         padding: 1rem 1.1rem;
     }
 
@@ -316,6 +345,18 @@
 
     <div class="hp-header-actions">
         @if($hasAnySessions)
+            <button type="button"
+                    class="hp-btn hp-btn-filter"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#helpSearchPanel"
+                    aria-expanded="{{ $showFilterPanel ? 'true' : 'false' }}"
+                    aria-controls="helpSearchPanel"
+                    data-help-filter-toggle>
+                <i class="bi bi-search"></i>
+                <span data-help-filter-label>{{ $showFilterPanel ? 'ซ่อนค้นหา' : 'ค้นหา' }}</span>
+                <i class="bi bi-chevron-down hp-filter-chevron" aria-hidden="true"></i>
+            </button>
+
             <a href="{{ route('help_sessions.create', $client->id) }}"
                class="hp-btn hp-btn-primary">
                 <i class="bi bi-plus-circle"></i>
@@ -334,7 +375,9 @@
 @if($hasAnySessions)
     @include('frontend.client.helping.partials.profile-card')
 
-    <section class="hp-filter-card">
+    <div id="helpSearchPanel"
+         class="collapse hp-filter-collapse {{ $showFilterPanel ? 'show' : '' }}">
+        <section class="hp-filter-card">
         <div class="hp-filter-head">
             <div class="hp-filter-title">
                 <i class="bi bi-funnel-fill"></i>
@@ -401,7 +444,8 @@
         <div class="hp-filter-note">
             ไม่เลือกวันที่ ระบบจะแสดงข้อมูลทั้งหมดโดยอัตโนมัติ
         </div>
-    </section>
+        </section>
+    </div>
 @else
     <section class="hp-empty-card" role="status">
         <div class="hp-empty-icon" aria-hidden="true">

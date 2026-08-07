@@ -8,18 +8,18 @@
         <div class="modal-content addictive-modal">
             <div class="modal-header addictive-modal-header">
                 <div class="addictive-modal-title-wrap">
-                    <div class="addictive-modal-icon"><i class="bi bi-pencil-square"></i></div>
+                    <div class="addictive-modal-icon"><i id="editAddictiveIcon" class="bi bi-pencil-square"></i></div>
                     <div>
                         <h5 class="modal-title addictive-modal-title mb-0" id="editAddictiveLabel">
                             แก้ไขข้อมูลการตรวจสารเสพติด
                         </h5>
-                        <div class="addictive-modal-subtitle">ปรับปรุงผลการตรวจและแนวทางดำเนินการต่อ</div>
+                        <div class="addictive-modal-subtitle" id="editAddictiveSubtitle">ปรับปรุงผลการตรวจและแนวทางดำเนินการต่อ</div>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
             </div>
 
-            <form id="addictive-edit-form" method="POST" novalidate>
+            <form id="addictive-edit-form" method="POST" novalidate data-permission-action="update">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="client_id" value="{{ $client->id }}">
@@ -172,7 +172,7 @@
                     <button type="button" class="btn btn-cancel-modern" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> ปิด
                     </button>
-                    <button type="submit" class="btn btn-save-modern">
+                    <button type="submit" id="addictive-edit-submit" class="btn btn-save-modern" data-permission-action="update">
                         <i class="bi bi-save"></i> อัปเดตข้อมูล
                     </button>
                 </div>

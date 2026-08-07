@@ -1,44 +1,46 @@
-<div class="card border-0 shadow-sm medical-table-card">
-    <div class="card-body">
-        <div class="medical-empty-state text-center py-5 px-3">
-            <div class="medical-empty-state-icon mb-3">
-                <i class="bi bi-clipboard-x"></i>
+@php
+    $medicalFilterActive = request()->filled('start_date') || request()->filled('end_date');
+    $medicalFilteredEmpty = ($hasMedicalRecords ?? false) && $medicalFilterActive;
+@endphp
+
+<div class="md-table-card" data-permission-keep>
+    <div class="md-table-head">
+        <h2 class="md-table-title">
+            <i class="bi bi-list-check" aria-hidden="true"></i>
+            รายการการรักษาพยาบาล
+        </h2>
+        <span class="md-table-meta">ทั้งหมด 0 รายการ</span>
+    </div>
+
+    <div class="md-table-body">
+        <div class="md-empty">
+            <div class="md-empty-icon">
+                <i class="bi {{ $medicalFilteredEmpty ? 'bi-search' : 'bi-clipboard2-pulse' }}"></i>
             </div>
-            @if(request()->filled('start_date') || request()->filled('end_date') || old('start_date') || old('end_date'))
-                <h6 class="fw-bold mb-2">ไม่พบข้อมูลในช่วงวันที่ที่เลือก</h6>
-                <p class="text-muted mb-3 small">
-                    ลองเปลี่ยนช่วงวันที่ หรือล้างค่าตัวกรองเพื่อดูข้อมูลทั้งหมด
-                </p>
+
+            @if($medicalFilteredEmpty)
+                <h3 class="md-empty-title">ไม่พบข้อมูลตามช่วงวันที่ที่เลือก</h3>
+                <p class="md-empty-text">ปรับช่วงวันที่ใหม่ หรือล้างตัวกรองเพื่อแสดงข้อมูลทั้งหมด</p>
+                <a href="{{ route('medical.add', ['client_id' => $client->id]) }}"
+                   class="btn btn-outline-secondary md-btn"
+                   data-permission-keep>
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    <span>ล้างตัวกรอง</span>
+                </a>
             @else
-                <h6 class="fw-bold mb-2">ยังไม่มีข้อมูลการรักษาพยาบาล</h6>
-                <p class="text-muted mb-3 small">
-                    เริ่มต้นเพิ่มข้อมูลการรักษาเพื่อให้ระบบติดตามสุขภาพได้ครบถ้วน
-                </p>
+                <h3 class="md-empty-title">ยังไม่มีข้อมูลการรักษาพยาบาล</h3>
+                <p class="md-empty-text">เพิ่มข้อมูลครั้งแรกเพื่อเริ่มบันทึกและติดตามการรักษา</p>
+                @if($canMedicalCreate)
+                    <button type="button"
+                            class="btn btn-primary md-btn"
+                            data-bs-toggle="modal"
+                            data-bs-target="#add-medical-modal"
+                            data-permission-action="create">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>เพิ่มข้อมูล</span>
+                    </button>
+                @endif
             @endif
-            <button type="button"
-                    class="btn btn-primary medical-btn medical-btn-primary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#add-medical-modal">
-                <i class="bi bi-plus-circle"></i>
-                <span>เพิ่มข้อมูล</span>
-            </button>
         </div>
     </div>
 </div>
-
-@push('styles')
-<style>
-.medical-page .medical-empty-state-icon {
-    width: 72px;
-    height: 72px;
-    margin: 0 auto;
-    border-radius: 18px;
-    background: #eff6ff;
-    color: #2563eb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-}
-</style>
-@endpush

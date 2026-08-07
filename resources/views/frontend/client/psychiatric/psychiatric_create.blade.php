@@ -3,12 +3,52 @@
 @section('content')
 @php
     /*
-     * สถานะว่างครั้งแรกจะแสดงเฉพาะเมื่อยังไม่มีข้อมูลจริง
-     * และผู้ใช้ไม่ได้กำลังค้นหาด้วยช่วงวันที่
+     * สถานะข้อมูลและตัวกรอง ใช้ร่วมกันทั้ง Header, Filter และ Empty state
+     * URL ที่มี start_date/end_date เป็นค่าว่าง จะไม่ถือว่าเปิดตัวกรอง
      */
     $hasPsychiatricRows = isset($psychiatrics) && $psychiatrics->isNotEmpty();
-    $hasActivePsychiatricFilter = request()->filled('start_date') || request()->filled('end_date');
-    $showPsychiatricFirstEmptyState = !$hasPsychiatricRows && !$hasActivePsychiatricFilter;
+
+    $hasActivePsychiatricFilter = request()->filled('start_date')
+        || request()->filled('end_date')
+        || filled(old('start_date'))
+        || filled(old('end_date'));
+
+    $psychiatricFilterErrorBag = $errors->getBag('filters');
+    $hasPsychiatricFilterErrors = $psychiatricFilterErrorBag->has('start_date')
+        || $psychiatricFilterErrorBag->has('end_date')
+        || (blank(old('_form_context')) && (
+            $errors->has('start_date') || $errors->has('end_date')
+        ));
+
+    /* เปิดตัวกรองอัตโนมัติเฉพาะเมื่อมีค่าค้นหา หรือ Validation ตัวกรองผิดพลาด */
+    $showPsychiatricFilter = $hasActivePsychiatricFilter || $hasPsychiatricFilterErrors;
+    $canShowPsychiatricFilter = $hasPsychiatricRows
+        || $hasActivePsychiatricFilter
+        || $hasPsychiatricFilterErrors;
+
+    $showPsychiatricFirstEmptyState = !$hasPsychiatricRows
+        && !$hasActivePsychiatricFilter
+        && !$hasPsychiatricFilterErrors;
+
+    /* สิทธิ์รายฟอร์ม: ตัวกรองยังใช้งานได้ในโหมดอ่านอย่างเดียว */
+    $permissionUser = auth()->user();
+    $fallbackWriteRoles = ['admin', 'executive', 'social_worker'];
+
+    $canPsychiatricCreate = $permissionUser && method_exists($permissionUser, 'canCreateForm')
+        ? $permissionUser->canCreateForm('health_psychiatric')
+        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
+
+    $canPsychiatricUpdate = $permissionUser && method_exists($permissionUser, 'canUpdateForm')
+        ? $permissionUser->canUpdateForm('health_psychiatric')
+        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
+
+    $canPsychiatricDelete = $permissionUser && method_exists($permissionUser, 'canDeleteForm')
+        ? $permissionUser->canDeleteForm('health_psychiatric')
+        : $permissionUser?->role === 'admin';
+
+    $canPsychiatricPrint = $permissionUser && method_exists($permissionUser, 'canPrintForm')
+        ? $permissionUser->canPrintForm('health_psychiatric')
+        : true;
 @endphp
 
 <div class="container-fluid mt-2 psychiatric-page">
@@ -31,14 +71,17 @@
                     เริ่มต้นบันทึกผลการส่งตรวจ การวินิจฉัย การรักษา และการติดตามของผู้รับบริการรายนี้
                 </p>
 
-                <button type="button"
-                        class="btn psychiatric-empty-add-btn"
-                        data-bs-toggle="modal"
-                        data-bs-target="#createPsychiatricModal"
-                        id="btn-create-psychiatric">
-                    <i class="bi bi-plus-circle"></i>
-                    <span>เพิ่มข้อมูลการตรวจจิตเวชครั้งแรก</span>
-                </button>
+                @if($canPsychiatricCreate)
+                    <button type="button"
+                            class="btn psychiatric-empty-add-btn"
+                            data-bs-toggle="modal"
+                            data-bs-target="#createPsychiatricModal"
+                            data-permission-action="create"
+                            id="btn-create-psychiatric">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>เพิ่มข้อมูลการตรวจจิตเวชครั้งแรก</span>
+                    </button>
+                @endif
             </div>
         </section>
     @else

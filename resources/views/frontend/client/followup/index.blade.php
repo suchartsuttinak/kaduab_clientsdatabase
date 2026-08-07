@@ -114,6 +114,111 @@
             align-items: center;
         }
 
+        .followup-page .followup-btn {
+            min-height: 42px;
+            padding: .65rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .45rem;
+            border-radius: 12px;
+            border-width: 1px;
+            font-weight: 700;
+            line-height: 1.25;
+            white-space: nowrap;
+            box-shadow: 0 5px 14px rgba(15, 23, 42, .07);
+            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+        }
+
+        .followup-page .followup-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, .11);
+        }
+
+
+        .followup-page .followup-btn:disabled,
+        .followup-page .followup-btn.disabled {
+            opacity: 1;
+            transform: none;
+            cursor: not-allowed;
+            box-shadow: 0 5px 14px rgba(15, 23, 42, .07);
+        }
+
+        .followup-page .followup-btn:focus-visible {
+            outline: 0;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, .16), 0 8px 18px rgba(15, 23, 42, .1);
+        }
+
+        .followup-page .followup-btn-primary {
+            color: #fff;
+            border-color: #1d4ed8;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+
+        .followup-page .followup-btn-primary:hover,
+        .followup-page .followup-btn-primary:focus,
+        .followup-page .followup-btn-primary:active {
+            color: #fff;
+            border-color: #1e40af;
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        }
+
+        .followup-page .followup-btn-filter {
+            color: #1d4ed8;
+            border-color: #93c5fd;
+            background: #eff6ff;
+        }
+
+        .followup-page .followup-btn-filter:hover,
+        .followup-page .followup-btn-filter:focus,
+        .followup-page .followup-btn-filter[aria-expanded="true"] {
+            color: #fff;
+            border-color: #2563eb;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .followup-page .followup-btn-filter .followup-filter-chevron {
+            font-size: .78rem;
+            transition: transform .2s ease;
+        }
+
+        .followup-page .followup-btn-filter[aria-expanded="true"] .followup-filter-chevron {
+            transform: rotate(180deg);
+        }
+
+        .followup-page .followup-btn-report {
+            color: #0f766e;
+            border-color: #99f6e4;
+            background: #f0fdfa;
+        }
+
+        .followup-page .followup-btn-report:hover,
+        .followup-page .followup-btn-report:focus {
+            color: #fff;
+            border-color: #0f766e;
+            background: #0f766e;
+        }
+
+        .followup-page .followup-btn-back,
+        .followup-page .followup-btn-secondary {
+            color: #475569;
+            border-color: #cbd5e1;
+            background: #fff;
+        }
+
+        .followup-page .followup-btn-back:hover,
+        .followup-page .followup-btn-back:focus,
+        .followup-page .followup-btn-secondary:hover,
+        .followup-page .followup-btn-secondary:focus {
+            color: #0f172a;
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+
+        .followup-page .followup-search-collapse {
+            width: 100%;
+        }
+
         .followup-page .followup-note {
             color: #64748b;
             font-size: .95rem;
@@ -267,6 +372,50 @@
             line-height: 1;
         }
 
+
+        .followup-page .btn-action-report {
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+            background: #eff6ff;
+        }
+
+        .followup-page .btn-action-report:hover,
+        .followup-page .btn-action-report:focus {
+            color: #fff;
+            border-color: #2563eb;
+            background: #2563eb;
+        }
+
+        .followup-page .btn-action-edit {
+            color: #92400e;
+            border-color: #fde68a;
+            background: #fffbeb;
+        }
+
+        .followup-page .btn-action-edit:hover,
+        .followup-page .btn-action-edit:focus {
+            color: #fff;
+            border-color: #d97706;
+            background: #d97706;
+        }
+
+        .followup-page .btn-action-delete {
+            color: #b91c1c;
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        .followup-page .btn-action-delete:hover,
+        .followup-page .btn-action-delete:focus {
+            color: #fff;
+            border-color: #dc2626;
+            background: #dc2626;
+        }
+
+        .followup-page .modal-footer .followup-btn {
+            min-width: 120px;
+        }
+
         .followup-page .dataTables_wrapper .dataTables_length,
         .followup-page .dataTables_wrapper .dataTables_filter {
             margin-bottom: .25rem;
@@ -377,7 +526,7 @@
         @media (min-width: 768px) and (max-width: 1199.98px) {
             .followup-page .followup-toolbar {
                 display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
+                grid-template-columns: repeat(2, minmax(0, 1fr));
                 align-items: stretch;
                 gap: .65rem;
             }
@@ -598,9 +747,14 @@
             || !empty($dateFrom)
             || !empty($dateTo);
 
-        // ✅ มีข้อมูล หรือมีการค้นหาตามวันที่แล้ว ให้แสดง filter/table
-        // ✅ ถ้ายังไม่มีข้อมูลจริงและไม่ได้ค้นหา ให้ซ่อน filter/table
-        $showDataSection = $hasFollowupRows || $hasDateFilter;
+        $hasFilterErrors = $errors->has('date_from') || $errors->has('date_to');
+        $showSearchPanel = $hasDateFilter || $hasFilterErrors;
+
+        $canManageFollowup = auth()->check()
+            && in_array(auth()->user()->role, ['admin', 'executive', 'social_worker']);
+
+        // มีข้อมูล หรือกำลังค้นหาตามช่วงวันที่ จึงแสดงส่วนค้นหา/ตาราง
+        $showDataSection = $hasFollowupRows || $hasDateFilter || $hasFilterErrors;
     @endphp
 
     <div class="followup-card">
@@ -636,78 +790,97 @@
                     </div>
                 </div>
 
-                <div class="followup-badge">
-                    <i class="bi bi-clipboard2-pulse"></i>
-                    <span>{{ $followups->count() }} รายการ</span>
-                </div>
+                @if($hasFollowupRows)
+                    <div class="followup-badge">
+                        <i class="bi bi-clipboard2-pulse"></i>
+                        <span>{{ $followups->count() }} รายการ</span>
+                    </div>
+                @endif
             </div>
         </div>
 
         <div class="followup-toolbar">
             <div class="followup-toolbar-left">
-                <a href="{{ route('client.edit', $client->id) }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left-circle me-1"></i>
-                    กลับหน้าแก้ไขผู้รับบริการ
+                <a href="{{ route('client.edit', $client->id) }}"
+                   class="btn followup-btn followup-btn-back">
+                    <i class="bi bi-arrow-left-circle"></i>
+                    <span>กลับหน้าแก้ไขผู้รับบริการ</span>
                 </a>
 
                 @if($hasFollowupRows)
-                    <a href="{{ route('followup.report', $client->id) }}" target="_blank" class="btn btn-outline-primary">
-                        <i class="bi bi-printer me-1"></i>
-                        รายงาน
+                    <a href="{{ route('followup.report', $client->id) }}"
+                       class="btn followup-btn followup-btn-report">
+                        <i class="bi bi-printer"></i>
+                        <span>รายงาน</span>
                     </a>
                 @endif
             </div>
 
-              @if($hasFollowupRows)
             <div class="followup-toolbar-right">
-               
-                @if(auth()->check() && in_array(auth()->user()->role, ['admin', 'executive', 'social_worker']))
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFollowupModal">
-                        <i class="bi bi-plus-circle me-1"></i>
-                        เพิ่มข้อมูลติดตามผล
+                @if($showDataSection)
+                    <button type="button"
+                            class="btn followup-btn followup-btn-filter"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#followupSearchPanel"
+                            aria-expanded="{{ $showSearchPanel ? 'true' : 'false' }}"
+                            aria-controls="followupSearchPanel"
+                            data-followup-filter-toggle>
+                        <i class="bi bi-search"></i>
+                        <span data-followup-filter-label>{{ $showSearchPanel ? 'ซ่อนค้นหา' : 'ค้นหา' }}</span>
+                        <i class="bi bi-chevron-down followup-filter-chevron" aria-hidden="true"></i>
                     </button>
                 @endif
-                 
+
+                @if($canManageFollowup && $showDataSection)
+                    <button type="button"
+                            class="btn followup-btn followup-btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#createFollowupModal">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>เพิ่มข้อมูลติดตามผล</span>
+                    </button>
+                @endif
             </div>
-            @endif
         </div>
 
         @if($showDataSection)
-            <div class="followup-filter-box">
-                <form action="{{ route('followup.index', $client->id) }}" method="GET" class="row g-3 align-items-end">
+            <div id="followupSearchPanel"
+                 class="collapse followup-search-collapse {{ $showSearchPanel ? 'show' : '' }}">
+                <div class="followup-filter-box">
+                    <form action="{{ route('followup.index', $client->id) }}" method="GET" class="row g-3 align-items-end">
                     <div class="col-12 col-md-3">
                         <label class="form-label fw-semibold">วันที่เริ่มต้น</label>
-                        <input type="date" name="date_from" class="form-control" value="{{ $dateFrom ?? request('date_from') }}">
+                        <input type="date" name="date_from" class="form-control" value="{{ $dateFrom ?? request('date_from') }}" max="{{ now('Asia/Bangkok')->toDateString() }}">
                     </div>
 
                     <div class="col-12 col-md-3">
                         <label class="form-label fw-semibold">วันที่สิ้นสุด</label>
-                        <input type="date" name="date_to" class="form-control" value="{{ $dateTo ?? request('date_to') }}">
+                        <input type="date" name="date_to" class="form-control" value="{{ $dateTo ?? request('date_to') }}" max="{{ now('Asia/Bangkok')->toDateString() }}">
                     </div>
 
                     <div class="col-12 col-md-6">
                         <div class="followup-filter-actions">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-funnel me-1"></i>
-                                ค้นหาตามช่วงวันที่
+                            <button type="submit" class="btn followup-btn followup-btn-primary">
+                                <i class="bi bi-search"></i>
+                                <span>ค้นหาตามช่วงวันที่</span>
                             </button>
 
-                            <a href="{{ route('followup.index', $client->id) }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-clockwise me-1"></i>
-                                ล้างตัวกรอง
+                            <a href="{{ route('followup.index', $client->id) }}" class="btn followup-btn followup-btn-secondary">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                <span>ล้างตัวกรอง</span>
                             </a>
 
                             @if($hasFollowupRows)
                                 <a href="{{ route('followup.report', ['client_id' => $client->id, 'date_from' => request('date_from'), 'date_to' => request('date_to')]) }}"
-                                   target="_blank"
-                                   class="btn btn-outline-primary">
-                                    <i class="bi bi-file-earmark-text me-1"></i>
-                                    รายงานตามช่วงวันที่
+                                   class="btn followup-btn followup-btn-report">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                    <span>รายงานตามช่วงวันที่</span>
                                 </a>
                             @endif
                         </div>
                     </div>
-                </form>
+                    </form>
+                </div>
             </div>
 
             @if($hasFollowupRows)
@@ -741,18 +914,16 @@
                                     <td class="action-column action-cell text-center">
                                         <div class="action-group justify-content-center">
                                             <a href="{{ route('followup.report_item', $item->id) }}"
-                                               target="_blank"
-                                               rel="noopener noreferrer"
-                                               class="btn btn-outline-primary btn-sm btn-action"
+                                               class="btn btn-sm btn-action btn-action-report"
                                                title="เปิดรายงาน"
                                                aria-label="เปิดรายงาน">
                                                 <i class="bi bi-file-earmark-text"></i>
                                             </a>
 
-                                            @if(auth()->check() && in_array(auth()->user()->role, ['admin', 'executive', 'social_worker']))
+                                            @if($canManageFollowup)
                                                 <button
                                                     type="button"
-                                                    class="btn btn-warning btn-sm btn-action edit-followup-btn"
+                                                    class="btn btn-sm btn-action btn-action-edit edit-followup-btn"
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#editFollowupModal"
                                                     data-id="{{ $item->id }}"
@@ -768,7 +939,7 @@
                                             @if(auth()->check() && auth()->user()->role === 'admin')
                                                 <form action="{{ route('followup.delete', $item->id) }}" method="POST" class="d-inline delete-followup-form">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-danger btn-sm btn-action" title="ลบ">
+                                                    <button type="submit" class="btn btn-sm btn-action btn-action-delete" title="ลบ" aria-label="ลบ">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>
@@ -791,9 +962,9 @@
                         กรุณาปรับช่วงวันที่ใหม่ หรือล้างตัวกรองเพื่อกลับไปดูข้อมูลทั้งหมด
                     </p>
 
-                    <a href="{{ route('followup.index', $client->id) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise me-1"></i>
-                        ล้างตัวกรอง
+                    <a href="{{ route('followup.index', $client->id) }}" class="btn followup-btn followup-btn-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        <span>ล้างตัวกรอง</span>
                     </a>
                 </div>
             @endif
@@ -809,10 +980,13 @@
                     เพื่อให้หน้าจอดูสะอาดและใช้งานง่ายขึ้น
                 </p>
 
-                @if(auth()->check() && in_array(auth()->user()->role, ['admin', 'executive', 'social_worker']))
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFollowupModal">
-                        <i class="bi bi-plus-circle me-1"></i>
-                        เพิ่มข้อมูลติดตามผล
+                @if($canManageFollowup)
+                    <button type="button"
+                            class="btn followup-btn followup-btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#createFollowupModal">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>เพิ่มข้อมูลติดตามผล</span>
                     </button>
                 @endif
             </div>
@@ -822,7 +996,7 @@
     {{-- Create Modal --}}
     <div class="modal fade" id="createFollowupModal" tabindex="-1" aria-labelledby="createFollowupModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <form action="{{ route('followup.store', $client->id) }}" method="POST" class="modal-content">
+            <form action="{{ route('followup.store', $client->id) }}" method="POST" class="modal-content followup-save-form">
                 @csrf
 
                 <div class="modal-header">
@@ -839,7 +1013,7 @@
                             <label class="form-label">
                                 วันเดือนปี <span class="required-star">*</span>
                             </label>
-                            <input type="date" name="followup_date" class="form-control" value="{{ old('followup_date') }}" required>
+                            <input type="date" name="followup_date" class="form-control" value="{{ old('followup_date') }}" max="{{ now('Asia/Bangkok')->toDateString() }}" required>
                         </div>
 
                         <div class="col-12">
@@ -857,13 +1031,14 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">
-                        ปิด
+                    <button type="button" class="btn followup-btn followup-btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i>
+                        <span>ปิด</span>
                     </button>
 
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle me-1"></i>
-                        บันทึกข้อมูล
+                    <button type="submit" class="btn followup-btn followup-btn-primary">
+                        <i class="bi bi-check-circle"></i>
+                        <span>บันทึกข้อมูล</span>
                     </button>
                 </div>
             </form>
@@ -873,7 +1048,7 @@
     {{-- Edit Modal --}}
     <div class="modal fade" id="editFollowupModal" tabindex="-1" aria-labelledby="editFollowupModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <form id="editFollowupForm" action="" method="POST" class="modal-content">
+            <form id="editFollowupForm" action="" method="POST" class="modal-content followup-save-form">
                 @csrf
 
                 <div class="modal-header">
@@ -890,7 +1065,7 @@
                             <label class="form-label">
                                 วันเดือนปี <span class="required-star">*</span>
                             </label>
-                            <input type="date" name="followup_date" id="edit_followup_date" class="form-control" required>
+                            <input type="date" name="followup_date" id="edit_followup_date" class="form-control" max="{{ now('Asia/Bangkok')->toDateString() }}" required>
                         </div>
 
                         <div class="col-12">
@@ -908,13 +1083,14 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">
-                        ปิด
+                    <button type="button" class="btn followup-btn followup-btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i>
+                        <span>ปิด</span>
                     </button>
 
-                    <button type="submit" class="btn btn-warning">
-                        <i class="bi bi-check-circle me-1"></i>
-                        บันทึกการแก้ไข
+                    <button type="submit" class="btn followup-btn followup-btn-primary">
+                        <i class="bi bi-check-circle"></i>
+                        <span>บันทึกการแก้ไข</span>
                     </button>
                 </div>
             </form>
@@ -927,6 +1103,27 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const followupPage = document.querySelector('.followup-page');
+    const successMessage = @json(session('success') ?? session('message') ?? session('status') ?? session('success_message'));
+    const filterPanel = document.getElementById('followupSearchPanel');
+    const filterToggle = document.querySelector('[data-followup-filter-toggle]');
+
+    if (filterPanel && filterToggle) {
+        const filterLabel = filterToggle.querySelector('[data-followup-filter-label]');
+
+        filterPanel.addEventListener('show.bs.collapse', function () {
+            filterToggle.setAttribute('aria-expanded', 'true');
+            if (filterLabel) {
+                filterLabel.textContent = 'ซ่อนค้นหา';
+            }
+        });
+
+        filterPanel.addEventListener('hide.bs.collapse', function () {
+            filterToggle.setAttribute('aria-expanded', 'false');
+            if (filterLabel) {
+                filterLabel.textContent = 'ค้นหา';
+            }
+        });
+    }
 
     function syncFollowupBottomSpace() {
         if (!followupPage) {
@@ -1025,6 +1222,44 @@ document.addEventListener('DOMContentLoaded', function () {
             editNote.value = note;
         });
     });
+
+    document.querySelectorAll('.followup-save-form').forEach(form => {
+        form.addEventListener('submit', function () {
+            const submitButton = form.querySelector('button[type="submit"]');
+
+            if (!submitButton || submitButton.disabled) {
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.setAttribute('aria-disabled', 'true');
+        });
+    });
+
+    if (successMessage) {
+        let successTitle = 'บันทึกข้อมูลสำเร็จ';
+
+        if (/แก้ไข|อัปเดต/.test(successMessage)) {
+            successTitle = 'แก้ไขข้อมูลสำเร็จ';
+        } else if (/ลบ/.test(successMessage)) {
+            successTitle = 'ลบข้อมูลสำเร็จ';
+        }
+
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'success',
+                title: successTitle,
+                text: successMessage,
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: true,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#2563eb'
+            });
+        } else {
+            window.alert(successMessage);
+        }
+    }
 
     document.querySelectorAll('.delete-followup-form').forEach(form => {
         form.addEventListener('submit', function (e) {

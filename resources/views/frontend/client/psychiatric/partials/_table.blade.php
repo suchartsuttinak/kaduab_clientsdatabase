@@ -468,9 +468,232 @@
                     font-size: 0.82rem;
                 }
             }
+
+            /* ===== DataTable normalization: รูปแบบเดียวกับหน้า Medical ===== */
+            .psychiatric-page .psy-inline-table-wrap {
+                width: 100%;
+                min-width: 0;
+                overflow: visible;
+            }
+
+            .psychiatric-page .psy-inline-table {
+                width: 100% !important;
+                min-width: 1180px;
+                margin: 0 !important;
+                table-layout: fixed;
+            }
+
+            .psychiatric-page .psy-col-actions {
+                position: static !important;
+                right: auto !important;
+                width: 185px !important;
+                min-width: 185px !important;
+                max-width: 185px !important;
+                box-shadow: none !important;
+            }
+
+            .psychiatric-page .dataTables_wrapper {
+                width: 100%;
+                min-width: 0;
+                padding-top: 0;
+            }
+
+            .psychiatric-page .psy-dt-top,
+            .psychiatric-page .psy-dt-bottom {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
+                flex-wrap: wrap;
+                background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            }
+
+            .psychiatric-page .psy-dt-top {
+                padding: 0.85rem 1rem 0.7rem;
+                border-bottom: 1px solid #eef2f7;
+            }
+
+            .psychiatric-page .psy-dt-bottom {
+                padding: 0.75rem 1rem 0.9rem;
+                border-top: 1px solid #eef2f7;
+            }
+
+            .psychiatric-page .dataTables_length,
+            .psychiatric-page .dataTables_filter,
+            .psychiatric-page .dataTables_info,
+            .psychiatric-page .dataTables_paginate {
+                float: none !important;
+                width: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                color: #64748b;
+                font-size: 0.82rem;
+                text-align: initial !important;
+            }
+
+            .psychiatric-page .dataTables_length label,
+            .psychiatric-page .dataTables_filter label {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.45rem;
+                margin: 0 !important;
+                color: #64748b;
+                font-size: 0.82rem;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+
+            .psychiatric-page .dataTables_length select,
+            .psychiatric-page .dataTables_filter input {
+                min-height: 36px;
+                margin: 0 !important;
+                border: 1px solid #cbd5e1;
+                border-radius: 9px;
+                background: #ffffff;
+                color: #334155;
+                box-shadow: none !important;
+                font-size: 0.84rem;
+            }
+
+            .psychiatric-page .dataTables_length select {
+                min-width: 72px;
+                padding: 0.3rem 1.85rem 0.3rem 0.58rem;
+            }
+
+            .psychiatric-page .dataTables_filter input {
+                width: min(240px, 46vw) !important;
+                min-width: 0 !important;
+                padding: 0.38rem 0.65rem;
+            }
+
+            .psychiatric-page .dataTables_length select:focus,
+            .psychiatric-page .dataTables_filter input:focus {
+                border-color: #93c5fd;
+                outline: 0;
+                box-shadow: 0 0 0 0.18rem rgba(37, 99, 235, 0.09) !important;
+            }
+
+            .psychiatric-page .dataTables_scroll {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .psychiatric-page .dataTables_scrollHead {
+                overflow: hidden !important;
+                border-bottom: 0 !important;
+            }
+
+            .psychiatric-page .dataTables_scrollHeadInner {
+                min-width: 100% !important;
+            }
+
+            .psychiatric-page .dataTables_scrollHead table,
+            .psychiatric-page .dataTables_scrollBody table {
+                width: 100% !important;
+                margin: 0 !important;
+            }
+
+            .psychiatric-page .dataTables_scrollBody {
+                overflow-x: auto !important;
+                overflow-y: visible !important;
+                border: 0 !important;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+            }
+
+            .psychiatric-page .dataTables_scrollBody::-webkit-scrollbar {
+                height: 8px;
+            }
+
+            .psychiatric-page .dataTables_scrollBody::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 999px;
+            }
+
+            .psychiatric-page .dataTables_paginate .paginate_button {
+                min-width: 32px;
+                min-height: 32px;
+                margin: 0 2px !important;
+                padding: 0.34rem 0.58rem !important;
+                border: 1px solid transparent !important;
+                border-radius: 7px !important;
+                background: transparent !important;
+                color: #475569 !important;
+                box-shadow: none !important;
+            }
+
+            .psychiatric-page .dataTables_paginate .paginate_button:hover {
+                border-color: #cbd5e1 !important;
+                background: #f8fafc !important;
+                color: #1e293b !important;
+            }
+
+            .psychiatric-page .dataTables_paginate .paginate_button.current,
+            .psychiatric-page .dataTables_paginate .paginate_button.current:hover {
+                border-color: #2563eb !important;
+                background: #2563eb !important;
+                color: #ffffff !important;
+            }
+
+            .psychiatric-page .psy-inline-readonly-label {
+                min-height: 34px;
+                padding: 0.42rem 0.72rem;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.4rem;
+                border: 1px solid #bfdbfe;
+                border-radius: 10px;
+                background: #eff6ff;
+                color: #1d4ed8;
+                font-size: 0.82rem;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+
+            @media (min-width: 1400px) {
+                .psychiatric-page .psy-inline-table {
+                    min-width: 100% !important;
+                }
+            }
+
+            @media (max-width: 575.98px) {
+                .psychiatric-page .psy-dt-top,
+                .psychiatric-page .psy-dt-bottom {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    align-items: stretch;
+                    padding-left: 0.85rem;
+                    padding-right: 0.85rem;
+                }
+
+                .psychiatric-page .dataTables_length,
+                .psychiatric-page .dataTables_filter,
+                .psychiatric-page .dataTables_info,
+                .psychiatric-page .dataTables_paginate {
+                    width: 100% !important;
+                }
+
+                .psychiatric-page .dataTables_length label,
+                .psychiatric-page .dataTables_filter label {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+
+                .psychiatric-page .dataTables_filter input {
+                    width: 100% !important;
+                }
+
+                .psychiatric-page .dataTables_paginate {
+                    display: flex;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+            }
         </style>
 
-        <div class="card border-0 shadow-sm psychiatric-table-card psy-inline-record-card">
+        <div class="card border-0 shadow-sm psychiatric-table-card psy-inline-record-card" data-permission-keep>
             <div class="psy-inline-record-head">
                 <div class="psy-inline-record-head-left">
                     <div class="psy-inline-record-icon">
@@ -484,7 +707,7 @@
             </div>
 
             <div class="psy-inline-table-wrap">
-                <table id="datatable-psychiatric" class="table align-middle psy-inline-table">
+                <table id="datatable-psychiatric" class="table align-middle psy-inline-table" data-permission-keep>
                     <thead>
                         <tr>
                             {{-- <th style="min-width: 40px;">#</th> --}}
@@ -542,31 +765,46 @@
 
                                 <td class="text-center psy-col-actions">
                                     <div class="psy-inline-action-group">
-                                        <button type="button"
-                                                class="btn btn-warning btn-sm psy-inline-btn-action js-psychiatric-edit"
-                                                data-id="{{ $psychiatric->id }}"
-                                                data-edit-url="{{ url('/psychiatric/edit-json/' . $psychiatric->id) }}"
-                                                data-update-url="{{ url('/psychiatric/' . $psychiatric->id) }}">
-                                            <i class="bi bi-pencil-square"></i>
-                                            <span>แก้ไข</span>
-                                        </button>
+                                        @if($canPsychiatricUpdate)
+                                            <button type="button"
+                                                    class="btn btn-warning btn-sm psy-inline-btn-action js-psychiatric-edit"
+                                                    data-id="{{ $psychiatric->id }}"
+                                                    data-edit-url="{{ url('/psychiatric/edit-json/' . $psychiatric->id) }}"
+                                                    data-update-url="{{ url('/psychiatric/' . $psychiatric->id) }}"
+                                                    data-permission-action="update">
+                                                <i class="bi bi-pencil-square"></i>
+                                                <span>แก้ไข</span>
+                                            </button>
+                                        @endif
 
-                                        <button type="button"
-                                                class="btn btn-danger btn-sm psy-inline-btn-action js-psychiatric-delete"
-                                                data-form-id="delete-form-psychiatric-{{ $psychiatric->id }}">
-                                            <i class="bi bi-trash"></i>
-                                            <span>ลบ</span>
-                                        </button>
+                                        @if($canPsychiatricDelete)
+                                            <button type="button"
+                                                    class="btn btn-danger btn-sm psy-inline-btn-action js-psychiatric-delete"
+                                                    data-form-id="delete-form-psychiatric-{{ $psychiatric->id }}"
+                                                    data-permission-action="delete">
+                                                <i class="bi bi-trash"></i>
+                                                <span>ลบ</span>
+                                            </button>
+                                        @endif
 
+                                        @if(!$canPsychiatricUpdate && !$canPsychiatricDelete)
+                                            <span class="psy-inline-readonly-label" data-permission-keep>
+                                                <i class="bi bi-eye"></i>
+                                                <span>ดูข้อมูล</span>
+                                            </span>
+                                        @endif
                                     </div>
 
-                                    <form id="delete-form-psychiatric-{{ $psychiatric->id }}"
-                                          action="{{ route('psychiatric.delete', $psychiatric->id) }}"
-                                          method="POST"
-                                          class="d-none">
-                                        @csrf
-                                        @method('DELETE')
-                                    </form>
+                                    @if($canPsychiatricDelete)
+                                        <form id="delete-form-psychiatric-{{ $psychiatric->id }}"
+                                              action="{{ route('psychiatric.delete', $psychiatric->id) }}"
+                                              method="POST"
+                                              class="d-none"
+                                              data-permission-action="delete">
+                                            @csrf
+                                            @method('DELETE')
+                                        </form>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -574,9 +812,7 @@
                 </table>
             </div>
 
-            <div class="psy-inline-footer-note">
-                ตารางรองรับการเลื่อนแนวนอนอัตโนมัติบนจอเล็ก
-            </div>
+           
         </div>
     </div>
 @else

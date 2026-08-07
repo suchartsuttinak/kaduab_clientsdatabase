@@ -6,8 +6,14 @@
         <div>
             <h4 class="escape-page-header__title mb-1">ข้อมูลการออกจากสถานสงเคราะห์</h4>
             <div class="escape-page-header__subtitle">
-                จัดการข้อมูลการออกจากหน่วยงานและติดตามประวัติอย่างเป็นระบบ
+                  <p class="co-empty-header-subtitle">
+                        ผู้รับบริการ:
+                        <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
+                         <span class="mx-1">•</span>
+                            อายุ: <strong>{{ is_numeric($client->age ?? null) ? $client->age . ' ปี' : '-' }}</strong>
+                    </p>
             </div>
+            
         </div>
     </div>
 

@@ -1,334 +1,180 @@
-<div class="modal fade medical-page" id="editMedicalModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
-        <div class="modal-content medical-modal-content">
-            <form id="editMedicalForm" method="POST" action="{{ route('medical.update', 0) }}" novalidate>
+<div class="modal fade md-modal" id="editMedicalModal" tabindex="-1" aria-labelledby="editMedicalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <form id="editMedicalForm"
+                  method="POST"
+                  action="{{ route('medical.update', 0) }}"
+                  novalidate
+                  data-permission-keep>
                 <input type="hidden" name="_form_context" value="medical_edit">
                 @csrf
                 @method('PUT')
-
                 <input type="hidden" name="client_id" id="edit_client_id">
                 <input type="hidden" name="id" id="edit_medical_id">
 
-                <div class="modal-header medical-modal-header medical-modal-header--warning">
-                    <div>
-                        <h5 class="modal-title fw-bold mb-1">
-                            <i class="bi bi-pencil-square me-2"></i>แก้ไขข้อมูลการรักษาพยาบาล
-                        </h5>
-                        <div class="small text-dark opacity-75">ปรับปรุงข้อมูลให้เป็นปัจจุบันและถูกต้อง</div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editMedicalModalLabel">
+                        <i class="bi {{ $canMedicalUpdate ? 'bi-pencil-square' : 'bi-eye' }} me-2"></i>
+                        {{ $canMedicalUpdate ? 'แก้ไขข้อมูลการรักษาพยาบาล' : 'ดูข้อมูลการรักษาพยาบาล' }}
+                        @unless($canMedicalUpdate)
+                            <span class="md-readonly-badge">อ่านอย่างเดียว</span>
+                        @endunless
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด" data-permission-keep></button>
                 </div>
 
                 <div class="modal-body">
-                    <div class="medical-form-body p-3 p-md-4">
+                    <div class="md-form-section">
+                        <h6 class="md-section-title"><i class="bi bi-heart-pulse"></i>ข้อมูลการรักษา</h6>
+                        <div class="md-form-grid">
+                            <div class="md-col-4">
+                                <label class="md-form-label" for="edit_medical_date">
+                                    <i class="bi bi-calendar-event"></i>วันที่รักษา <span class="text-danger">*</span>
+                                </label>
+                                <input type="date"
+                                       name="medical_date"
+                                       id="edit_medical_date"
+                                       class="form-control md-form-control"
+                                       max="{{ now('Asia/Bangkok')->toDateString() }}"
+                                       required>
+                                <div class="invalid-feedback"></div>
+                            </div>
 
-                        <div class="medical-form-section">
-                            <div class="medical-section-title medical-section-title--warning">ข้อมูลการรักษาเบื้องต้น</div>
+                            <div class="md-col-8">
+                                <label class="md-form-label" for="edit_disease_name">
+                                    <i class="bi bi-activity"></i>ชื่อโรค <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       name="disease_name"
+                                       id="edit_disease_name"
+                                       class="form-control md-form-control"
+                                       maxlength="255"
+                                       required>
+                                <div class="invalid-feedback"></div>
+                            </div>
 
-                            <div class="row g-3">
-                                <div class="col-12 col-md-4 col-lg-3">
-                                    <label class="form-label required">วันที่รักษา</label>
+                            <div class="md-col-6">
+                                <label class="md-form-label" for="edit_illness">
+                                    <i class="bi bi-thermometer-half"></i>อาการป่วย <span class="text-danger">*</span>
+                                </label>
+                                <textarea name="illness"
+                                          id="edit_illness"
+                                          class="form-control md-form-control"
+                                          rows="4"
+                                          maxlength="3000"
+                                          required></textarea>
+                                <div class="invalid-feedback"></div>
+                            </div>
+
+                            <div class="md-col-6">
+                                <label class="md-form-label" for="edit_treatment">
+                                    <i class="bi bi-bandaid"></i>การรักษา / การปฐมพยาบาล
+                                </label>
+                                <textarea name="treatment"
+                                          id="edit_treatment"
+                                          class="form-control md-form-control"
+                                          rows="4"
+                                          maxlength="3000"></textarea>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="md-form-section">
+                        <h6 class="md-section-title"><i class="bi bi-hospital"></i>การพบแพทย์</h6>
+                        <div class="md-radio-group">
+                            <label class="md-radio-option" for="edit_refer_yes">
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="refer"
+                                       id="edit_refer_yes"
+                                       value="พบแพทย์"
+                                       required>
+                                <span><i class="bi bi-check-circle"></i>พบแพทย์</span>
+                            </label>
+
+                            <label class="md-radio-option" for="edit_refer_no">
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="refer"
+                                       id="edit_refer_no"
+                                       value="ไม่พบแพทย์">
+                                <span><i class="bi bi-dash-circle"></i>ไม่พบแพทย์</span>
+                            </label>
+                        </div>
+                        <div class="invalid-feedback d-block"></div>
+
+                        <div id="edit_medical_section" class="md-conditional mt-3" style="display:none;">
+                            <div class="md-form-grid">
+                                <div class="md-col-8">
+                                    <label class="md-form-label" for="edit_diagnosis">
+                                        <i class="bi bi-clipboard2-pulse"></i>การวินิจฉัยของแพทย์ <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea name="diagnosis"
+                                              id="edit_diagnosis"
+                                              class="form-control md-form-control"
+                                              rows="3"
+                                              maxlength="3000"></textarea>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="md-col-4">
+                                    <label class="md-form-label" for="edit_appt_date">
+                                        <i class="bi bi-calendar2-check"></i>วันที่แพทย์นัด
+                                    </label>
                                     <input type="date"
-                                        name="medical_date"
-                                        id="edit_medical_date"
-                                        class="form-control"
-                                        max="{{ now('Asia/Bangkok')->toDateString() }}"
-                                        required>
-                                </div>
-
-                                <div class="col-12 col-md-8 col-lg-4">
-                                    <label class="form-label required">ชื่อโรค</label>
-                                    <input type="text" name="disease_name" id="edit_disease_name" class="form-control" maxlength="255" required>
-                                </div>
-
-                                <div class="col-12 col-lg-5">
-                                    <label class="form-label required">อาการป่วย</label>
-                                    <textarea name="illness" id="edit_illness" class="form-control" rows="3" maxlength="3000" required></textarea>
-                                </div>
-
-                                <div class="col-12">
-                                    <label class="form-label">การรักษา / การปฐมพยาบาล</label>
-                                    <textarea name="treatment" id="edit_treatment" class="form-control" rows="4" maxlength="3000"></textarea>
+                                           name="appt_date"
+                                           id="edit_appt_date"
+                                           class="form-control md-form-control">
+                                    <div class="invalid-feedback"></div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="medical-form-section">
-                            <div class="medical-section-title medical-section-title--warning">การพบแพทย์</div>
-
-                            <div class="medical-radio-group">
-                                <label class="medical-radio-card">
-                                    <input type="radio" name="refer" id="edit_refer_yes" value="พบแพทย์" required>
-                                    <span class="medical-radio-content">
-                                        <span class="medical-radio-icon text-success"><i class="bi bi-check-circle-fill"></i></span>
-                                        <span class="medical-radio-text">
-                                            <strong>พบแพทย์</strong>
-                                            <small>มีการตรวจ วินิจฉัย หรือรักษาโดยแพทย์</small>
-                                        </span>
-                                    </span>
+                    <div class="md-form-section mb-0">
+                        <h6 class="md-section-title"><i class="bi bi-info-circle"></i>ข้อมูลเพิ่มเติม</h6>
+                        <div class="md-form-grid">
+                            <div class="md-col-5">
+                                <label class="md-form-label" for="edit_teacher">
+                                    <i class="bi bi-person-check"></i>ผู้ดูแล
                                 </label>
+                                <input type="text"
+                                       name="teacher"
+                                       id="edit_teacher"
+                                       class="form-control md-form-control"
+                                       maxlength="255">
+                                <div class="invalid-feedback"></div>
+                            </div>
 
-                                <label class="medical-radio-card">
-                                    <input type="radio" name="refer" id="edit_refer_no" value="ไม่พบแพทย์">
-                                    <span class="medical-radio-content">
-                                        <span class="medical-radio-icon text-secondary"><i class="bi bi-dash-circle-fill"></i></span>
-                                        <span class="medical-radio-text">
-                                            <strong>ไม่พบแพทย์</strong>
-                                            <small>ดูแลเบื้องต้นโดยยังไม่มีการพบแพทย์</small>
-                                        </span>
-                                    </span>
+                            <div class="md-col-7">
+                                <label class="md-form-label" for="edit_remark">
+                                    <i class="bi bi-chat-left-text"></i>หมายเหตุ
                                 </label>
-                            </div>
-
-                            <div id="edit_medical_section" class="medical-conditional-box mt-3" style="display:none;">
-                                <div class="row g-3">
-                                    <div class="col-12 col-lg-8">
-                                        <label class="form-label required">การวินิจฉัยของแพทย์</label>
-                                        <textarea name="diagnosis" id="edit_diagnosis" class="form-control" rows="3" maxlength="3000" placeholder="ระบุผลการวินิจฉัยของแพทย์"></textarea>
-                                    </div>
-
-                                    <div class="col-12 col-md-6 col-lg-4">
-                                        <label class="form-label">วันที่แพทย์นัด</label>
-                                        <input type="date" name="appt_date" id="edit_appt_date" class="form-control">
-                                    </div>
-                                </div>
+                                <textarea name="remark"
+                                          id="edit_remark"
+                                          class="form-control md-form-control"
+                                          rows="3"
+                                          maxlength="3000"></textarea>
+                                <div class="invalid-feedback"></div>
                             </div>
                         </div>
-
-                        <div class="medical-form-section mb-0">
-                            <div class="medical-section-title medical-section-title--warning">ข้อมูลเพิ่มเติม</div>
-
-                            <div class="row g-3">
-                                <div class="col-12 col-md-5">
-                                    <label class="form-label">ผู้ดูแล</label>
-                                    <input type="text" name="teacher" id="edit_teacher" class="form-control" maxlength="255">
-                                </div>
-
-                                <div class="col-12 col-md-7">
-                                    <label class="form-label">หมายเหตุ</label>
-                                    <textarea name="remark" id="edit_remark" class="form-control" rows="3" maxlength="3000"></textarea>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
 
-                <div class="modal-footer medical-modal-footer">
-                    <button type="submit" class="btn btn-success medical-btn medical-btn-success">
-                        <i class="bi bi-save"></i>
-                        <span>อัปเดตข้อมูล</span>
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary medical-btn medical-btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary md-btn" data-bs-dismiss="modal" data-permission-keep>
+                        <i class="bi bi-x-lg"></i>
                         <span>ปิด</span>
                     </button>
+                    @if($canMedicalUpdate)
+                        <button type="submit" class="btn btn-warning md-btn" data-permission-action="update">
+                            <i class="bi bi-check2-circle"></i>
+                            <span>บันทึกการแก้ไข</span>
+                        </button>
+                    @endif
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-@push('styles')
-<style>
-#editMedicalModal .medical-modal-content {
-    border: 0;
-    border-radius: var(--medical-radius);
-    overflow: hidden;
-}
-
-#editMedicalModal .medical-modal-content > form {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-}
-
-#editMedicalModal .medical-modal-header {
-    border-bottom: 0;
-    padding: 1rem 1.25rem;
-    flex: 0 0 auto;
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    color: #78350f;
-}
-
-#editMedicalModal .modal-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    background: #fffcf5;
-}
-
-#editMedicalModal .medical-form-section {
-    background: #fff;
-    border: 1px solid #f3ead7;
-    border-radius: 16px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
-#editMedicalModal .medical-section-title {
-    font-size: .95rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-}
-
-#editMedicalModal .medical-section-title::before {
-    content: "";
-    width: 6px;
-    height: 18px;
-    border-radius: 999px;
-    background: #f59e0b;
-    display: inline-block;
-}
-
-#editMedicalModal .form-label {
-    font-size: .85rem;
-    font-weight: 600;
-    color: #334155;
-    margin-bottom: .4rem;
-}
-
-#editMedicalModal .form-label.required::after {
-    content: " *";
-    color: #dc2626;
-}
-
-#editMedicalModal .form-control,
-#editMedicalModal .form-select {
-    border-radius: 12px;
-    border-color: #dbe2ea;
-    min-height: 42px;
-    padding-top: .55rem;
-    padding-bottom: .55rem;
-}
-
-#editMedicalModal .form-control:focus,
-#editMedicalModal .form-select:focus {
-    border-color: #fcd34d;
-    box-shadow: 0 0 0 .2rem rgba(245, 158, 11, .14);
-}
-
-#editMedicalModal .medical-radio-group {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
-}
-
-#editMedicalModal .medical-radio-card {
-    display: block;
-    margin: 0;
-    cursor: pointer;
-}
-
-#editMedicalModal .medical-radio-card input[type="radio"] {
-    display: none;
-}
-
-#editMedicalModal .medical-radio-content {
-    display: flex;
-    align-items: flex-start;
-    gap: .85rem;
-    border: 1px solid #dbe2ea;
-    border-radius: 14px;
-    padding: .95rem 1rem;
-    background: #fff;
-    transition: all .2s ease;
-    min-height: 100%;
-}
-
-#editMedicalModal .medical-radio-icon {
-    font-size: 1.1rem;
-    line-height: 1;
-    margin-top: 2px;
-}
-
-#editMedicalModal .medical-radio-text {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.35;
-}
-
-#editMedicalModal .medical-radio-text small {
-    color: #64748b;
-    margin-top: .2rem;
-}
-
-#editMedicalModal .medical-radio-card input[type="radio"]:checked + .medical-radio-content {
-    border-color: #fbbf24;
-    background: #fff7d6;
-    box-shadow: 0 0 0 .15rem rgba(245, 158, 11, .10);
-}
-
-#editMedicalModal .medical-conditional-box {
-    background: #fffaf0;
-    border: 1px dashed #e7d3a7;
-    border-radius: 14px;
-    padding: 1rem;
-}
-
-#editMedicalModal .medical-modal-footer {
-    flex: 0 0 auto;
-    border-top: 1px solid var(--medical-border);
-    background: #fff;
-    padding: .9rem 1.25rem;
-    display: flex;
-    justify-content: flex-end;
-    gap: .75rem;
-    flex-wrap: wrap;
-}
-
-#editMedicalModal .medical-btn-success,
-#editMedicalModal .medical-btn-secondary {
-    min-width: 148px;
-}
-
-@media (max-width: 991.98px) {
-    #editMedicalModal .medical-radio-group {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 767.98px) {
-    #editMedicalModal .medical-modal-footer {
-        flex-direction: column-reverse;
-    }
-
-    #editMedicalModal .medical-modal-footer .medical-btn {
-        width: 100%;
-        min-width: 0;
-    }
-}
-
-@media (max-width: 575.98px) {
-    #editMedicalModal.modal.modal-fullscreen-sm-down .modal-content {
-        height: 100vh;
-        border-radius: 0;
-    }
-
-    #editMedicalModal.modal.modal-fullscreen-sm-down .medical-modal-content > form {
-        height: 100vh;
-    }
-
-    #editMedicalModal.modal.modal-fullscreen-sm-down .modal-header {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-    }
-
-    #editMedicalModal.modal.modal-fullscreen-sm-down .modal-footer {
-        position: sticky;
-        bottom: 0;
-        z-index: 20;
-        border-top: 1px solid #dee2e6;
-        background: #fff;
-        padding: .75rem;
-    }
-}
-</style>
-@endpush

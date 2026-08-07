@@ -9,7 +9,7 @@
         @include('frontend.client.escape.partials._header')
 
         @if ($escapes->isNotEmpty())
-            @include('frontend.client.escape.partials.client_info')
+            {{-- @include('frontend.client.escape.partials.client_info') --}}
             @include('frontend.client.escape.partials._table')
         @else
             <div class="escape-first-empty-card" role="status" aria-live="polite">

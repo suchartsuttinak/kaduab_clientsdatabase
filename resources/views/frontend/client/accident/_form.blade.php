@@ -57,6 +57,8 @@
                     @if($isEdit)
                         <a href="{{ route('accident.add', $client->id) }}"
                            class="acc-modal-close"
+                           data-permission-action="navigation"
+                           data-permission-keep
                            aria-label="ยกเลิกการแก้ไข">
                             <i class="bi bi-x-lg" aria-hidden="true"></i>
                         </a>
@@ -64,6 +66,8 @@
                         <button type="button"
                                 class="acc-modal-close"
                                 data-bs-dismiss="modal"
+                                data-permission-action="navigation"
+                                data-permission-keep
                                 aria-label="ปิดหน้าต่าง">
                             <i class="bi bi-x-lg" aria-hidden="true"></i>
                         </button>
@@ -390,14 +394,18 @@
                 <div class="modal-footer acc-modal-footer">
                     @if($isEdit)
                         <a href="{{ route('accident.add', $client->id) }}"
-                           class="acc-modal-btn acc-modal-btn-cancel">
+                           class="acc-modal-btn acc-modal-btn-cancel"
+                           data-permission-action="navigation"
+                           data-permission-keep>
                             <i class="bi bi-x-circle"></i>
                             <span>ยกเลิกการแก้ไข</span>
                         </a>
                     @else
                         <button type="button"
                                 class="acc-modal-btn acc-modal-btn-cancel"
-                                data-bs-dismiss="modal">
+                                data-bs-dismiss="modal"
+                                data-permission-action="navigation"
+                                data-permission-keep>
                             <i class="bi bi-x-circle"></i>
                             <span>ยกเลิก</span>
                         </button>

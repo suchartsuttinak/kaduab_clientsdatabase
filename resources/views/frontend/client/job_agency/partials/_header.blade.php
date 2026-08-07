@@ -122,6 +122,28 @@
     background: #faf5ff;
 }
 
+.ja-btn-filter {
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+
+.ja-btn-filter:hover,
+.ja-btn-filter:focus,
+.ja-btn-filter[aria-expanded="true"] {
+    color: #1e40af;
+    border-color: #93c5fd;
+    background: #dbeafe;
+}
+
+.ja-filter-collapse {
+    margin-bottom: 1rem;
+}
+
+.ja-filter-collapse .ja-filter-card {
+    margin-bottom: 0;
+}
+
 .ja-filter-card {
     padding: 1rem 1.1rem;
     margin-bottom: 1rem;
@@ -293,6 +315,23 @@
     </div>
 
     <div class="ja-header-actions">
+        @if($hasAnyJobAgency || $hasDateFilter || $hasFilterErrors)
+            <button type="button"
+                    class="btn btn-outline-primary ja-btn ja-btn-filter"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#jobAgencyFilterPanel"
+                    data-job-agency-filter-toggle
+                    aria-controls="jobAgencyFilterPanel"
+                    aria-expanded="{{ $showDateFilter ? 'true' : 'false' }}">
+                <i class="bi {{ $showDateFilter ? 'bi-chevron-up' : 'bi-funnel' }}"
+                   data-filter-toggle-icon
+                   aria-hidden="true"></i>
+                <span data-filter-toggle-label>
+                    {{ $showDateFilter ? 'ซ่อนการค้นหา' : 'ค้นหารายการ' }}
+                </span>
+            </button>
+        @endif
+
         @if($hasAnyJobAgency)
             <a href="{{ $reportUrl }}" class="btn btn-outline-success ja-btn">
                 <i class="bi bi-file-earmark-text"></i>
@@ -317,9 +356,14 @@
     </div>
 </header>
 
-@if($hasAnyJobAgency || $hasDateFilter)
-    <div class="ja-filter-card">
-        <form method="GET" action="{{ route('job_agencies.show', $client->id) }}" novalidate>
+@if($hasAnyJobAgency || $hasDateFilter || $hasFilterErrors)
+    <div id="jobAgencyFilterPanel"
+         class="collapse ja-filter-collapse {{ $showDateFilter ? 'show' : '' }}">
+        <div class="ja-filter-card">
+            <form method="GET"
+                  action="{{ route('job_agencies.show', $client->id) }}"
+                  class="ja-filter-form"
+                  novalidate>
             <div class="ja-filter-row">
                 <div class="ja-filter-group">
                     <label for="start_date" class="form-label">วันที่เริ่มต้น</label>
@@ -356,17 +400,11 @@
                     <a href="{{ route('job_agencies.show', $client->id) }}"
                        class="btn btn-light ja-btn border">
                         <i class="bi bi-arrow-clockwise"></i>
-                        <span>รีเซ็ต</span>
+                        <span>ล้างการค้นหา</span>
                     </a>
-
-                    @if($hasAnyJobAgency)
-                        <a href="{{ $reportUrl }}" class="btn btn-success ja-btn">
-                            <i class="bi bi-printer"></i>
-                            <span>ดูรายงาน</span>
-                        </a>
-                    @endif
                 </div>
             </div>
-        </form>
+            </form>
+        </div>
     </div>
 @endif

@@ -135,7 +135,8 @@
                                     <a href="{{ route('check_body.edit', $row->id) }}"
                                        class="btn btn-warning cb-icon-btn"
                                        title="แก้ไขข้อมูล"
-                                       aria-label="แก้ไขข้อมูลวันที่ {{ ThaiDateHelper::formatThaiShort($row->assessor_date) }}">
+                                       aria-label="แก้ไขข้อมูลวันที่ {{ ThaiDateHelper::formatThaiShort($row->assessor_date) }}"
+                                       data-permission-action="update">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
 
@@ -143,14 +144,16 @@
                                             class="btn btn-danger cb-icon-btn"
                                             onclick="confirmDelete({{ $row->id }})"
                                             title="ลบข้อมูล"
-                                            aria-label="ลบข้อมูลวันที่ {{ ThaiDateHelper::formatThaiShort($row->assessor_date) }}">
+                                            aria-label="ลบข้อมูลวันที่ {{ ThaiDateHelper::formatThaiShort($row->assessor_date) }}"
+                                            data-permission-action="delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
 
                                     <a href="{{ route('check_body.report', $row->id) }}"
                                        class="btn btn-info text-white cb-icon-btn"
                                        title="พิมพ์รายงาน"
-                                       aria-label="พิมพ์รายงานวันที่ {{ ThaiDateHelper::formatThaiShort($row->assessor_date) }}">
+                                       aria-label="พิมพ์รายงานวันที่ {{ ThaiDateHelper::formatThaiShort($row->assessor_date) }}"
+                                       data-permission-action="print">
                                         <i class="bi bi-printer"></i>
                                     </a>
                                 </div>

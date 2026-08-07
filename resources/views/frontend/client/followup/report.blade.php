@@ -85,11 +85,46 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: .4rem;
-        min-height: 40px;
-        border-radius: 10px;
-        font-weight: 600;
+        gap: .45rem;
+        min-height: 42px;
+        padding: .65rem 1rem;
+        border-radius: 12px;
+        font-weight: 700;
         white-space: nowrap;
+        box-shadow: 0 5px 14px rgba(15, 23, 42, .07);
+        transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+    }
+
+    .followup-report-toolbar .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, .11);
+    }
+
+    .followup-report-btn-back {
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+    }
+
+    .followup-report-btn-back:hover,
+    .followup-report-btn-back:focus {
+        color: #0f172a;
+        border-color: #94a3b8;
+        background: #f8fafc;
+    }
+
+    .followup-report-btn-print {
+        color: #fff;
+        border: 1px solid #1d4ed8;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    }
+
+    .followup-report-btn-print:hover,
+    .followup-report-btn-print:focus,
+    .followup-report-btn-print:active {
+        color: #fff;
+        border-color: #1e40af;
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
     }
 
     .followup-report-header {
@@ -474,14 +509,14 @@
     <section class="followup-report-card">
         <div class="followup-report-toolbar">
             <div class="followup-report-toolbar-group">
-                <a href="{{ route('followup.index', $client->id) }}" class="btn btn-outline-secondary">
+                <a href="{{ route('followup.index', $client->id) }}" class="btn followup-report-btn-back">
                     <i class="bi bi-arrow-left-circle"></i>
                     <span>กลับหน้ารายการ</span>
                 </a>
             </div>
 
             <div class="followup-report-toolbar-group">
-                <button type="button" class="btn btn-primary" onclick="window.print();">
+                <button type="button" class="btn followup-report-btn-print" onclick="window.print();">
                     <i class="bi bi-printer"></i>
                     <span>พิมพ์รายงาน</span>
                 </button>

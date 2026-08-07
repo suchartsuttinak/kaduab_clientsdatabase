@@ -8,10 +8,12 @@
             <h1 class="co-header-title">
                 การติดตามเด็กที่พักอาศัยภายนอก
             </h1>
-            <p class="co-header-subtitle">
-                ผู้รับบริการ:
-                <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
-            </p>
+             <p class="co-empty-header-subtitle">
+                        ผู้รับบริการ:
+                        <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
+                         <span class="mx-1">•</span>
+                            อายุ: <strong>{{ is_numeric($client->age ?? null) ? $client->age . ' ปี' : '-' }}</strong>
+                    </p>
         </div>
     </div>
 

@@ -150,7 +150,12 @@
                     <div>
                         <h1 class="observe-title">ข้อมูลการบันทึกและติดตามพฤติกรรม</h1>
                         <p class="observe-subtitle">
-                            จัดการข้อมูลการสังเกตพฤติกรรม การดำเนินการ ผลลัพธ์ และการติดตามผลของผู้รับบริการอย่างเป็นระบบ
+                           <p class="co-empty-header-subtitle">
+                        ผู้รับบริการ:
+                        <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
+                         <span class="mx-1">•</span>
+                            อายุ: <strong>{{ is_numeric($client->age ?? null) ? $client->age . ' ปี' : '-' }}</strong>
+                    </p>
                         </p>
                     </div>
                 </div>
@@ -178,7 +183,7 @@
         </div>
 
         @if($hasObserveData)
-            @include('frontend.client.observe.partials.summary')
+            {{-- @include('frontend.client.observe.partials.summary') --}}
             @include('frontend.client.observe.partials._table')
         @else
             <section class="observe-empty-card" aria-labelledby="observeEmptyTitle">

@@ -1,84 +1,101 @@
-<div class="modal fade" id="absentModal" tabindex="-1" aria-labelledby="absentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-fullscreen-sm-down absent-mobile-dialog">
-        <div class="modal-content border-0 shadow-lg custom-modal absent-mobile-content">
-            <div class="modal-header modal-header-primary">
-                <div>
-                    <h5 class="modal-title fw-bold mb-1" id="absentModalLabel">
-                        <i class="bi bi-journal-plus me-2"></i>แบบฟอร์มบันทึกการขาดเรียน
-                    </h5>
-                    <div class="modal-subtitle">
-                        บันทึกรายละเอียดการขาดเรียนของนักเรียนอย่างครบถ้วน เป็นระบบ และพร้อมใช้งานสำหรับการติดตามผล
-                    </div>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-
-            <form id="absent-form" method="POST" action="{{ route('absent.store') }}">
+<div class="modal fade ab-modal"
+     id="absentModal"
+     tabindex="-1"
+     aria-labelledby="absentModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable absent-mobile-dialog">
+        <div class="modal-content custom-modal absent-mobile-content">
+            <form id="absent-form"
+                  method="POST"
+                  action="{{ route('absent.store') }}">
                 @csrf
                 <input type="hidden" name="client_id" value="{{ $client->id }}">
-                <input type="hidden" name="education_record_id" value="{{ $educationRecord->id ?? '' }}">
+                <input type="hidden"
+                       name="education_record_id"
+                       value="{{ $educationRecord->id ?? '' }}">
 
-                <div class="modal-body p-4">
-                    <div class="row g-4">
-                        <div class="col-lg-4">
-                            <div class="form-side-card h-100">
-                                <div class="form-side-header">
-                                    <i class="bi bi-person-lines-fill me-2"></i>ข้อมูลเด็ก
-                                </div>
-                                <div class="form-side-body">
-                                    <div class="side-info-item">
-                                        <span class="side-info-label">ชื่อ - นามสกุล</span>
-                                        <span class="side-info-value">{{ $clientName }}</span>
-                                    </div>
-                                    <div class="side-info-item">
-                                        <span class="side-info-label">อายุ</span>
-                                        <span class="side-info-value">{{ $clientAge }} ปี</span>
-                                    </div>
-                                    <div class="side-info-item">
-                                        <span class="side-info-label">สถานศึกษา</span>
-                                        <span class="side-info-value">{{ $schoolName }}</span>
-                                    </div>
-                                    <div class="side-info-item">
-                                        <span class="side-info-label">ระดับชั้น</span>
-                                        <span class="side-info-value">{{ $educationName }}</span>
-                                    </div>
-                                    <div class="side-info-item">
-                                        <span class="side-info-label">ภาคเรียน</span>
-                                        <span class="side-info-value">{{ $semesterName }}</span>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="modal-header">
+                    <div class="ab-modal-heading">
+                        <span class="ab-modal-heading-icon" aria-hidden="true">
+                            <i class="bi bi-calendar-plus"></i>
+                        </span>
+
+                        <div class="ab-modal-heading-text">
+                            <h5 class="modal-title" id="absentModalLabel">
+                                เพิ่มข้อมูลการขาดเรียน
+                            </h5>
+                            <p class="ab-modal-subtitle">
+                                บันทึกวันที่ สาเหตุ และการดำเนินงานอย่างเป็นระบบ
+                            </p>
                         </div>
+                    </div>
 
-                        <div class="col-lg-8">
-                            <div class="form-main-card h-100">
-                                <div class="form-side-header">
-                                    <i class="bi bi-journal-check me-2"></i>ข้อมูลการขาดเรียน
-                                </div>
-
-                                <div class="form-side-body">
-                                    @include('frontend.client.absent.partials.form-fields', [
-                                        'prefix' => '',
-                                        'absentDate' => old('absent_date', now('Asia/Bangkok')->toDateString()),
-                                        'recordDate' => old('record_date', now('Asia/Bangkok')->toDateString()),
-                                        'cause' => old('cause'),
-                                        'operation' => old('operation'),
-                                        'remark' => old('remark'),
-                                        'teacher' => old('teacher'),
-                                    ])
-                                </div>
-                            </div>
-                        </div>
+                    <div class="ab-modal-header-actions">
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="ปิด"></button>
                     </div>
                 </div>
 
-                <div class="modal-footer px-4 py-3 border-0">
-                    <button type="button" class="btn btn-light btn-cancel" data-bs-dismiss="modal"
-                        id="btn-cancel-absent">
-                        <i class="bi bi-x-circle me-2"></i>ยกเลิก
+                <div class="modal-body">
+                    <div class="ab-modal-context">
+                        <div class="ab-modal-context-item">
+                            <span class="ab-modal-context-label">
+                                <i class="bi bi-building"></i>
+                                สถานศึกษา
+                            </span>
+                            <span class="ab-modal-context-value">
+                                {{ $schoolName }}
+                            </span>
+                        </div>
+
+                        <div class="ab-modal-context-item">
+                            <span class="ab-modal-context-label">
+                                <i class="bi bi-book"></i>
+                                ระดับชั้น
+                            </span>
+                            <span class="ab-modal-context-value">
+                                {{ $educationName }}
+                            </span>
+                        </div>
+
+                        <div class="ab-modal-context-item">
+                            <span class="ab-modal-context-label">
+                                <i class="bi bi-calendar3"></i>
+                                ภาคเรียน / ปีการศึกษา
+                            </span>
+                            <span class="ab-modal-context-value">
+                                {{ $semesterName }}
+                            </span>
+                        </div>
+                    </div>
+
+                    @include('frontend.client.absent.partials.form-fields', [
+                        'prefix' => '',
+                        'absentDate' => old('absent_date', now('Asia/Bangkok')->toDateString()),
+                        'recordDate' => old('record_date', now('Asia/Bangkok')->toDateString()),
+                        'cause' => old('cause'),
+                        'operation' => old('operation'),
+                        'remark' => old('remark'),
+                        'teacher' => old('teacher'),
+                    ])
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-outline-secondary ab-btn btn-cancel"
+                            data-bs-dismiss="modal"
+                            id="btn-cancel-absent">
+                        <i class="bi bi-x-lg"></i>
+                        <span>ปิด</span>
                     </button>
-                    <button type="submit" class="btn btn-success btn-save">
-                        <i class="bi bi-check-circle-fill me-2"></i>บันทึกข้อมูล
+
+                    <button type="submit"
+                            class="btn btn-primary ab-btn btn-save"
+                            data-permission-action="create">
+                        <i class="bi bi-check-circle"></i>
+                        <span>บันทึกข้อมูล</span>
                     </button>
                 </div>
             </form>

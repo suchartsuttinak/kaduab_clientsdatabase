@@ -6,10 +6,30 @@
 
     $isEdit = isset($checkbody) && $checkbody;
     $hasRows = isset($checkbodies) && $checkbodies->isNotEmpty();
-    $totalRows = $hasRows ? $checkbodies->count() : 0;
     $normalCount = $hasRows ? $checkbodies->where('development', 'สมวัย')->count() : 0;
     $delayedCount = $hasRows ? $checkbodies->where('development', 'ไม่สมวัย')->count() : 0;
     $specialCount = $hasRows ? $checkbodies->where('development_type', 'เด็กกลุ่มพิเศษ')->count() : 0;
+
+    $clientDisplayName = filled($client->fullname ?? null)
+        ? $client->fullname
+        : (filled($client->name ?? null)
+            ? $client->name
+            : trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')));
+
+    $clientDisplayName = filled($clientDisplayName) ? $clientDisplayName : '-';
+    $clientAgeValue = $client->age ?? null;
+
+    if (blank($clientAgeValue) && filled($client->birth_date ?? null)) {
+        try {
+            $clientAgeValue = \Carbon\Carbon::parse($client->birth_date)->age;
+        } catch (\Throwable $exception) {
+            $clientAgeValue = null;
+        }
+    }
+
+    $clientAgeText = filled($clientAgeValue)
+        ? (is_numeric($clientAgeValue) ? $clientAgeValue . ' ปี' : $clientAgeValue)
+        : '-';
 @endphp
 
 <style>
@@ -47,8 +67,8 @@
 
     .checkbody-page .cb-shell {
         width: 100%;
-        max-width: 1500px;
-        margin: 0 auto;
+        max-width: none;
+        margin: 0;
     }
 
     .checkbody-page .cb-hero,
@@ -67,18 +87,18 @@
         padding: 1.35rem 1.5rem;
         border-radius: var(--cb-radius-xl);
         background:
-            radial-gradient(circle at top right, rgba(20, 184, 166, .14), transparent 35%),
-            linear-gradient(135deg, #fff 0%, #f7fffc 100%);
+            radial-gradient(circle at top right, rgba(59, 130, 246, .14), transparent 34%),
+            linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
     }
 
     .checkbody-page .cb-hero::after {
         content: "";
         position: absolute;
-        right: -78px;
-        bottom: -100px;
-        width: 225px;
-        height: 225px;
-        border: 38px solid rgba(15, 111, 97, .055);
+        right: -80px;
+        bottom: -95px;
+        width: 220px;
+        height: 220px;
+        border: 38px solid rgba(37, 99, 235, .055);
         border-radius: 50%;
         pointer-events: none;
     }
@@ -99,6 +119,10 @@
         gap: .9rem;
     }
 
+    .checkbody-page .cb-heading-content {
+        min-width: 0;
+    }
+
     .checkbody-page .cb-heading-icon {
         display: inline-flex;
         width: 52px;
@@ -106,24 +130,25 @@
         flex: 0 0 52px;
         align-items: center;
         justify-content: center;
-        border: 1px solid var(--cb-primary-border);
+        border: 1px solid #bfdbfe;
         border-radius: 16px;
-        background: var(--cb-primary-soft);
-        color: var(--cb-primary);
+        background: #eff6ff;
+        color: #1d4ed8;
         font-size: 1.35rem;
-        box-shadow: 0 8px 20px rgba(15, 111, 97, .1);
+        box-shadow: 0 8px 20px rgba(37, 99, 235, .10);
     }
 
     .checkbody-page .cb-page-title {
         margin: 0;
         color: #0f172a;
-        font-size: clamp(1.22rem, 2vw, 1.58rem);
+        font-size: clamp(1.2rem, 2vw, 1.55rem);
         font-weight: 800;
         line-height: 1.35;
+        letter-spacing: -.01em;
     }
 
     .checkbody-page .cb-page-subtitle {
-        max-width: 850px;
+        max-width: 820px;
         margin: .28rem 0 0;
         color: var(--cb-muted);
         font-size: .9rem;
@@ -143,15 +168,19 @@
         align-items: center;
         gap: .42rem;
         padding: .48rem .75rem;
-        border: 1px solid var(--cb-border);
+        border: 1px solid #dbe4f0;
         border-radius: 999px;
-        background: rgba(255, 255, 255, .9);
+        background: rgba(255, 255, 255, .88);
         color: #334155;
         font-size: .8rem;
         line-height: 1.35;
+        box-shadow: 0 3px 10px rgba(15, 23, 42, .035);
     }
 
-    .checkbody-page .cb-meta-chip i { color: var(--cb-primary); }
+    .checkbody-page .cb-meta-chip i {
+        color: #1d4ed8;
+    }
+
     .checkbody-page .cb-meta-chip strong {
         overflow: hidden;
         text-overflow: ellipsis;
@@ -177,47 +206,62 @@
         font-weight: 700;
         line-height: 1.2;
         text-decoration: none;
+        white-space: nowrap;
         box-shadow: none;
-        transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease;
+        transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease, color .18s ease;
     }
 
-    .checkbody-page .cb-btn:hover { transform: translateY(-1px); }
+    .checkbody-page .cb-btn:hover,
+    .checkbody-page .cb-btn:focus {
+        transform: translateY(-1px);
+    }
 
     .checkbody-page .cb-btn-primary {
-        border: 1px solid var(--cb-primary);
-        background: var(--cb-primary);
-        color: #fff;
+        border: 1px solid #1d4ed8;
+        background: #1d4ed8;
+        color: #ffffff;
     }
 
-    .checkbody-page .cb-btn-primary:hover {
-        border-color: var(--cb-primary-dark);
-        background: var(--cb-primary-dark);
-        color: #fff;
-        box-shadow: 0 9px 20px rgba(15, 111, 97, .2);
+    .checkbody-page .cb-btn-primary:hover,
+    .checkbody-page .cb-btn-primary:focus {
+        border-color: #1e3a8a;
+        background: #1e3a8a;
+        color: #ffffff;
+        box-shadow: 0 9px 20px rgba(29, 78, 216, .20);
     }
 
-    .checkbody-page .cb-btn-secondary {
+    .checkbody-page .cb-btn-secondary,
+    .checkbody-page .cb-btn-back {
         border: 1px solid #cbd5e1;
-        background: #fff;
+        background: #ffffff;
         color: #475569;
     }
 
-    .checkbody-page .cb-btn-secondary:hover {
+    .checkbody-page .cb-btn-secondary:hover,
+    .checkbody-page .cb-btn-secondary:focus,
+    .checkbody-page .cb-btn-back:hover,
+    .checkbody-page .cb-btn-back:focus {
         border-color: #94a3b8;
         background: #f8fafc;
         color: #1e293b;
+        box-shadow: none;
     }
 
     .checkbody-page .cb-stats {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
+        align-items: stretch;
         gap: .85rem;
         margin-bottom: 1rem;
     }
 
     .checkbody-page .cb-stat {
+        display: flex;
         min-width: 0;
-        padding: 1rem 1.05rem;
+        min-height: 98px;
+        height: 100%;
+        padding: 1.05rem 1.1rem;
+        flex-direction: column;
         border-radius: var(--cb-radius-lg);
     }
 
@@ -248,7 +292,8 @@
     }
 
     .checkbody-page .cb-stat-value {
-        margin-top: .5rem;
+        margin-top: auto;
+        padding-top: .5rem;
         overflow: hidden;
         color: #0f172a;
         font-size: 1rem;
@@ -328,26 +373,55 @@
     .checkbody-page .cb-card-body { padding: 1.05rem 1.15rem 1.2rem; }
 
     .checkbody-page .cb-table-wrap {
-        overflow: hidden;
-        border: 1px solid var(--cb-border-soft);
-        border-radius: 14px;
-        background: #fff;
+        width: 100%;
+        min-width: 0;
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
     }
 
-    .checkbody-page .cb-table-wrap .dataTables_wrapper,
-    .checkbody-page .cb-table-wrap .dataTables_scroll {
+    .checkbody-page .cb-table-wrap .dataTables_wrapper {
         width: 100%;
         min-width: 0;
     }
 
-    .checkbody-page .cb-table-wrap .dataTables_scrollHead {
-        overflow: hidden !important;
-        background: #f8fafc;
+    .checkbody-page .cb-dt-toolbar,
+    .checkbody-page .cb-dt-footer {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem 1rem;
+        flex-wrap: wrap;
     }
 
-    .checkbody-page .cb-table-wrap .dataTables_scrollBody {
-        overflow-x: auto !important;
-        overflow-y: visible !important;
+    .checkbody-page .cb-dt-toolbar {
+        margin-bottom: .8rem;
+    }
+
+    .checkbody-page .cb-dt-footer {
+        margin-top: .85rem;
+    }
+
+    .checkbody-page .cb-dt-length,
+    .checkbody-page .cb-dt-search,
+    .checkbody-page .cb-dt-info,
+    .checkbody-page .cb-dt-paging {
+        min-width: 0;
+    }
+
+    .checkbody-page .cb-dt-search {
+        margin-left: auto;
+    }
+
+    .checkbody-page .cb-dt-scroll {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border: 1px solid var(--cb-border-soft);
+        border-radius: 14px;
+        background: #fff;
         scrollbar-gutter: stable;
         -webkit-overflow-scrolling: touch;
     }
@@ -357,6 +431,7 @@
         min-width: 1280px;
         margin: 0 !important;
         table-layout: fixed;
+        border-collapse: collapse !important;
     }
 
     .checkbody-page .cb-col-date { width: 125px !important; min-width: 125px !important; }
@@ -368,27 +443,32 @@
     .checkbody-page .cb-col-remark { width: 220px !important; min-width: 220px !important; }
 
     .checkbody-page .cb-col-actions {
-        position: sticky;
-        right: 0;
+        position: static !important;
+        right: auto !important;
         width: 150px !important;
         min-width: 150px !important;
         max-width: 150px !important;
         border-left: 1px solid var(--cb-border-soft) !important;
+        box-shadow: none !important;
     }
 
     .checkbody-page .cb-table thead .cb-col-actions {
-        z-index: 5;
         background: #f8fafc;
-        box-shadow: -10px 0 18px -18px rgba(15, 23, 42, .75);
     }
 
     .checkbody-page .cb-table tbody .cb-col-actions {
-        z-index: 3;
         background: #fff;
-        box-shadow: -10px 0 18px -18px rgba(15, 23, 42, .55);
     }
 
-    .checkbody-page .cb-table tbody tr:hover .cb-col-actions { background: #fbfefd; }
+    .checkbody-page .cb-table tbody tr:hover .cb-col-actions {
+        background: #fbfefd;
+    }
+
+    @media (min-width: 1500px) {
+        .checkbody-page .cb-table {
+            min-width: 100%;
+        }
+    }
 
     .checkbody-page .cb-table thead th {
         padding: .78rem .75rem;
@@ -465,12 +545,13 @@
     }
 
     .checkbody-page .cb-row-actions {
-        display: grid;
-        width: 120px;
+        display: flex;
+        width: max-content;
+        max-width: 100%;
         margin: 0 auto;
-        grid-template-columns: repeat(3, 36px);
-        justify-content: center;
         align-items: center;
+        justify-content: center;
+        flex-wrap: nowrap;
         gap: .38rem;
         white-space: nowrap;
     }
@@ -530,30 +611,100 @@
     }
 
     .checkbody-page .dataTables_wrapper .dataTables_length,
-    .checkbody-page .dataTables_wrapper .dataTables_filter {
-        margin-bottom: .8rem;
+    .checkbody-page .dataTables_wrapper .dataTables_filter,
+    .checkbody-page .dataTables_wrapper .dataTables_info,
+    .checkbody-page .dataTables_wrapper .dataTables_paginate {
+        float: none !important;
+        margin: 0 !important;
         color: #475569;
         font-size: .82rem;
+        text-align: left !important;
+    }
+
+    .checkbody-page .dataTables_wrapper .dataTables_length label,
+    .checkbody-page .dataTables_wrapper .dataTables_filter label {
+        display: inline-flex;
+        align-items: center;
+        gap: .42rem;
+        margin: 0;
+        color: #475569;
+        font-weight: 650;
+        white-space: nowrap;
     }
 
     .checkbody-page .dataTables_wrapper .dataTables_length select,
     .checkbody-page .dataTables_wrapper .dataTables_filter input {
         min-height: 38px;
+        margin: 0 !important;
         border: 1px solid var(--cb-border);
         border-radius: 10px;
         background: #fff;
+        color: #334155;
         box-shadow: none;
+        outline: none;
     }
 
-    .checkbody-page .dataTables_wrapper .dataTables_info,
-    .checkbody-page .dataTables_wrapper .dataTables_paginate {
-        margin-top: .8rem;
+    .checkbody-page .dataTables_wrapper .dataTables_length select {
+        min-width: 76px;
+        padding: .35rem 1.9rem .35rem .65rem;
+    }
+
+    .checkbody-page .dataTables_wrapper .dataTables_filter input {
+        width: 230px;
+        max-width: 42vw;
+        padding: .45rem .7rem;
+    }
+
+    .checkbody-page .dataTables_wrapper .dataTables_length select:focus,
+    .checkbody-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--cb-primary);
+        box-shadow: 0 0 0 .18rem rgba(15, 111, 97, .1);
+    }
+
+    .checkbody-page .dataTables_wrapper .dataTables_info {
+        padding-top: 0 !important;
         color: var(--cb-muted);
-        font-size: .8rem;
+        line-height: 1.5;
+    }
+
+    .checkbody-page .dataTables_wrapper .dataTables_paginate {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .2rem;
     }
 
     .checkbody-page .dataTables_wrapper .dataTables_paginate .paginate_button {
-        border-radius: 8px !important;
+        min-width: 36px;
+        min-height: 36px;
+        margin: 0 1px !important;
+        padding: .42rem .62rem !important;
+        border: 1px solid transparent !important;
+        border-radius: 9px !important;
+        background: transparent !important;
+        color: #475569 !important;
+        box-shadow: none !important;
+    }
+
+    .checkbody-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        border-color: #cbd5e1 !important;
+        background: #f8fafc !important;
+        color: #0f172a !important;
+    }
+
+    .checkbody-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .checkbody-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        border-color: var(--cb-primary) !important;
+        background: var(--cb-primary) !important;
+        color: #fff !important;
+    }
+
+    .checkbody-page .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+    .checkbody-page .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+        border-color: transparent !important;
+        background: transparent !important;
+        color: #94a3b8 !important;
+        cursor: default !important;
     }
 
 
@@ -1158,21 +1309,61 @@
         pointer-events: none;
     }
 
+    @media (min-width: 1200px) {
+        .checkbody-page .cb-stat {
+            min-height: 102px;
+        }
+    }
+
     @media (max-width: 1199.98px) {
         .checkbody-page .cb-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     @media (max-width: 991.98px) {
-        .checkbody-page .cb-hero-grid { grid-template-columns: 1fr; }
-        .checkbody-page .cb-actions { justify-content: flex-start; }
+        .checkbody-page .cb-hero-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .checkbody-page .cb-actions {
+            justify-content: flex-start;
+        }
     }
 
     @media (max-width: 767.98px) {
         .checkbody-page { padding-right: .65rem !important; padding-left: .65rem !important; }
         .checkbody-page .cb-hero { padding: 1.1rem; border-radius: 18px; }
+        .checkbody-page .cb-heading-icon { width: 46px; height: 46px; flex-basis: 46px; }
+        .checkbody-page .cb-actions { display: grid; grid-template-columns: 1fr; }
+        .checkbody-page .cb-actions .cb-btn { width: 100%; }
         .checkbody-page .cb-stats { grid-template-columns: 1fr 1fr; gap: .65rem; }
         .checkbody-page .cb-card-header { align-items: flex-start; flex-direction: column; }
         .checkbody-page .cb-card-body { padding: .9rem; }
+        .checkbody-page .cb-dt-toolbar,
+        .checkbody-page .cb-dt-footer {
+            align-items: stretch;
+            flex-direction: column;
+        }
+        .checkbody-page .cb-dt-length,
+        .checkbody-page .cb-dt-search,
+        .checkbody-page .cb-dt-info,
+        .checkbody-page .cb-dt-paging {
+            width: 100%;
+            margin-left: 0;
+        }
+        .checkbody-page .dataTables_wrapper .dataTables_length label,
+        .checkbody-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .checkbody-page .dataTables_wrapper .dataTables_filter input {
+            width: min(100%, 280px);
+            max-width: none;
+        }
+        .checkbody-page .dataTables_wrapper .dataTables_paginate {
+            justify-content: flex-start;
+            overflow-x: auto;
+            padding-bottom: .2rem;
+        }
 
         #checkBodyFormModal .modal-dialog {
             width: calc(100% - 1rem);
@@ -1188,12 +1379,12 @@
     }
 
     @media (max-width: 575.98px) {
-        .checkbody-page .cb-heading-icon { width: 46px; height: 46px; flex-basis: 46px; }
-        .checkbody-page .cb-page-subtitle { font-size: .84rem; }
+        .checkbody-page .cb-heading-row { align-items: flex-start; gap: .8rem; }
+        .checkbody-page .cb-heading-icon { border-radius: 14px; font-size: 1.2rem; }
+        .checkbody-page .cb-page-title { font-size: 1.08rem; }
+        .checkbody-page .cb-page-subtitle { font-size: .8rem; line-height: 1.55; }
         .checkbody-page .cb-meta-chip { width: 100%; }
         .checkbody-page .cb-meta-chip strong { white-space: normal; }
-        .checkbody-page .cb-actions,
-        .checkbody-page .cb-actions .cb-btn { width: 100%; }
         .checkbody-page .cb-stats { grid-template-columns: 1fr; }
 
         #checkBodyFormModal .modal-dialog { width: 100%; height: 100dvh; margin: 0; }
@@ -1236,95 +1427,76 @@
 
 <div class="container-fluid px-2 px-lg-3 checkbody-page">
     <div class="cb-shell">
-        @if($hasRows)
-            <section class="cb-hero" aria-labelledby="checkBodyPageTitle">
-                <div class="cb-hero-grid">
-                    <div class="cb-heading-row">
-                        <div class="cb-heading-icon" aria-hidden="true">
-                            <i class="bi bi-heart-pulse"></i>
-                        </div>
-
-                        <div class="cb-heading-content">
-                            <h1 class="cb-page-title" id="checkBodyPageTitle">
-                                บันทึกการตรวจสุขภาพเบื้องต้น
-                            </h1>
-
-                            <p class="cb-page-subtitle">
-                                จัดเก็บผลการตรวจร่างกาย พัฒนาการ การส่งเสริม และข้อมูลสุขภาพของผู้รับบริการอย่างเป็นระบบ
-                            </p>
-
-                            <div class="cb-client-meta">
-                                <span class="cb-meta-chip">
-                                    <i class="bi bi-person"></i>
-                                    ผู้รับบริการ:
-                                    <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
-                                </span>
-
-                                @if(!empty($client->age))
-                                    <span class="cb-meta-chip">
-                                        <i class="bi bi-calendar-heart"></i>
-                                        อายุ:
-                                        <strong>{{ $client->age }} ปี</strong>
-                                    </span>
-                                @endif
-
-                                <span class="cb-meta-chip">
-                                    <i class="bi bi-clipboard2-pulse"></i>
-                                    จำนวนบันทึก:
-                                    <strong>{{ number_format($totalRows) }} รายการ</strong>
-                                </span>
-                            </div>
-                        </div>
+        <header class="cb-hero" aria-labelledby="checkBodyPageTitle">
+            <div class="cb-hero-grid">
+                <div class="cb-heading-row">
+                    <div class="cb-heading-icon" aria-hidden="true">
+                        <i class="bi bi-heart-pulse"></i>
                     </div>
 
-                    <div class="cb-actions">
-                        @if($isEdit)
-                            <a href="{{ route('check_body.add', $client->id) }}"
-                               class="btn cb-btn cb-btn-secondary">
-                                <i class="bi bi-arrow-counterclockwise"></i>
-                                ยกเลิกการแก้ไข
-                            </a>
-                        @endif
+                    <div class="cb-heading-content">
+                        <h1 class="cb-page-title" id="checkBodyPageTitle">
+                            บันทึกการตรวจสุขภาพเบื้องต้น
+                        </h1>
 
-                        <button type="button"
-                                class="btn cb-btn cb-btn-primary"
-                                data-bs-toggle="modal"
-                                data-bs-target="#checkBodyFormModal">
-                            <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
-                            {{ $isEdit ? 'เปิดฟอร์มแก้ไข' : 'เพิ่มผลการตรวจ' }}
-                        </button>
+                        <p class="cb-page-subtitle">
+                            จัดเก็บผลการตรวจร่างกาย พัฒนาการ และข้อมูลสุขภาพพื้นฐานอย่างเป็นระบบ
+                        </p>
+
+                        <div class="cb-client-meta">
+                            <span class="cb-meta-chip">
+                                <i class="bi bi-person"></i>
+                                <span>ผู้รับบริการ:</span>
+                                <strong>{{ $clientDisplayName }}</strong>
+                            </span>
+
+                            @if(filled($client->cid ?? null))
+                                <span class="cb-meta-chip">
+                                    <i class="bi bi-card-text"></i>
+                                    <span>เลขประจำตัว:</span>
+                                    <strong>{{ $client->cid }}</strong>
+                                </span>
+                            @endif
+
+                            <span class="cb-meta-chip">
+                                <i class="bi bi-calendar-heart"></i>
+                                <span>อายุ:</span>
+                                <strong>{{ $clientAgeText }}</strong>
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </section>
-        @else
-            <section class="cb-empty-header" aria-labelledby="checkBodyPageTitle">
-                <div class="cb-empty-header-inner">
-                    <div class="cb-empty-header-left">
-                        <div class="cb-empty-header-icon" aria-hidden="true">
-                            <i class="bi bi-heart-pulse"></i>
-                        </div>
 
-                        <div class="cb-empty-header-text">
-                            <h1 class="cb-empty-header-title" id="checkBodyPageTitle">
-                                บันทึกการตรวจสุขภาพเบื้องต้น
-                            </h1>
-
-                            <div class="cb-empty-header-client">
-                                ผู้รับบริการ:
-                                <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
-                            </div>
-                        </div>
-                    </div>
+                <div class="cb-actions">
+                    @if($isEdit)
+                        <a href="{{ route('check_body.add', $client->id) }}"
+                           class="btn cb-btn cb-btn-secondary"
+                           data-permission-keep>
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                            <span>ยกเลิกการแก้ไข</span>
+                        </a>
+                    @endif
 
                     <a href="{{ route('admin.index', $client->id) }}"
-                       class="cb-empty-back-btn"
-                       aria-label="กลับหน้าหลักผู้รับบริการ">
+                       class="btn cb-btn cb-btn-secondary"
+                       data-permission-keep>
                         <i class="bi bi-arrow-left-circle"></i>
                         <span>กลับ</span>
                     </a>
+
+                    @if($hasRows)
+                        <button type="button"
+                                class="btn cb-btn cb-btn-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#checkBodyFormModal"
+                                data-permission-action="{{ $isEdit ? 'update' : 'create' }}">
+                            <i class="bi {{ $isEdit ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
+                            <span>{{ $isEdit ? 'เปิดฟอร์มแก้ไข' : 'เพิ่มผลการตรวจ' }}</span>
+                        </button>
+                    @endif
                 </div>
-            </section>
-        @endif
+            </div>
+        </header>
 
         @if($hasRows)
             <section class="cb-stats" aria-label="สรุปข้อมูลการตรวจสุขภาพ">
@@ -1386,7 +1558,8 @@
                 <button type="button"
                         class="btn cb-btn cb-btn-primary"
                         data-bs-toggle="modal"
-                        data-bs-target="#checkBodyFormModal">
+                        data-bs-target="#checkBodyFormModal"
+                        data-permission-action="create">
                     <i class="bi bi-plus-circle"></i>
                     เพิ่มผลการตรวจครั้งแรก
                 </button>
@@ -1406,6 +1579,90 @@
         const shouldAutoOpen = @json(
             $isEdit || ($errors->any() && old('_form_context') === 'checkbody_form')
         );
+
+        function setupCheckBodyDataTable() {
+            const tableElement = document.getElementById('datatable-checkbody');
+
+            if (!tableElement || !window.jQuery || !jQuery.fn.DataTable) {
+                return;
+            }
+
+            const $table = jQuery(tableElement);
+
+            /* ป้องกัน Layout หรือสคริปต์ส่วนกลางสร้าง DataTable ซ้ำ */
+            if (jQuery.fn.DataTable.isDataTable(tableElement)) {
+                $table.DataTable().destroy();
+            }
+
+            tableElement.removeAttribute('style');
+
+            const dataTable = $table.DataTable({
+                destroy: true,
+                autoWidth: false,
+                responsive: false,
+                scrollX: false,
+                order: [[0, 'desc']],
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                dom: '<"cb-dt-toolbar"<"cb-dt-length"l><"cb-dt-search"f>><"cb-dt-scroll"t><"cb-dt-footer"<"cb-dt-info"i><"cb-dt-paging"p>>',
+                columnDefs: [
+                    {
+                        orderable: false,
+                        searchable: false,
+                        width: '150px',
+                        className: 'cb-col-actions',
+                        targets: -1
+                    }
+                ],
+                language: {
+                    emptyTable: 'ไม่พบข้อมูล',
+                    info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
+                    infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
+                    infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
+                    lengthMenu: 'แสดง _MENU_ รายการ',
+                    loadingRecords: 'กำลังโหลด...',
+                    processing: 'กำลังประมวลผล...',
+                    search: 'ค้นหา:',
+                    zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
+                    paginate: {
+                        first: 'หน้าแรก',
+                        last: 'หน้าสุดท้าย',
+                        next: 'ถัดไป',
+                        previous: 'ก่อนหน้า'
+                    }
+                },
+                initComplete: function () {
+                    const api = this.api();
+                    const wrapper = tableElement.closest('.dataTables_wrapper');
+
+                    wrapper?.querySelectorAll('.cb-dt-toolbar, .cb-dt-footer').forEach(function (element) {
+                        element.setAttribute('data-permission-keep', '');
+                    });
+
+                    wrapper?.querySelectorAll(
+                        '.cb-dt-toolbar input, .cb-dt-toolbar select, .cb-dt-toolbar button, .cb-dt-toolbar a, ' +
+                        '.cb-dt-footer input, .cb-dt-footer select, .cb-dt-footer button, .cb-dt-footer a'
+                    ).forEach(function (element) {
+                        element.setAttribute('data-permission-keep', '');
+                    });
+
+                    window.requestAnimationFrame(function () {
+                        api.columns.adjust();
+                    });
+                }
+            });
+
+            let resizeTimer = null;
+            window.addEventListener('resize', function () {
+                window.clearTimeout(resizeTimer);
+                resizeTimer = window.setTimeout(function () {
+                    dataTable.columns.adjust();
+                }, 140);
+            }, { passive: true });
+        }
+
+        /* รอ DataTable จาก Layout ทำงานก่อน แล้วจัดรูปแบบหน้านี้เพียงครั้งเดียว */
+        window.setTimeout(setupCheckBodyDataTable, 80);
 
         if (!modalElement || !form) {
             return;
@@ -1608,51 +1865,7 @@
             }).show();
         }
 
-        if (window.jQuery && $.fn.DataTable && document.getElementById('datatable-checkbody')) {
-            const table = $('#datatable-checkbody');
 
-            if (!$.fn.DataTable.isDataTable(table)) {
-                const dataTable = table.DataTable({
-                    autoWidth: false,
-                    scrollX: true,
-                    scrollCollapse: true,
-                    order: [[0, 'desc']],
-                    pageLength: 10,
-                    lengthMenu: [10, 25, 50, 100],
-                    columnDefs: [{
-                        orderable: false,
-                        searchable: false,
-                        width: '150px',
-                        className: 'cb-col-actions',
-                        targets: -1
-                    }],
-                    initComplete: function () {
-                        const api = this.api();
-                        window.requestAnimationFrame(function () { api.columns.adjust(); });
-                    },
-                    language: {
-                        emptyTable: 'ไม่พบข้อมูล',
-                        info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
-                        infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
-                        infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
-                        lengthMenu: 'แสดง _MENU_ รายการ',
-                        loadingRecords: 'กำลังโหลด...',
-                        processing: 'กำลังประมวลผล...',
-                        search: 'ค้นหา:',
-                        zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
-                        paginate: {
-                            first: 'หน้าแรก', last: 'หน้าสุดท้าย', next: 'ถัดไป', previous: 'ก่อนหน้า'
-                        }
-                    }
-                });
-
-                let resizeTimer = null;
-                window.addEventListener('resize', function () {
-                    window.clearTimeout(resizeTimer);
-                    resizeTimer = window.setTimeout(function () { dataTable.columns.adjust(); }, 120);
-                });
-            }
-        }
     });
 
     function confirmDelete(id) {

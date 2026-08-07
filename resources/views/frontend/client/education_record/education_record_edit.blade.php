@@ -264,7 +264,7 @@
                                         name="record_date"
                                         id="record_date"
                                         class="form-control @error('record_date') is-invalid @enderror"
-                                        value="{{ old('record_date', $record->record_date ?? '') }}"
+                                        value="{{ old('record_date', filled($record->record_date) ? \Carbon\Carbon::parse($record->record_date)->format('Y-m-d') : '') }}"
                                         max="{{ now('Asia/Bangkok')->toDateString() }}"
                                         required>
                                     @error('record_date')

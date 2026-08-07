@@ -35,7 +35,24 @@
 document.addEventListener('DOMContentLoaded', function () {
     const successMessage = @json(session('message'));
 
-    document.querySelectorAll('.help-page .collapse').forEach(function (collapseElement) {
+    const filterPanel = document.getElementById('helpSearchPanel');
+    const filterToggle = document.querySelector('[data-help-filter-toggle]');
+
+    if (filterPanel && filterToggle) {
+        const filterLabel = filterToggle.querySelector('[data-help-filter-label]');
+
+        filterPanel.addEventListener('show.bs.collapse', function () {
+            filterToggle.setAttribute('aria-expanded', 'true');
+            if (filterLabel) filterLabel.textContent = 'ซ่อนค้นหา';
+        });
+
+        filterPanel.addEventListener('hide.bs.collapse', function () {
+            filterToggle.setAttribute('aria-expanded', 'false');
+            if (filterLabel) filterLabel.textContent = 'ค้นหา';
+        });
+    }
+
+    document.querySelectorAll('.help-page .hp-detail-row .collapse').forEach(function (collapseElement) {
         collapseElement.addEventListener('show.bs.collapse', function () {
             const button = document.querySelector('[data-bs-target="#' + collapseElement.id + '"]');
             if (!button) return;

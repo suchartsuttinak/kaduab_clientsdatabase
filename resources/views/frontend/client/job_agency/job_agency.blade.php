@@ -9,8 +9,11 @@
     $hasAnyJobAgency = $hasAnyJobAgency ?? $jobAgencies->isNotEmpty();
     $hasDateFilter = request()->filled('start_date')
         || request()->filled('end_date')
-        || old('start_date')
-        || old('end_date');
+        || filled(old('start_date'))
+        || filled(old('end_date'));
+
+    $hasFilterErrors = $errors->getBag('filters')->any();
+    $showDateFilter = $hasDateFilter || $hasFilterErrors;
 @endphp
 
 <div class="container-fluid mt-2 jobagency-page">
@@ -42,7 +45,6 @@
                     </button>
                 </section>
             @else
-                @include('frontend.client.job_agency.partials.info-card')
                 @include('frontend.client.job_agency.partials._table')
             @endif
         </div>
@@ -65,6 +67,46 @@ document.addEventListener('DOMContentLoaded', function () {
     const formSelector = '.jobagency-validate-form';
     const createModalEl = document.getElementById('createJobAgencyModal');
     const createForm = document.getElementById('createJobAgencyForm');
+    const filterPanel = document.getElementById('jobAgencyFilterPanel');
+    const filterToggle = document.querySelector('[data-job-agency-filter-toggle]');
+
+    function syncFilterToggle(isOpen) {
+        if (!filterToggle) return;
+
+        filterToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+
+        const icon = filterToggle.querySelector('[data-filter-toggle-icon]');
+        const label = filterToggle.querySelector('[data-filter-toggle-label]');
+
+        if (icon) {
+            icon.className = isOpen
+                ? 'bi bi-chevron-up'
+                : 'bi bi-funnel';
+        }
+
+        if (label) {
+            label.textContent = isOpen
+                ? 'ซ่อนการค้นหา'
+                : 'ค้นหารายการ';
+        }
+    }
+
+    if (filterPanel) {
+        syncFilterToggle(filterPanel.classList.contains('show'));
+        filterPanel.addEventListener('shown.bs.collapse', function () {
+            syncFilterToggle(true);
+
+            const firstFilter = filterPanel.querySelector('input:not([disabled])');
+            if (firstFilter) {
+                setTimeout(function () {
+                    firstFilter.focus({ preventScroll: true });
+                }, 100);
+            }
+        });
+        filterPanel.addEventListener('hidden.bs.collapse', function () {
+            syncFilterToggle(false);
+        });
+    }
 
     function showAlert(options) {
         if (window.Swal && typeof Swal.fire === 'function') {

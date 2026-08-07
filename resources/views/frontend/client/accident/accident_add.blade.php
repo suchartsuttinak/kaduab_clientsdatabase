@@ -1,10 +1,11 @@
 @extends('admin_client.admin_client')
 
+{{-- ACCIDENT_EMPTY_STATE_FULL_FIX_V4 --}}
+
 @section('content')
 @php
     $isEdit = isset($accident) && $accident;
     $hasAccidentRows = isset($accidents) && $accidents->isNotEmpty();
-    $totalAccidents = $hasAccidentRows ? $accidents->count() : 0;
     $doctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'พบแพทย์')->count() : 0;
     $nonDoctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'ไม่พบแพทย์')->count() : 0;
     $clientDisplayName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
@@ -54,8 +55,9 @@
     }
 
     .accident-page .acc-shell {
-        max-width: 1500px;
-        margin: 0 auto;
+        width: 100%;
+        max-width: none;
+        margin: 0;
     }
 
     .accident-page .acc-hero,
@@ -226,6 +228,91 @@
         color: #1e293b;
     }
 
+
+    /**
+     |--------------------------------------------------------------------------
+     | Accident Empty State
+     |--------------------------------------------------------------------------
+     | จัดรูปแบบกรณียังไม่มีข้อมูลให้เป็นการ์ดกะทัดรัดและอยู่กึ่งกลาง
+     */
+    .accident-page .acc-empty-state {
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        min-height: 270px;
+        margin-bottom: 1rem;
+        padding: 2.35rem 1.5rem;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        border-radius: var(--acc-radius-xl);
+        text-align: center;
+        isolation: isolate;
+    }
+
+    .accident-page .acc-empty-state::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        top: -76px;
+        right: -64px;
+        width: 190px;
+        height: 190px;
+        border: 32px solid rgba(37, 99, 235, .045);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .accident-page .acc-empty-state::after {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        left: -52px;
+        bottom: -78px;
+        width: 170px;
+        height: 170px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 130, 246, .065) 0%, rgba(59, 130, 246, 0) 70%);
+        pointer-events: none;
+    }
+
+    .accident-page .acc-empty-icon {
+        display: inline-flex;
+        width: 62px;
+        height: 62px;
+        flex: 0 0 62px;
+        margin-bottom: 1rem;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #bfdbfe;
+        border-radius: 18px;
+        background: var(--acc-primary-soft);
+        color: var(--acc-primary);
+        font-size: 1.55rem;
+        line-height: 1;
+        box-shadow: 0 10px 24px rgba(37, 99, 235, .11);
+    }
+
+    .accident-page .acc-empty-title {
+        margin: 0;
+        color: #0f172a;
+        font-size: clamp(1.12rem, 2vw, 1.38rem);
+        font-weight: 800;
+        line-height: 1.4;
+    }
+
+    .accident-page .acc-empty-text {
+        max-width: 650px;
+        margin: .48rem auto 0;
+        color: var(--acc-muted);
+        font-size: .88rem;
+        line-height: 1.75;
+    }
+
+    .accident-page .acc-empty-state .acc-btn {
+        margin-top: 1.15rem;
+    }
+
     .accident-page .acc-stats {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -343,6 +430,8 @@
     }
 
     .accident-page .acc-table-wrap {
+        width: 100%;
+        min-width: 0;
         overflow: hidden;
         border: 1px solid var(--acc-border-soft);
         border-radius: 14px;
@@ -350,31 +439,163 @@
     }
 
     /*
-    | ใช้ scrollX ของ DataTables เพียงจุดเดียว
-    | ป้องกัน scrollbar ซ้อนและหัวตารางไม่ตรงกับข้อมูล
+    |--------------------------------------------------------------------------
+    | Accident DataTable — single, stable layout
+    |--------------------------------------------------------------------------
+    | DataTables ดูแลการเลื่อนแนวนอนเพียงจุดเดียว ป้องกันหัวตารางเหลื่อม
+    | ช่องค้นหา/จำนวนรายการซ้ำ และ scrollbar ซ้อนจาก wrapper หลายชั้น
     */
-    .accident-page .acc-table-wrap .dataTables_wrapper,
-    .accident-page .acc-table-wrap .dataTables_scroll {
+    .accident-page .dataTables_wrapper {
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+        color: var(--acc-text);
+    }
+
+    .accident-page .acc-dt-top,
+    .accident-page .acc-dt-bottom {
+        display: flex;
+        width: 100%;
+        min-width: 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: .85rem 1rem;
+        margin: 0;
+    }
+
+    .accident-page .acc-dt-top {
+        padding: .9rem 1rem .75rem;
+        border-bottom: 1px solid #eef2f7;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+
+    .accident-page .acc-dt-bottom {
+        padding: .8rem 1rem .95rem;
+        border-top: 1px solid #eef2f7;
+        background: #ffffff;
+    }
+
+    .accident-page .acc-dt-length,
+    .accident-page .acc-dt-search,
+    .accident-page .acc-dt-info,
+    .accident-page .acc-dt-paging {
+        min-width: 0;
+    }
+
+    .accident-page .acc-dt-length {
+        flex: 1 1 auto;
+    }
+
+    .accident-page .acc-dt-search,
+    .accident-page .acc-dt-paging {
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_length,
+    .accident-page .dataTables_wrapper .dataTables_filter,
+    .accident-page .dataTables_wrapper .dataTables_info,
+    .accident-page .dataTables_wrapper .dataTables_paginate {
+        float: none !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        color: var(--acc-muted);
+        font-size: .82rem;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_length label,
+    .accident-page .dataTables_wrapper .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        margin: 0 !important;
+        color: #475569;
+        font-size: .84rem;
+        font-weight: 650;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_filter label {
+        justify-content: flex-end;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_length select,
+    .accident-page .dataTables_wrapper .dataTables_filter input {
+        height: 40px;
+        min-height: 40px;
+        margin: 0 !important;
+        border: 1px solid var(--acc-border);
+        border-radius: 11px;
+        background-color: #ffffff;
+        color: #0f172a;
+        font-size: .86rem;
+        box-shadow: none;
+        outline: none;
+        transition: border-color .16s ease, box-shadow .16s ease;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_length select {
+        min-width: 76px;
+        padding: .38rem 2rem .38rem .72rem;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_filter input {
+        width: 210px !important;
+        min-width: 210px;
+        padding: .42rem .75rem;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_length select:focus,
+    .accident-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 .18rem rgba(59, 130, 246, .13);
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_scroll,
+    .accident-page .dataTables_wrapper .dataTables_scrollHead,
+    .accident-page .dataTables_wrapper .dataTables_scrollBody {
         width: 100%;
         min-width: 0;
     }
 
-    .accident-page .acc-table-wrap .dataTables_scrollHead {
+    .accident-page .dataTables_wrapper .dataTables_scrollHead {
         overflow: hidden !important;
+        border: 0 !important;
         background: #f8fafc;
     }
 
-    .accident-page .acc-table-wrap .dataTables_scrollBody {
+    .accident-page .dataTables_wrapper .dataTables_scrollBody {
         overflow-x: auto !important;
-        overflow-y: visible !important;
-        /* ไม่จองพื้นที่ scrollbar โดยไม่จำเป็น เพราะทำให้เกิดส่วนเกินเล็กน้อย */
-        scrollbar-gutter: auto;
+        overflow-y: hidden !important;
+        border: 0 !important;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
         -webkit-overflow-scrolling: touch;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_scrollBody::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_scrollBody::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: #cbd5e1;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_scrollHeadInner,
+    .accident-page .dataTables_wrapper .dataTables_scrollHeadInner > table,
+    .accident-page .dataTables_wrapper .dataTables_scrollBody > table {
+        box-sizing: border-box !important;
+        margin: 0 !important;
     }
 
     .accident-page .acc-table {
         width: 100% !important;
         margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0;
         table-layout: fixed;
     }
 
@@ -426,10 +647,6 @@
         min-width: 140px !important;
     }
 
-    /*
-    | คอลัมน์จัดการเลื่อนไปพร้อมกับตาราง
-    | ไม่ใช้ sticky เพื่อป้องกันช่องว่าง/คอลัมน์ซ้อนบนจอขนาดใหญ่
-    */
     .accident-page .acc-col-actions {
         position: static !important;
         right: auto !important;
@@ -441,41 +658,16 @@
     }
 
     .accident-page .acc-table thead .acc-col-actions {
-        z-index: auto;
         background: #f8fafc;
     }
 
     .accident-page .acc-table tbody .acc-col-actions {
-        z-index: auto;
         background: #ffffff;
+        text-align: center !important;
     }
 
     .accident-page .acc-table tbody tr:hover .acc-col-actions {
         background: #fbfdff;
-    }
-
-    /*
-    | DataTables บางครั้งปัดเศษความกว้างเกิน 1-12px บนจอใหญ่
-    | JavaScript จะเพิ่มคลาสนี้เฉพาะเมื่อเป็นส่วนเกินเล็กน้อยจริง
-    */
-    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .dataTables_scrollBody {
-        overflow-x: hidden !important;
-    }
-
-    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .dataTables_scrollHeadInner {
-        width: 100% !important;
-        padding-right: 0 !important;
-    }
-
-    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .dataTables_scrollHeadInner > table,
-    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .dataTables_scrollBody > table {
-        width: 100% !important;
-        min-width: 100% !important;
-    }
-
-    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .acc-table th,
-    .accident-page .dataTables_wrapper.acc-no-trivial-overflow .acc-table td {
-        min-width: 0 !important;
     }
 
     .accident-page .acc-text-block {
@@ -493,27 +685,34 @@
     }
 
     .accident-page .acc-table thead th {
-        padding: .78rem .75rem;
+        padding: .82rem .75rem;
+        border-top: 0;
         border-bottom: 1px solid var(--acc-border);
         background: #f8fafc;
         color: #334155;
         font-size: .78rem;
         font-weight: 800;
+        line-height: 1.35;
         vertical-align: middle;
         white-space: nowrap;
     }
 
     .accident-page .acc-table tbody td {
-        padding: .78rem .75rem;
+        padding: .82rem .75rem;
         border-color: #edf1f6;
+        background: #ffffff;
         color: #334155;
         font-size: .83rem;
         line-height: 1.55;
         vertical-align: middle;
     }
 
-    .accident-page .acc-table tbody tr:hover {
-        background: #fbfdff;
+    .accident-page .acc-table tbody tr:nth-child(even) td {
+        background: #fcfdff;
+    }
+
+    .accident-page .acc-table tbody tr:hover td {
+        background: #f8fbff;
     }
 
     .accident-page .acc-table .acc-cell-main {
@@ -561,12 +760,6 @@
         vertical-align: middle;
     }
 
-    /* จัดปุ่มในคอลัมน์ “จัดการ” ให้อยู่กึ่งกลางเสมอ
-       แม้ระบบสิทธิ์อ่านอย่างเดียวจะเหลือปุ่มดูเพียงปุ่มเดียว */
-    .accident-page .acc-table tbody .acc-col-actions {
-        text-align: center !important;
-    }
-
     .accident-page .acc-icon-btn {
         display: inline-flex;
         width: 36px;
@@ -585,69 +778,75 @@
         box-shadow: 0 6px 14px rgba(15, 23, 42, .12);
     }
 
-    .accident-page .acc-empty-state {
-        padding: 3.2rem 1.25rem;
-        border-radius: var(--acc-radius-xl);
-        text-align: center;
-        background:
-            radial-gradient(circle at top, rgba(59, 130, 246, .10), transparent 44%),
-            #ffffff;
+    .accident-page .dataTables_wrapper .dataTables_info {
+        line-height: 1.45;
     }
 
-    .accident-page .acc-empty-icon {
-        display: inline-flex;
-        width: 82px;
-        height: 82px;
-        margin-bottom: 1rem;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #bfdbfe;
-        border-radius: 50%;
-        background: var(--acc-primary-soft);
-        color: var(--acc-primary);
-        font-size: 2rem;
-    }
-
-    .accident-page .acc-empty-title {
-        margin: 0;
-        color: #0f172a;
-        font-size: 1.15rem;
-        font-weight: 800;
-    }
-
-    .accident-page .acc-empty-text {
-        max-width: 650px;
-        margin: .45rem auto 1.15rem;
-        color: var(--acc-muted);
-        font-size: .88rem;
-        line-height: 1.75;
-    }
-
-    .accident-page .dataTables_wrapper .dataTables_length,
-    .accident-page .dataTables_wrapper .dataTables_filter {
-        margin-bottom: .8rem;
-        color: #475569;
-        font-size: .82rem;
-    }
-
-    .accident-page .dataTables_wrapper .dataTables_length select,
-    .accident-page .dataTables_wrapper .dataTables_filter input {
-        min-height: 38px;
-        border: 1px solid var(--acc-border);
-        border-radius: 10px;
-        background: #ffffff;
-        box-shadow: none;
-    }
-
-    .accident-page .dataTables_wrapper .dataTables_info,
     .accident-page .dataTables_wrapper .dataTables_paginate {
-        margin-top: .8rem;
-        color: var(--acc-muted);
-        font-size: .8rem;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .15rem;
+        white-space: nowrap;
     }
 
     .accident-page .dataTables_wrapper .dataTables_paginate .paginate_button {
-        border-radius: 8px !important;
+        min-width: 34px;
+        min-height: 34px;
+        margin: 0 1px !important;
+        padding: .38rem .62rem !important;
+        border-radius: 9px !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .accident-page .acc-empty-state {
+            min-height: 235px;
+            padding: 1.85rem 1rem;
+            border-radius: 18px;
+        }
+
+        .accident-page .acc-empty-icon {
+            width: 56px;
+            height: 56px;
+            flex-basis: 56px;
+            border-radius: 16px;
+            font-size: 1.38rem;
+        }
+
+        .accident-page .acc-empty-state .acc-btn {
+            width: auto;
+            max-width: 100%;
+        }
+
+        .accident-page .acc-dt-top,
+        .accident-page .acc-dt-bottom {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .accident-page .acc-dt-search,
+        .accident-page .acc-dt-paging {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        .accident-page .dataTables_wrapper .dataTables_filter,
+        .accident-page .dataTables_wrapper .dataTables_filter label {
+            width: 100% !important;
+            justify-content: flex-start;
+        }
+
+        .accident-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .accident-page .dataTables_wrapper .dataTables_paginate {
+            justify-content: flex-start;
+            overflow-x: auto;
+            padding-bottom: .15rem !important;
+        }
     }
 
     /*
@@ -1127,130 +1326,6 @@
         transform: none;
     }
 
-
-    /* =========================================================
-       HEADER สำหรับกรณียังไม่มีข้อมูล
-       ยึดโครงสร้างเดียวกับหน้า Check Body
-    ========================================================= */
-    .accident-page .acc-empty-header {
-        position: relative;
-        overflow: hidden;
-        min-height: 142px;
-        margin-bottom: 1.75rem;
-        padding: 1.45rem 1.5rem;
-        border: 1px solid #bfdbfe;
-        border-radius: 18px;
-        background:
-            linear-gradient(135deg, #eff6ff 0%, #f8fbff 58%, #ffffff 100%);
-        box-shadow: 0 10px 28px rgba(37, 99, 235, .08);
-    }
-
-    .accident-page .acc-empty-header::after {
-        content: "";
-        position: absolute;
-        right: -58px;
-        top: -72px;
-        width: 190px;
-        height: 190px;
-        border: 26px solid rgba(37, 99, 235, .045);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-
-    .accident-page .acc-empty-header-inner {
-        position: relative;
-        z-index: 1;
-        min-height: 92px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-
-    .accident-page .acc-empty-header-left {
-        display: flex;
-        min-width: 0;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .accident-page .acc-empty-header-icon {
-        display: inline-flex;
-        width: 60px;
-        height: 60px;
-        flex: 0 0 60px;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #bfdbfe;
-        border-radius: 18px;
-        background: linear-gradient(145deg, #dbeafe, #eff6ff);
-        color: var(--acc-primary);
-        font-size: 1.45rem;
-        box-shadow: 0 8px 18px rgba(37, 99, 235, .12);
-    }
-
-    .accident-page .acc-empty-header-text {
-        min-width: 0;
-    }
-
-    .accident-page .acc-empty-header-title {
-        margin: 0;
-        color: #172554;
-        font-size: 1.18rem;
-        font-weight: 800;
-        line-height: 1.35;
-        letter-spacing: -.01em;
-    }
-
-    .accident-page .acc-empty-header-client {
-        margin-top: .28rem;
-        color: var(--acc-muted);
-        font-size: .84rem;
-        line-height: 1.5;
-    }
-
-    .accident-page .acc-empty-header-client strong {
-        color: #0f172a;
-        font-weight: 800;
-    }
-
-    .accident-page .acc-empty-back-btn {
-        display: inline-flex;
-        min-height: 42px;
-        align-items: center;
-        justify-content: center;
-        gap: .42rem;
-        padding: .55rem .95rem;
-        border: 1px solid #8b5cf6;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, .92);
-        color: #7c3aed;
-        font-size: .86rem;
-        font-weight: 700;
-        line-height: 1.2;
-        text-decoration: none;
-        white-space: nowrap;
-        box-shadow: 0 5px 12px rgba(124, 58, 237, .08);
-        transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
-    }
-
-    .accident-page .acc-empty-back-btn:hover,
-    .accident-page .acc-empty-back-btn:focus {
-        color: #6d28d9;
-        background: #faf5ff;
-        transform: translateY(-1px);
-        box-shadow: 0 8px 16px rgba(124, 58, 237, .12);
-    }
-
-    .accident-page .acc-empty-state {
-        min-height: 320px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
     @media (max-width: 1199.98px) {
         .accident-page .acc-stats {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1297,28 +1372,6 @@
             padding: .9rem;
         }
 
-        .accident-page .acc-empty-header {
-            min-height: 168px;
-            margin-bottom: 1rem;
-            padding: 1.35rem 1rem !important;
-            border-radius: 16px;
-        }
-
-        .accident-page .acc-empty-header-inner {
-            min-height: 124px;
-            align-content: center;
-            row-gap: 1rem;
-        }
-
-        .accident-page .acc-empty-header-inner,
-        .accident-page .acc-empty-header-left {
-            width: 100%;
-        }
-
-        .accident-page .acc-empty-back-btn {
-            width: 100%;
-        }
-
         #accidentFormModal {
             padding: 0 !important;
         }
@@ -1363,33 +1416,6 @@
 
         .accident-page .acc-meta-chip strong {
             white-space: normal;
-        }
-
-        .accident-page .acc-empty-header {
-            min-height: 176px;
-            padding-top: 1.5rem !important;
-            padding-bottom: 1.5rem !important;
-        }
-
-        .accident-page .acc-empty-header-left {
-            align-items: center;
-            gap: .8rem;
-        }
-
-        .accident-page .acc-empty-header-icon {
-            width: 52px;
-            height: 52px;
-            flex-basis: 52px;
-            border-radius: 15px;
-            font-size: 1.25rem;
-        }
-
-        .accident-page .acc-empty-header-title {
-            font-size: 1.02rem;
-        }
-
-        .accident-page .acc-empty-header-client {
-            font-size: .78rem;
         }
 
         .accident-page .acc-card-header {
@@ -1453,11 +1479,93 @@
             transition-duration: .01ms !important;
         }
     }
+
+    /*
+     * Final Empty State override V4
+     * ใช้ ID เพื่อป้องกัน CSS จาก layout/theme เขียนทับ
+     */
+    .accident-page #accidentEmptyState {
+        position: relative !important;
+        overflow: hidden !important;
+        display: flex !important;
+        width: 100% !important;
+        min-height: 290px !important;
+        margin: 0 0 1rem !important;
+        padding: 2.4rem 1.5rem !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-direction: column !important;
+        border: 1px solid #e8eef6 !important;
+        border-radius: 22px !important;
+        background: #ffffff !important;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, .06) !important;
+        text-align: center !important;
+    }
+
+    .accident-page #accidentEmptyState > .acc-empty-icon {
+        display: inline-flex !important;
+        width: 62px !important;
+        height: 62px !important;
+        flex: 0 0 62px !important;
+        margin: 0 0 1rem !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border: 1px solid #bfdbfe !important;
+        border-radius: 18px !important;
+        background: #eff6ff !important;
+        color: #1d4ed8 !important;
+        font-size: 1.55rem !important;
+        line-height: 1 !important;
+        box-shadow: 0 10px 24px rgba(37, 99, 235, .11) !important;
+    }
+
+    .accident-page #accidentEmptyState > .acc-empty-title {
+        margin: 0 !important;
+        color: #0f172a !important;
+        font-size: clamp(1.12rem, 2vw, 1.38rem) !important;
+        font-weight: 800 !important;
+        line-height: 1.4 !important;
+        text-align: center !important;
+    }
+
+    .accident-page #accidentEmptyState > .acc-empty-text {
+        width: 100% !important;
+        max-width: 650px !important;
+        margin: .48rem auto 0 !important;
+        color: #64748b !important;
+        font-size: .88rem !important;
+        line-height: 1.75 !important;
+        text-align: center !important;
+    }
+
+    .accident-page #accidentEmptyState > .acc-btn {
+        margin-top: 1.15rem !important;
+    }
+
+    @media (max-width: 575.98px) {
+        .accident-page #accidentEmptyState {
+            min-height: 250px !important;
+            padding: 2rem 1rem !important;
+            border-radius: 18px !important;
+        }
+
+        .accident-page #accidentEmptyState > .acc-empty-icon {
+            width: 56px !important;
+            height: 56px !important;
+            flex-basis: 56px !important;
+            border-radius: 16px !important;
+            font-size: 1.38rem !important;
+        }
+
+        .accident-page #accidentEmptyState > .acc-btn {
+            width: 100% !important;
+            max-width: 310px !important;
+        }
+    }
 </style>
 
 <div class="container-fluid px-2 px-lg-3 accident-page">
     <div class="acc-shell">
-        @if($hasAccidentRows)
         <header class="acc-hero">
             <div class="acc-hero-grid">
                 <div class="acc-heading-row">
@@ -1491,14 +1599,6 @@
                                 <span>อายุ:</span>
                                 <strong>{{ $clientAgeDisplay }}</strong>
                             </span>
-
-                            @if($hasAccidentRows)
-                                <span class="acc-meta-chip">
-                                    <i class="bi bi-journal-medical"></i>
-                                    <span>จำนวนบันทึก:</span>
-                                    <strong>{{ number_format($totalAccidents) }} รายการ</strong>
-                                </span>
-                            @endif
                         </div>
                     </div>
                 </div>
@@ -1524,35 +1624,6 @@
                 @endif
             </div>
         </header>
-        @else
-            <section class="acc-empty-header" aria-labelledby="accidentPageTitle">
-                <div class="acc-empty-header-inner">
-                    <div class="acc-empty-header-left">
-                        <div class="acc-empty-header-icon" aria-hidden="true">
-                            <i class="bi bi-shield-plus"></i>
-                        </div>
-
-                        <div class="acc-empty-header-text">
-                            <h1 class="acc-empty-header-title" id="accidentPageTitle">
-                                บันทึกข้อมูลการบาดเจ็บ
-                            </h1>
-
-                            <div class="acc-empty-header-client">
-                                ผู้รับบริการ:
-                                <strong>{{ $clientDisplayName }}</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <a href="{{ route('admin.index', $client->id) }}"
-                       class="acc-empty-back-btn"
-                       aria-label="กลับหน้าหลักผู้รับบริการ">
-                        <i class="bi bi-arrow-left-circle"></i>
-                        <span>กลับ</span>
-                    </a>
-                </div>
-            </section>
-        @endif
 
         @if($hasAccidentRows)
             <section class="acc-stats" aria-label="สรุปข้อมูลการบาดเจ็บ">
@@ -1562,7 +1633,7 @@
                         <span class="acc-stat-icon"><i class="bi bi-calendar-event"></i></span>
                     </div>
                     <div class="acc-stat-value">
-                        {{ \App\Helpers\ThaiDateHelper::formatThaiShort(optional($accidents->first())->incident_date) }}
+                        {{ \App\Helpers\*ThaiDateHelper::formatThaiShort(optional($accidents->first())->incident_date) }}
                     </div>
                 </article>
 
@@ -1595,19 +1666,73 @@
         @if($hasAccidentRows)
             @include('frontend.client.accident._table')
         @else
-            <section class="acc-empty-state">
-                <div class="acc-empty-icon" aria-hidden="true">
-                    <i class="bi bi-clipboard2-pulse"></i>
+            {{--
+                ใช้ inline critical styles เฉพาะ Empty State เพื่อป้องกัน CSS จาก Layout/Theme
+                เขียนทับจนรูปแบบเพี้ยน โดยยังคง class เดิมสำหรับ responsive และมาตรฐานหน้า Accident
+            --}}
+            <section id="accidentEmptyState" class="acc-empty-state"
+                     style="position:relative !important;
+                            overflow:hidden !important;
+                            display:flex !important;
+                            width:100% !important;
+                            min-height:290px !important;
+                            margin:0 0 1rem !important;
+                            padding:2.4rem 1.5rem !important;
+                            align-items:center !important;
+                            justify-content:center !important;
+                            flex-direction:column !important;
+                            border:1px solid #e8eef6 !important;
+                            border-radius:22px !important;
+                            background:#ffffff !important;
+                            box-shadow:0 6px 18px rgba(15,23,42,.06) !important;
+                            text-align:center !important;">
+
+                <div class="acc-empty-icon"
+                     aria-hidden="true"
+                     style="display:inline-flex !important;
+                            width:62px !important;
+                            height:62px !important;
+                            flex:0 0 62px !important;
+                            margin:0 0 1rem !important;
+                            align-items:center !important;
+                            justify-content:center !important;
+                            border:1px solid #bfdbfe !important;
+                            border-radius:18px !important;
+                            background:#eff6ff !important;
+                            color:#1d4ed8 !important;
+                            font-size:1.55rem !important;
+                            line-height:1 !important;
+                            box-shadow:0 10px 24px rgba(37,99,235,.11) !important;">
+                    <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
                 </div>
-                <h2 class="acc-empty-title">ยังไม่มีข้อมูลการบาดเจ็บ</h2>
-                <p class="acc-empty-text">
+
+                <h2 class="acc-empty-title"
+                    style="margin:0 !important;
+                           color:#0f172a !important;
+                           font-size:clamp(1.12rem,2vw,1.38rem) !important;
+                           font-weight:800 !important;
+                           line-height:1.4 !important;
+                           text-align:center !important;">
+                    ยังไม่มีข้อมูลการบาดเจ็บ
+                </h2>
+
+                <p class="acc-empty-text"
+                   style="width:100% !important;
+                          max-width:650px !important;
+                          margin:.48rem auto 0 !important;
+                          color:#64748b !important;
+                          font-size:.88rem !important;
+                          line-height:1.75 !important;
+                          text-align:center !important;">
                     เริ่มต้นบันทึกเหตุการณ์ครั้งแรก โดยระบุวันเกิดเหตุ สถานที่ รายละเอียด การรักษา และผู้ดูแลให้ครบถ้วน
                 </p>
+
                 <button type="button"
                         class="btn acc-btn acc-btn-primary"
+                        style="margin-top:1.15rem !important;"
                         data-bs-toggle="modal"
                         data-bs-target="#accidentFormModal">
-                    <i class="bi bi-plus-circle"></i>
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i>
                     <span>เพิ่มข้อมูลการบาดเจ็บครั้งแรก</span>
                 </button>
             </section>
@@ -1809,106 +1934,100 @@
             }).show();
         }
 
-        if (window.jQuery && $.fn.DataTable && document.getElementById('datatable-accident')) {
-            const table = $('#datatable-accident');
+        function setupAccidentDataTable() {
+            const tableElement = document.getElementById('datatable-accident');
 
-            if (!$.fn.DataTable.isDataTable(table)) {
-                const accidentDataTable = table.DataTable({
-                    autoWidth: false,
-                    scrollX: true,
-                    scrollCollapse: true,
-                    order: [[0, 'desc']],
-                    pageLength: 10,
-                    lengthMenu: [10, 25, 50, 100],
-                    columnDefs: [
-                        {
-                            orderable: false,
-                            searchable: false,
-                            width: '150px',
-                            className: 'acc-col-actions',
-                            targets: -1
-                        }
-                    ],
-                    initComplete: function () {
-                        const api = this.api();
+            if (!tableElement || !window.jQuery || !jQuery.fn.DataTable) {
+                return;
+            }
 
-                        window.requestAnimationFrame(function () {
-                            api.columns.adjust();
-                            window.requestAnimationFrame(syncAccidentTableOverflow);
-                        });
-                    },
-                    language: {
-                        emptyTable: 'ไม่พบข้อมูล',
-                        info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
-                        infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
-                        infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
-                        lengthMenu: 'แสดง _MENU_ รายการ',
-                        loadingRecords: 'กำลังโหลด...',
-                        processing: 'กำลังประมวลผล...',
-                        search: 'ค้นหา:',
-                        zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
-                        paginate: {
-                            first: 'หน้าแรก',
-                            last: 'หน้าสุดท้าย',
-                            next: 'ถัดไป',
-                            previous: 'ก่อนหน้า'
-                        }
+            const $table = jQuery(tableElement);
+
+            /*
+             * Layout หรือสคริปต์ส่วนกลางอาจสร้าง DataTable ไว้ก่อน
+             * ทำลาย instance เดิมแล้วสร้างใหม่เพียงครั้งเดียว เพื่อไม่ให้
+             * ช่องค้นหา/จำนวนรายการซ้ำ หัวตารางเหลื่อม หรือ scrollbar ซ้อน
+             */
+            if (jQuery.fn.DataTable.isDataTable(tableElement)) {
+                $table.DataTable().destroy();
+            }
+
+            const accidentDataTable = $table.DataTable({
+                destroy: true,
+                autoWidth: false,
+                scrollX: true,
+                scrollCollapse: true,
+                order: [[0, 'desc']],
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                dom: '<"acc-dt-top"<"acc-dt-length"l><"acc-dt-search"f>>rt<"acc-dt-bottom"<"acc-dt-info"i><"acc-dt-paging"p>>',
+                columnDefs: [
+                    {
+                        orderable: false,
+                        searchable: false,
+                        width: '150px',
+                        className: 'acc-col-actions',
+                        targets: -1
                     }
-                });
-
-                function syncAccidentTableOverflow() {
-                    const tableNode = accidentDataTable.table().node();
-                    const wrapper = tableNode.closest('.dataTables_wrapper');
-
-                    if (!wrapper) {
-                        return;
+                ],
+                language: {
+                    emptyTable: 'ไม่พบข้อมูล',
+                    info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
+                    infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
+                    infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
+                    lengthMenu: 'แสดง _MENU_ รายการ',
+                    loadingRecords: 'กำลังโหลด...',
+                    processing: 'กำลังประมวลผล...',
+                    search: 'ค้นหา:',
+                    zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
+                    paginate: {
+                        first: 'หน้าแรก',
+                        last: 'หน้าสุดท้าย',
+                        next: 'ถัดไป',
+                        previous: 'ก่อนหน้า'
                     }
+                },
+                initComplete: function () {
+                    const api = this.api();
+                    const wrapper = tableElement.closest('.dataTables_wrapper');
 
-                    const scrollBody = wrapper.querySelector('.dataTables_scrollBody');
+                    wrapper?.setAttribute('data-permission-keep', '');
+                    wrapper?.querySelectorAll('input, select, button, a').forEach(function (element) {
+                        element.setAttribute('data-permission-keep', '');
+                    });
 
-                    if (!scrollBody) {
-                        return;
-                    }
-
-                    /*
-                    | DataTables อาจคำนวณความกว้างเกินจริงประมาณ 1–24px
-                    | ซ่อน scrollbar เฉพาะเมื่อพื้นที่ปัจจุบันรองรับความกว้างตารางได้จริง
-                    | หากจอแคบกว่าความกว้างขั้นต่ำ ตารางยังเลื่อนแนวนอนได้ตามปกติ
-                    */
-                    const requiredTableWidth = tableNode.classList.contains('acc-table-expanded')
-                        ? 1450
-                        : 1150;
-                    const overflowAmount = Math.max(
-                        0,
-                        Math.ceil(scrollBody.scrollWidth - scrollBody.clientWidth)
-                    );
-                    const contentCanFit = scrollBody.clientWidth >= (requiredTableWidth - 24);
-                    const isTrivialOverflow = contentCanFit && overflowAmount <= 24;
-
-                    wrapper.classList.toggle('acc-no-trivial-overflow', isTrivialOverflow);
-
-                    if (isTrivialOverflow) {
-                        scrollBody.scrollLeft = 0;
-                    }
+                    window.requestAnimationFrame(function () {
+                        api.columns.adjust().draw(false);
+                    });
                 }
+            });
 
-                let accidentTableResizeTimer = null;
-
-                window.addEventListener('resize', function () {
-                    window.clearTimeout(accidentTableResizeTimer);
-
-                    accidentTableResizeTimer = window.setTimeout(function () {
-                        accidentDataTable.columns.adjust();
-                        window.requestAnimationFrame(syncAccidentTableOverflow);
-                    }, 120);
-                });
-
-                window.addEventListener('load', function () {
+            function adjustAccidentDataTable() {
+                window.requestAnimationFrame(function () {
                     accidentDataTable.columns.adjust();
-                    window.requestAnimationFrame(syncAccidentTableOverflow);
-                }, { once: true });
+                });
+            }
+
+            window.setTimeout(adjustAccidentDataTable, 100);
+            window.addEventListener('load', adjustAccidentDataTable, { once: true });
+
+            let resizeTimer = null;
+            window.addEventListener('resize', function () {
+                window.clearTimeout(resizeTimer);
+                resizeTimer = window.setTimeout(adjustAccidentDataTable, 120);
+            });
+
+            const tableCard = tableElement.closest('.acc-table-card');
+            if (tableCard && window.ResizeObserver) {
+                const observer = new ResizeObserver(function () {
+                    adjustAccidentDataTable();
+                });
+                observer.observe(tableCard);
             }
         }
+
+        /* รอ Layout และสคริปต์ส่วนกลางทำงานก่อน แล้ว normalize ตารางหนึ่งครั้ง */
+        window.setTimeout(setupAccidentDataTable, 60);
     });
 
     function confirmDelete(id) {

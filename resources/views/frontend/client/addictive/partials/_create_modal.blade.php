@@ -205,7 +205,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
             </div>
 
-            <form id="addictive-form" action="{{ route('addictive.store') }}" method="POST" novalidate>
+            <form id="addictive-form" action="{{ route('addictive.store') }}" method="POST" novalidate data-permission-action="create">
                 @csrf
                 <input type="hidden" name="client_id" value="{{ $client->id }}">
                 <input type="hidden" name="_form_context" value="addictive_add">
@@ -352,7 +352,7 @@
                     <button type="button" class="btn btn-cancel-modern" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> ปิด
                     </button>
-                    <button type="submit" class="btn btn-save-modern">
+                    <button type="submit" class="btn btn-save-modern" data-permission-action="create">
                         <i class="bi bi-save"></i> บันทึกผล
                     </button>
                 </div>

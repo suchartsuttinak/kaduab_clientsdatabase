@@ -49,7 +49,12 @@
                 <div class="idstation-top-text">
                     <h5 id="idstationPageTitle">การดำเนินการด้านสถานะบุคคล</h5>
                     <div class="idstation-client-name">
-                        ผู้รับบริการ: <span>{{ $clientDisplayName ?: '-' }}</span>
+                        
+                        ผู้รับบริการ:
+                        <strong>{{ $client->fullname ?? $client->name ?? '-' }}</strong>
+                         <span class="mx-1">•</span>
+                            อายุ: <strong>{{ is_numeric($client->age ?? null) ? $client->age . ' ปี' : '-' }}</strong>
+                 
                     </div>
                 </div>
             </div>
