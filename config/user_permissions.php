@@ -178,7 +178,12 @@ return [
             'icon' => 'bi-people-fill',
             'description' => 'พฤติกรรม การหลบหนี การจำหน่าย การช่วยเหลือ และการติดตาม',
             'items' => [
-                'welfare_behavior_problem' => [
+                                'welfare_counseling' => [
+                    'label' => 'การให้คำปรึกษา',
+                    'description' => 'บันทึกกระบวนการให้คำปรึกษาเป็นครั้งและรอบ พร้อมรายงานรายรอบและรายงานรวม',
+                    'actions' => ['view', 'create', 'update', 'delete', 'print'],
+                ],
+'welfare_behavior_problem' => [
                     'label' => 'บันทึกปัญหาพฤติกรรม',
                     'description' => 'บันทึกปัญหาพฤติกรรมและการดำเนินการที่เกี่ยวข้อง',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
@@ -464,6 +469,7 @@ return [
             'screening_snap_iv',
             'screening_depression',
             'screening_nutrition',
+            'welfare_counseling',
             'welfare_behavior_problem',
             'welfare_escape',
             'welfare_outside_followup',
@@ -619,6 +625,34 @@ return [
         ['routes' => ['nutrition_assessments.destroy'], 'permissions' => ['screening_nutrition'], 'action' => 'delete'],
 
         // 5.1 ปัญหาพฤติกรรม
+        // การให้คำปรึกษา
+        ['routes' => [
+            'counseling.index',
+            'counseling.show',
+        ], 'permissions' => ['welfare_counseling'], 'action' => 'view'],
+
+        ['routes' => [
+            'counseling.store',
+            'counseling.followup.create',
+            'counseling.followup.store',
+        ], 'permissions' => ['welfare_counseling'], 'action' => 'create'],
+
+        ['routes' => [
+            'counseling.edit',
+            'counseling.update',
+            'counseling.followup.edit',
+            'counseling.followup.update',
+        ], 'permissions' => ['welfare_counseling'], 'action' => 'update'],
+
+        ['routes' => [
+            'counseling.delete',
+            'counseling.followup.delete',
+        ], 'permissions' => ['welfare_counseling'], 'action' => 'delete'],
+
+        ['routes' => [
+            'counseling.report',
+            'counseling.followup.report',
+        ], 'permissions' => ['welfare_counseling'], 'action' => 'print'],
         ['routes' => ['observe.create'], 'permissions' => ['welfare_behavior_problem'], 'action' => 'view'],
         ['routes' => ['observe.store', 'observe.followup.store'], 'permissions' => ['welfare_behavior_problem'], 'action' => 'create'],
         ['routes' => ['observe.edit', 'observe.update', 'observe.followup.edit', 'observe.followup.update'], 'permissions' => ['welfare_behavior_problem'], 'action' => 'update'],
