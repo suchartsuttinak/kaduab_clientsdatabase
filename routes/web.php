@@ -636,6 +636,7 @@ use Illuminate\Support\Facades\Route;
         require __DIR__.'/frontend/member.php';
         require __DIR__.'/frontend/observe.php';
         require __DIR__.'/frontend/psychiatric.php';
+        require __DIR__.'/frontend/counseling.php';
         require __DIR__.'/frontend/refer.php';
         require __DIR__.'/frontend/SchoolFollowup.php';
         require __DIR__.'/frontend/vaccination.php';

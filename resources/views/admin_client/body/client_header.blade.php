@@ -71,7 +71,8 @@
         Request::routeIs('help_sessions.*') ||
         Request::routeIs('followup.*') ||
         Request::routeIs('case-activities.*') ||
-        Request::routeIs('idstation.*');
+        Request::routeIs('idstation.*')
+        || Request::routeIs('counseling.*');
 
     $isStatelessClient = isset($client)
         && is_object($client)
@@ -301,6 +302,16 @@
                                 @if ($clientId && $isStatelessClient && $canForm('welfare_stateless_person'))
                                     <li><a class="dropdown-item {{ Request::routeIs('idstation.*') ? 'active' : '' }}" href="{{ route('idstation.index', $clientId) }}">ช่วยเหลือด้านสถานะบุคคล</a></li>
                                 @endif
+
+                                @if ($clientId && $canForm('welfare_counseling'))
+                                    <li>
+                                        <a class="dropdown-item {{ Request::routeIs('counseling.*') ? 'active' : '' }}"
+                                           href="{{ route('counseling.index', $clientId) }}">
+                                            การให้คำปรึกษา
+                                        </a>
+                                    </li>
+                                @endif
+
                                 @if ($clientId && $canForm('welfare_behavior_problem'))
                                     <li><a class="dropdown-item {{ Request::routeIs('observe.*') ? 'active' : '' }}" href="{{ route('observe.create', $clientId) }}">บันทึกปัญหาพฤติกรรม</a></li>
                                 @endif
@@ -347,7 +358,7 @@
                             <li><a href="auth-lock-screen.html" class="dropdown-item"><i class="fas fa-lock me-2"></i>ล็อกหน้าจอ</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <form method="POST" action="{{ route('admin.logout') }}" class="m-0">
+                                <form method="POST" action="{{ route('admin.logout') }}" class="m-0" data-permission-action="navigation">
                                     @csrf
                                     <button type="submit" class="dropdown-item text-danger border-0 bg-transparent w-100 text-start">
                                         <i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ

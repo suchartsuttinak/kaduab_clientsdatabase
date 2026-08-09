@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 use App\Models\ClientTransfer;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
@@ -364,5 +365,15 @@ public function nutritionAssessments()
 public function idstations()
 {
     return $this->hasMany(Idstation::class);
+}
+
+/**
+ * ประวัติการให้คำปรึกษาของผู้รับบริการ
+ */
+public function counselings(): HasMany
+{
+    return $this->hasMany(Counseling::class)
+        ->orderByDesc('session_date')
+        ->orderByDesc('session_no');
 }
 }

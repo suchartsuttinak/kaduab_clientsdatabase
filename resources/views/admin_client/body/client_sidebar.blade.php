@@ -111,7 +111,8 @@
         || Request::routeIs('help_sessions.*')
         || Request::routeIs('followup.*')
         || Request::routeIs('case-activities.*')
-        || Request::routeIs('idstation.*');
+        || Request::routeIs('idstation.*')
+        || Request::routeIs('counseling.*');
 
     $isStatelessClient = $sidebarClient
         && optional($sidebarClient->target)->target_name === 'บุคคลไม่มีสถานะทางทะเบียน';
@@ -525,6 +526,16 @@
                                 @if ($clientId && $isStatelessClient && $canForm('welfare_stateless_person'))
                                     <li><a href="{{ route('idstation.index', $clientId) }}" class="tp-link {{ Request::routeIs('idstation.*') ? 'active' : '' }}">ช่วยเหลือด้านสถานะบุคคล</a></li>
                                 @endif
+
+                                @if ($clientId && $canForm('welfare_counseling'))
+                                    <li>
+                                        <a href="{{ route('counseling.index', $clientId) }}"
+                                           class="tp-link {{ Request::routeIs('counseling.*') ? 'active' : '' }}">
+                                            การให้คำปรึกษา
+                                        </a>
+                                    </li>
+                                @endif
+
 
                                 @if ($clientId && $canForm('welfare_behavior_problem'))
                                     <li><a href="{{ route('observe.create', $clientId) }}" class="tp-link {{ Request::routeIs('observe.*') ? 'active' : '' }}">บันทึกปัญหาพฤติกรรม</a></li>
