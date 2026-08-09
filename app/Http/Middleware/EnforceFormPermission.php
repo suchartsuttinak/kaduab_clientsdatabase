@@ -541,6 +541,21 @@ class EnforceFormPermission
 
         $context = AuditMutationContext::primary($request, $action);
 
+        /*
+         * AUDIT_USER_UPDATE_EMPTY_CONTEXT_V1
+         * users.update may already write a dedicated PERMISSION_CHANGE audit row.
+         * If the request succeeded but no Eloquent mutation context exists,
+         * there was no model UPDATE to describe, so skip the empty generic UPDATE row.
+         */
+        if (
+            $context === null
+            && $result === 'success'
+            && $action === 'update'
+            && $request->route()?->getName() === 'users.update'
+        ) {
+            return;
+        }
+
         $clientId = isset($context['client_id']) && is_numeric($context['client_id'])
             ? (int) $context['client_id']
             : null;
