@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
@@ -42,19 +41,12 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
+        /*
+         * บัญชีเจ้าหน้าที่ต้องจัดการผ่านเมนูผู้ใช้งานส่วนกลาง
+         * เพื่อรักษา Audit Trail และป้องกันข้อมูลที่อ้างอิง user_id ถูกลบตาม cascade
+         */
+        return Redirect::route('profile.edit')->withErrors([
+            'account' => 'ไม่อนุญาตให้ลบบัญชีเจ้าหน้าที่ด้วยตนเอง กรุณาติดต่อผู้ดูแลระบบ',
         ]);
-
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
     }
 }

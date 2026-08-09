@@ -14,7 +14,8 @@
         || ($groupAccess['registration_central'] ?? false);
     $showDashboardMenu = (bool) ($groupAccess['dashboard'] ?? false);
     $showMasterMenu = (bool) ($groupAccess['master_data'] ?? false);
-    $showSystemMenu = $canForm('system_users');
+    $showSystemMenu = $canForm('system_users')
+    || $canForm('system_audit_logs');
 
     $isProfileOpen = Request::routeIs('client.show')
         || Request::routeIs('client.cases')
@@ -46,7 +47,8 @@
         || Request::routeIs('citizen.*')
         || Request::routeIs('translate.*');
 
-    $isUserMenu = Request::routeIs('users.*');
+   $isUserMenu = Request::routeIs('users.*')
+    || Request::routeIs('audit_logs.*');
     $isIdstationCentralMenu = Request::routeIs('idstation.central.*');
 @endphp
 
@@ -194,30 +196,99 @@
                     <li><a href="{{ route('refers.all') }}" class="nav-link {{ Request::routeIs('refers.all') ? 'active' : '' }}"><i class="bi bi-box-arrow-right me-2"></i><span>รายงานการจำหน่าย</span></a></li>
                 @endif
 
-                @if($showSystemMenu)
-                    <li class="menu-title mt-2">การจัดการระบบ</li>
+              @if($showSystemMenu)
+    <li class="menu-title mt-2">การจัดการระบบ</li>
+
+    <li>
+        <a href="#sidebarUsers"
+           data-bs-toggle="collapse"
+           aria-expanded="{{ $isUserMenu ? 'true' : 'false' }}"
+           class="{{ $isUserMenu ? 'active' : '' }}">
+
+            <i class="bi bi-people-fill"></i>
+            <span>จัดการผู้ใช้งาน</span>
+            <span class="menu-arrow menu-arrow-custom"></span>
+        </a>
+
+        <div class="collapse {{ $isUserMenu ? 'show' : '' }}"
+             id="sidebarUsers">
+
+            <ul class="nav-second-level">
+
+                {{-- รายชื่อผู้ใช้งาน --}}
+                @if($canForm('system_users'))
                     <li>
-                        <a href="#sidebarUsers" data-bs-toggle="collapse" aria-expanded="{{ $isUserMenu ? 'true' : 'false' }}" class="{{ $isUserMenu ? 'active' : '' }}">
-                            <i class="bi bi-people-fill"></i><span>จัดการผู้ใช้งาน</span><span class="menu-arrow menu-arrow-custom"></span>
+                        <a href="{{ route('users.index') }}"
+                           class="tp-link {{ Request::routeIs('users.index') || Request::routeIs('users.edit') ? 'active' : '' }}">
+                            รายชื่อผู้ใช้งาน
                         </a>
-                        <div class="collapse {{ $isUserMenu ? 'show' : '' }}" id="sidebarUsers">
-                            <ul class="nav-second-level">
-                                <li><a href="{{ route('users.index') }}" class="tp-link {{ Request::routeIs('users.index') || Request::routeIs('users.edit') ? 'active' : '' }}">รายชื่อผู้ใช้งาน</a></li>
-                                @if($canCreate('system_users'))
-                                    <li><a href="{{ route('users.create') }}" class="tp-link {{ Request::routeIs('users.create') ? 'active' : '' }}">เพิ่มผู้ใช้งาน</a></li>
-                                @endif
-                            </ul>
-                        </div>
                     </li>
                 @endif
 
+                {{-- เพิ่มผู้ใช้งาน --}}
+                @if($canForm('system_users') && $canCreate('system_users'))
+                    <li>
+                        <a href="{{ route('users.create') }}"
+                           class="tp-link {{ Request::routeIs('users.create') ? 'active' : '' }}">
+                            เพิ่มผู้ใช้งาน
+                        </a>
+                    </li>
+                @endif
+
+                {{-- ประวัติการใช้งานระบบ --}}
+                @if($canForm('system_audit_logs'))
+                    <li>
+                        <a href="{{ route('audit_logs.index') }}"
+                           class="tp-link {{ Request::routeIs('audit_logs.*') ? 'active' : '' }}">
+                            ประวัติการใช้งานระบบ
+                        </a>
+                    </li>
+                @endif
+
+            </ul>
+        </div>
+    </li>
+@endif
+
                 <li class="menu-title mt-2">ระบบ</li>
-                <li><a href="{{ route('admin.logout') }}"><i data-feather="log-out"></i><span>ออกจากระบบ</span></a></li>
+                <li>
+                    <form method="POST" action="{{ route('admin.logout') }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="sidebar-logout-btn">
+                            <i data-feather="log-out"></i><span>ออกจากระบบ</span>
+                        </button>
+                    </form>
+                </li>
             </ul>
         </div>
     </div>
 </div>
 
+
+
+<style>
+.sidebar-logout-btn{
+    display:flex;
+    align-items:center;
+    width:100%;
+    gap:10px;
+    padding:10px 20px;
+    border:0;
+    background:transparent;
+    color:inherit;
+    text-align:left;
+    cursor:pointer;
+}
+.sidebar-logout-btn:hover,
+.sidebar-logout-btn:focus{
+    color:inherit;
+    background:rgba(255,255,255,.04);
+}
+.sidebar-logout-btn svg{
+    width:18px;
+    height:18px;
+}
+</style>
 
 
 <script>

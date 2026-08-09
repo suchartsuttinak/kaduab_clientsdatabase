@@ -1,15 +1,9 @@
 @php
     $clientInitial = mb_substr(trim($client->fullname ?? $client->full_name ?? 'U'), 0, 1);
 
-    $clientImageUrl = asset('upload/no_image.jpg');
-
-    if (!empty($client->image)) {
-        $imagePath = public_path('upload/client_images/' . $client->image);
-
-        if (file_exists($imagePath)) {
-            $clientImageUrl = asset('upload/client_images/' . $client->image);
-        }
-    }
+    $clientImageUrl = !empty($client->image)
+        ? route('client.image', $client->id)
+        : asset('upload/no_image.jpg');
 @endphp
 
 <div class="hp-top-grid">

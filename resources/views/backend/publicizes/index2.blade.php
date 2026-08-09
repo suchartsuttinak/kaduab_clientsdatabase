@@ -210,7 +210,7 @@
 
                                                 <td>
                                                     <div class="publicize-table-actions">
-                                                        <a href="{{ asset('storage/' . $item->file_path) }}"
+                                                        <a href="{{ route('publicizes.file', $item) }}"
                                                            target="_blank"
                                                            class="btn btn-outline-primary btn-sm">
                                                             <i class="bi bi-eye me-1"></i> เปิด

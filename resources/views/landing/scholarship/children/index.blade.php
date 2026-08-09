@@ -2063,9 +2063,7 @@
                                 $photoUrl = null;
 
                                 if ($child->photo) {
-                                    $photoUrl = str_starts_with($child->photo, 'upload/')
-                                        ? asset($child->photo)
-                                        : asset('storage/' . $child->photo);
+                                    $photoUrl = route('scholarship.children.photo', $child);
                                 }
                             @endphp
 
@@ -2274,9 +2272,7 @@
         $modalPhotoUrl = null;
 
         if ($child->photo) {
-            $modalPhotoUrl = str_starts_with($child->photo, 'upload/')
-                ? asset($child->photo)
-                : asset('storage/' . $child->photo);
+            $modalPhotoUrl = route('scholarship.children.photo', $child);
         }
 
         $isOldExpenseChild = (string) old('expense_child_id') === (string) $child->id;
@@ -3545,7 +3541,7 @@
 
                                                         <td>
                                                             @forelse($expense->attachments->where('category', 'expense_document') as $attachment)
-                                                                <a href="{{ asset($attachment->file_path) }}"
+                                                                <a href="{{ route('scholarship.children.attachments.view', [$child, $expense, $attachment]) }}"
                                                                    target="_blank"
                                                                    rel="noopener"
                                                                    class="attachment-link">
@@ -3559,7 +3555,7 @@
 
                                                         <td>
                                                             @forelse($expense->attachments->where('category', 'grade_report') as $attachment)
-                                                                <a href="{{ asset($attachment->file_path) }}"
+                                                                <a href="{{ route('scholarship.children.attachments.view', [$child, $expense, $attachment]) }}"
                                                                    target="_blank"
                                                                    rel="noopener"
                                                                    class="attachment-link">
@@ -3970,7 +3966,7 @@
                                                                         : '' }}>
 
                                                             <span class="expense-existing-file-content">
-                                                                <a href="{{ asset($attachment->file_path) }}"
+                                                                <a href="{{ route('scholarship.children.attachments.view', [$child, $expense, $attachment]) }}"
                                                                    target="_blank"
                                                                    rel="noopener"
                                                                    class="expense-existing-file-name">
@@ -4012,7 +4008,7 @@
                                                                         : '' }}>
 
                                                             <span class="expense-existing-file-content">
-                                                                <a href="{{ asset($attachment->file_path) }}"
+                                                                <a href="{{ route('scholarship.children.attachments.view', [$child, $expense, $attachment]) }}"
                                                                    target="_blank"
                                                                    rel="noopener"
                                                                    class="expense-existing-file-name">

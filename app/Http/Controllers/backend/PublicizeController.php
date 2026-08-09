@@ -85,12 +85,13 @@ class PublicizeController extends Controller
         $categories = array_keys(Publicize::CATEGORIES);
 
         $validated = $request->validate([
-            'recorded_at' => ['required', 'date'],
+            'recorded_at' => ['required', 'date', 'before_or_equal:' . now('Asia/Bangkok')->toDateString()],
             'category'    => ['required', Rule::in($categories)],
             'title'       => ['required', 'string', 'max:255'],
             'file'        => ['required', 'file', 'mimes:pdf', 'max:10240'],
         ], [
             'recorded_at.required' => 'กรุณาเลือกวันที่บันทึก',
+            'recorded_at.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน',
             'category.required'    => 'กรุณาเลือกประเภท',
             'title.required'       => 'กรุณากรอกชื่อเรื่อง',
             'file.required'        => 'กรุณาอัปโหลดไฟล์ PDF',
@@ -106,7 +107,7 @@ class PublicizeController extends Controller
             'category'    => $validated['category'],
             'title'       => $validated['title'],
             'file_path'   => $filePath,
-            'file_name'   => $file->getClientOriginalName(),
+            'file_name'   => Str::limit(basename((string) $file->getClientOriginalName()), 255, ''),
         ]);
 
         return redirect()
@@ -126,12 +127,13 @@ class PublicizeController extends Controller
         $categories = array_keys(Publicize::CATEGORIES);
 
         $validated = $request->validate([
-            'recorded_at' => ['required', 'date'],
+            'recorded_at' => ['required', 'date', 'before_or_equal:' . now('Asia/Bangkok')->toDateString()],
             'category'    => ['required', Rule::in($categories)],
             'title'       => ['required', 'string', 'max:255'],
             'file'        => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
         ], [
             'recorded_at.required' => 'กรุณาเลือกวันที่บันทึก',
+            'recorded_at.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน',
             'category.required'    => 'กรุณาเลือกประเภท',
             'title.required'       => 'กรุณากรอกชื่อเรื่อง',
             'file.mimes'           => 'รองรับเฉพาะไฟล์ PDF เท่านั้น',
@@ -144,15 +146,33 @@ class PublicizeController extends Controller
             'title'       => $validated['title'],
         ];
 
-        if ($request->hasFile('file')) {
-            $this->deletePublicizeFile($publicize->file_path);
+        $oldFilePath = $publicize->file_path;
+        $newFilePath = null;
 
+        if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $data['file_path'] = $this->uploadPublicizeFile($file, $validated['category']);
-            $data['file_name'] = $file->getClientOriginalName();
+            $newFilePath = $this->uploadPublicizeFile($file, $validated['category']);
+            $data['file_path'] = $newFilePath;
+            $data['file_name'] = Str::limit(
+                basename((string) $file->getClientOriginalName()),
+                255,
+                ''
+            );
         }
 
-        $publicize->update($data);
+        try {
+            $publicize->update($data);
+        } catch (\Throwable $exception) {
+            if ($newFilePath) {
+                $this->deletePublicizeFile($newFilePath);
+            }
+
+            throw $exception;
+        }
+
+        if ($newFilePath && $oldFilePath !== $newFilePath) {
+            $this->deletePublicizeFile($oldFilePath);
+        }
 
         return redirect()
             ->route('publicizes.index', ['category' => $validated['category']])
@@ -172,36 +192,94 @@ class PublicizeController extends Controller
             ->with('success', 'ลบข้อมูลเรียบร้อยแล้ว');
     }
 
+    public function viewFile(Publicize $publicize)
+    {
+        $path = $this->resolvePublicizeFile($publicize->file_path);
+        abort_unless($path && $this->hasPdfSignature($path), 404);
+
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="publicize-' . $publicize->id . '.pdf"',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     private function uploadPublicizeFile($file, string $category): string
     {
-        $folder = 'upload/publicizes/' . $category;
-        $destinationPath = public_path($folder);
-
-        if (!File::exists($destinationPath)) {
-            File::makeDirectory($destinationPath, 0755, true);
+        if (!$this->hasPdfSignature($file->getRealPath())) {
+            abort(422, 'ไฟล์เอกสารไม่ใช่ PDF ที่ถูกต้อง');
         }
 
-        $filename = now()->format('YmdHis') . '_' . uniqid() . '.pdf';
+        $safeCategory = array_key_exists($category, Publicize::CATEGORIES)
+            ? $category
+            : 'other';
+        $folder = 'publicizes/' . $safeCategory;
+        $destinationPath = storage_path('app/private/' . $folder);
+        File::ensureDirectoryExists($destinationPath);
 
+        $filename = now('Asia/Bangkok')->format('YmdHis') . '_' . bin2hex(random_bytes(8)) . '.pdf';
         $file->move($destinationPath, $filename);
 
         return $folder . '/' . $filename;
     }
 
-    private function deletePublicizeFile(?string $filePath): void
+    private function resolvePublicizeFile(?string $filePath): ?string
     {
         if (empty($filePath)) {
-            return;
+            return null;
         }
 
-        $publicPath = public_path($filePath);
-
-        if (File::exists($publicPath)) {
-            File::delete($publicPath);
+        $relative = ltrim(str_replace('\\', '/', trim($filePath)), '/');
+        if ($relative === '' || str_contains($relative, '..')) {
+            return null;
         }
 
-        if (Storage::disk('public')->exists($filePath)) {
+        if (str_starts_with($relative, 'publicizes/')) {
+            $path = storage_path('app/private/' . $relative);
+            return File::isFile($path) ? $path : null;
+        }
+
+        // รองรับไฟล์เดิมที่เคยเก็บใต้ public/upload/publicizes
+        if (str_starts_with($relative, 'upload/publicizes/')) {
+            $path = public_path($relative);
+            return File::isFile($path) ? $path : null;
+        }
+
+        return null;
+    }
+
+    private function hasPdfSignature(?string $path): bool
+    {
+        if (!$path || !File::isFile($path)) {
+            return false;
+        }
+
+        $handle = @fopen($path, 'rb');
+        if (!$handle) {
+            return false;
+        }
+
+        try {
+            return fread($handle, 5) === '%PDF-';
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    private function deletePublicizeFile(?string $filePath): void
+    {
+        $path = $this->resolvePublicizeFile($filePath);
+
+        if ($path && File::isFile($path)) {
+            File::delete($path);
+        }
+
+        // รองรับ storage/public รูปแบบเก่ามาก หากยังมีข้อมูลค้างอยู่
+        if ($filePath && !str_contains($filePath, '..') && Storage::disk('public')->exists($filePath)) {
             Storage::disk('public')->delete($filePath);
         }
     }
+
 }

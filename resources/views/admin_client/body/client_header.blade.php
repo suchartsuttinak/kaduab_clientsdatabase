@@ -181,8 +181,13 @@
                                            href="{{ route('factfinding.add', $clientId) }}">สอบข้อเท็จจริงเบื้องต้น</a></li>
                                 @endif
                                 @if ($clientId && $canForm('registration_family'))
-                                    <li><a class="dropdown-item {{ Request::routeIs('family.*') || Request::routeIs('estimate.*') ? 'active' : '' }}"
-                                           href="{{ route('family.add', $clientId) }}">บันทึกข้อมูลครอบครัว</a></li>
+                                    {{-- FAMILY_ASSESSMENT_PERMISSION_V2 --}}
+                                    <li><a class="dropdown-item {{ Request::routeIs('family.*') ? 'active' : '' }}"
+                                            href="{{ route('family.add', $clientId) }}">บันทึกข้อมูลครอบครัว</a></li>
+                                @endif
+                                @if ($clientId && $canForm('registration_family_assessment'))
+                                    <li><a class="dropdown-item {{ Request::routeIs('estimate.*') ? 'active' : '' }}"
+                                            href="{{ route('estimate.show', $clientId) }}">ประเมินครอบครัว</a></li>
                                 @endif
                                 @if ($clientId && $canForm('registration_family_visit'))
                                     <li><a class="dropdown-item {{ Request::routeIs('visitFamily.*') || Request::routeIs('vitsitFamily.*') ? 'active' : '' }}"
@@ -341,7 +346,14 @@
                             <li><a href="{{ route('admin.profile') }}" class="dropdown-item"><i class="fas fa-user-circle me-2"></i>ข้อมูลส่วนตัว</a></li>
                             <li><a href="auth-lock-screen.html" class="dropdown-item"><i class="fas fa-lock me-2"></i>ล็อกหน้าจอ</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a href="{{ route('admin.logout') }}" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ</a></li>
+                            <li>
+                                <form method="POST" action="{{ route('admin.logout') }}" class="m-0">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item text-danger border-0 bg-transparent w-100 text-start">
+                                        <i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ
+                                    </button>
+                                </form>
+                            </li>
                         </ul>
                     </li>
                 </ul>

@@ -7,7 +7,10 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::dropIfExists('school_followups'); // ลบตารางเดิมออกก่อน
+        // Production safety: ห้ามลบข้อมูลเดิมเมื่อ migration นี้ยังไม่เคยถูกบันทึก
+        if (Schema::hasTable('school_followups')) {
+            return;
+        }
 
         Schema::create('school_followups', function (Blueprint $table) {
             $table->id();

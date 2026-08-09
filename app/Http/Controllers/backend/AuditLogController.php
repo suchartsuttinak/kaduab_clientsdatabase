@@ -1,0 +1,370 @@
+<?php
+
+namespace App\Http\Controllers\backend;
+
+use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
+
+class AuditLogController extends Controller
+{
+    /**
+     * แสดงประวัติการใช้งานระบบ
+     */
+    public function index(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Validation ตัวกรอง
+        |--------------------------------------------------------------------------
+        */
+
+        $validated = $request->validate([
+            'date_from' => [
+                'nullable',
+                'date',
+            ],
+
+            'date_to' => [
+                'nullable',
+                'date',
+                'after_or_equal:date_from',
+            ],
+
+            'user_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+            ],
+
+            'action' => [
+                'nullable',
+                'string',
+                Rule::in([
+                    'LOGIN',
+                    'LOGIN_FAILED',
+                    'LOGOUT',
+                    'VIEW',
+                    'CREATE',
+                    'UPDATE',
+                    'DELETE',
+                    'ACCESS_DENIED',
+                    'PRINT',
+                    'DOWNLOAD',
+                    'EXPORT',
+                    'PERMISSION_CHANGE',
+                    'TEST',
+                ]),
+            ],
+
+            'module' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'result' => [
+                'nullable',
+                Rule::in([
+                    'success',
+                    'failed',
+                    'denied',
+                ]),
+            ],
+
+            'search' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+        ], [
+            'date_from.date' =>
+                'วันที่เริ่มต้นไม่ถูกต้อง',
+
+            'date_to.date' =>
+                'วันที่สิ้นสุดไม่ถูกต้อง',
+
+            'date_to.after_or_equal' =>
+                'วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น',
+
+            'user_id.integer' =>
+                'ข้อมูลผู้ใช้งานไม่ถูกต้อง',
+
+            'user_id.exists' =>
+                'ไม่พบผู้ใช้งานที่เลือก',
+
+            'action.in' =>
+                'ประเภทการกระทำไม่ถูกต้อง',
+
+            'module.max' =>
+                'ชื่อหมวดยาวเกินไป',
+
+            'result.in' =>
+                'ผลการทำงานไม่ถูกต้อง',
+
+            'search.max' =>
+                'คำค้นหายาวเกินไป',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Query
+        |--------------------------------------------------------------------------
+        |
+        | เลือกเฉพาะคอลัมน์ที่จำเป็นสำหรับหน้ารายการ
+        | ไม่ดึง metadata / changed_fields / user_agent_hash
+        | โดยไม่จำเป็น
+        |--------------------------------------------------------------------------
+        */
+
+        $query = AuditLog::query()
+            ->select([
+                'id',
+                'request_id',
+                'user_id',
+                'action',
+                'module',
+                'client_id',
+                'subject_type',
+                'subject_id',
+                'route_name',
+                'http_method',
+                'ip_address',
+                'result',
+                'status_code',
+                'changed_fields',
+                'created_at',
+            ])
+            ->with([
+                'user:id,name',
+                'client:id,title_id,first_name,last_name,birth_date',
+                'client.title:id,title_name',
+            ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | วันที่เริ่มต้น
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($validated['date_from'])) {
+            $query->where(
+                'created_at',
+                '>=',
+                Carbon::parse(
+                    $validated['date_from']
+                )->startOfDay()
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | วันที่สิ้นสุด
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($validated['date_to'])) {
+            $query->where(
+                'created_at',
+                '<=',
+                Carbon::parse(
+                    $validated['date_to']
+                )->endOfDay()
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | ผู้ใช้งาน
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($validated['user_id'])) {
+            $query->where(
+                'user_id',
+                $validated['user_id']
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | ประเภทการกระทำ
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($validated['action'])) {
+            $query->where(
+                'action',
+                $validated['action']
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Module
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($validated['module'])) {
+            $query->where(
+                'module',
+                $validated['module']
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | ผลการทำงาน
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($validated['result'])) {
+            $query->where(
+                'result',
+                $validated['result']
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | ค้นหา
+        |--------------------------------------------------------------------------
+        |
+        | ค้นเฉพาะข้อมูลเชิงเทคนิค
+        | ไม่ค้นข้อมูลส่วนบุคคลหรือรายละเอียดทางสุขภาพ
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($validated['search'])) {
+            $search = trim(
+                (string) $validated['search']
+            );
+
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->where(
+                        'action',
+                        'like',
+                        "%{$search}%"
+                    )
+                    ->orWhere(
+                        'module',
+                        'like',
+                        "%{$search}%"
+                    )
+                    ->orWhere(
+                        'route_name',
+                        'like',
+                        "%{$search}%"
+                    )
+                    ->orWhere(
+                        'ip_address',
+                        'like',
+                        "%{$search}%"
+                    )
+                    ->orWhere(
+                        'request_id',
+                        'like',
+                        "%{$search}%"
+                    );
+                });
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        $auditLogs = $query
+            ->latest('id')
+            ->paginate(25)
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | เป้าหมายผู้ใช้งานของเหตุการณ์ด้านสิทธิ์
+        |--------------------------------------------------------------------------
+        |
+        | subject_type / subject_id ถูกเก็บไว้ใน Audit Log อยู่แล้ว
+        | จึงไม่ต้องเพิ่มตารางหรือ migration ใหม่
+        |
+        | โหลดชื่อผู้ใช้งานเฉพาะรายการในหน้าปัจจุบันเท่านั้น
+        | หากบัญชีถูกลบ จะยังแสดง User ID เดิมได้จาก subject_id
+        |--------------------------------------------------------------------------
+        */
+
+        $userMorphClass = (new User())->getMorphClass();
+
+        $targetUserIds = $auditLogs
+            ->getCollection()
+            ->filter(
+                static fn ($log): bool =>
+                    (string) $log->subject_type === $userMorphClass
+                    && !empty($log->subject_id)
+            )
+            ->pluck('subject_id')
+            ->map(static fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        $targetUsers = $targetUserIds->isEmpty()
+            ? collect()
+            : User::query()
+                ->select([
+                    'id',
+                    'name',
+                ])
+                ->whereIn('id', $targetUserIds)
+                ->get()
+                ->keyBy('id');
+
+        /*
+        |--------------------------------------------------------------------------
+        | รายชื่อผู้ใช้งานสำหรับตัวกรอง
+        |--------------------------------------------------------------------------
+        */
+
+        $users = User::query()
+            ->select([
+                'id',
+                'name',
+            ])
+            ->orderBy('name')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Module ที่มีอยู่จริง
+        |--------------------------------------------------------------------------
+        */
+
+        $modules = AuditLog::query()
+            ->whereNotNull('module')
+            ->where('module', '!=', '')
+            ->distinct()
+            ->orderBy('module')
+            ->pluck('module');
+
+        /*
+        |--------------------------------------------------------------------------
+        | View
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'backend.audit_logs.index',
+            compact(
+                'auditLogs',
+                'users',
+                'modules',
+                'targetUsers',
+                'userMorphClass'
+            )
+        );
+    }
+}

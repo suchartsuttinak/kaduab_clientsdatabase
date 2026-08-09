@@ -1,0 +1,23 @@
+รายการที่ไม่ควรนำขึ้น Production
+=================================
+
+อย่า upload:
+- .env จากเครื่อง local (สร้าง production .env บน server แยก)
+- storage/logs/* เดิม
+- storage/framework/sessions/* เดิม
+- storage/framework/views/* เดิม
+- database dump (*.sql, *.sqlite)
+- backup/*.zip หรือ code backup files
+- public/hot
+- public/build.zip เก่า
+- node_modules/
+- .git/
+- test/dummy user uploads ที่ไม่ต้องใช้
+
+ไฟล์ stale ที่ควรลบจาก project เดิม:
+- app/Models/FactFindingDocument.php
+  เหตุผล: ไฟล์นี้ประกาศ class Factfinding ซ้ำกับ model จริงและชื่อไฟล์/class ไม่ตรง
+
+หมายเหตุ:
+- vendor/ ต้องมีตอน runtime; ถ้า Host ไม่มี Composer ให้ build vendor บนเครื่องพัฒนาแล้ว upload
+- public/build/ ต้องมีตอน runtimeเมื่อ view ใช้ @vite; สร้างใหม่ด้วย npm run build

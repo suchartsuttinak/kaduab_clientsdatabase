@@ -2,7 +2,7 @@
 
 return [
 
-    'show_warnings' => true,
+    'show_warnings' => env('DOMPDF_SHOW_WARNINGS', false),
 
     'public_path' => public_path(),
 
@@ -44,9 +44,9 @@ return [
 
         'enable_php' => false,
 
-        'enable_javascript' => true,
+        'enable_javascript' => false,
 
-        'enable_remote' => true,
+        'enable_remote' => env('DOMPDF_ENABLE_REMOTE', false),
 
         'allowed_remote_hosts' => null,
 

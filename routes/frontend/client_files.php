@@ -3,7 +3,8 @@
 use App\Http\Controllers\Frontend\ClientFileController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('clients/{client_id}')
+Route::middleware('auth')
+    ->prefix('clients/{client_id}')
     ->where(['client_id' => '[0-9]+'])
     ->controller(ClientFileController::class)
     ->group(function (): void {

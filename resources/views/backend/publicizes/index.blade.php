@@ -181,7 +181,7 @@
 
             {{-- ชื่อเอกสาร --}}
             <div class="publicize-item__main">
-                <a href="{{ asset($item->file_path) }}"
+                <a href="{{ route('publicizes.file', $item) }}"
                    target="_blank"
                    class="publicize-file-link">
                     <span class="publicize-pdf-icon">

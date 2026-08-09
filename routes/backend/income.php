@@ -10,5 +10,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/income', [IncomeController::class, 'StoreIncome'])->name('income.store');
     Route::get('/edit/income/{id}', [IncomeController::class, 'EditIncome'])->name('income.edit');
     Route::post('/update/income', [IncomeController::class, 'UpdateIncome'])->name('income.update');
-    Route::get('/delete/income/{id}', [IncomeController::class, 'DeleteIncome'])->name('income.delete');
+    Route::delete('/delete/income/{id}', [IncomeController::class, 'DeleteIncome'])->name('income.delete');
 });

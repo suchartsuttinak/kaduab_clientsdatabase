@@ -1,11 +1,15 @@
 @extends('admin_client.admin_client')
 
 @section('content')
+    @php
+        $clientName = $client->full_name ?? $client->fullname ?? '-';
+    @endphp
+
     <div class="card shadow-sm mb-4">
         <div class="card-body d-flex align-items-center">
             <i class="bi bi-file-earmark-plus text-success me-3" style="font-size: 1.5rem;"></i>
             <h5 class="mb-0">
-                เพิ่มไฟล์สำหรับ <span class="text-primary">{{ $client->fullname }}</span>
+                เพิ่มไฟล์สำหรับ <span class="text-primary">{{ $clientName }}</span>
             </h5>
         </div>
     </div>
@@ -38,7 +42,8 @@
             <select
                 name="file_type"
                 id="file_type"
-                class="form-select @error('file_type') is-invalid @enderror">
+                class="form-select @error('file_type') is-invalid @enderror"
+                required>
 
                 <option value="">
                     -- โปรดเลือกประเภทเอกสาร --
@@ -66,10 +71,11 @@
                 name="file"
                 id="file"
                 class="form-control @error('file') is-invalid @enderror"
-                accept=".pdf,application/pdf">
+                accept=".pdf,application/pdf"
+                required>
 
             <small class="text-muted">
-                รองรับเฉพาะไฟล์ PDF ขนาดไม่เกิน 20 MB
+                รองรับเฉพาะไฟล์ PDF ขนาดไม่เกิน {{ $maxFileSizeMb }} MB
             </small>
 
             <div class="invalid-feedback" id="file_error">

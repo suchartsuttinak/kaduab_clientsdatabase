@@ -10,5 +10,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/document', [DocumentController::class, 'StoreDocument'])->name('document.store');
     Route::get('/edit/document/{id}', [DocumentController::class, 'EditDocument'])->name('document.edit');
     Route::post('/update/document', [DocumentController::class, 'UpdateDocument'])->name('document.update');
-    Route::get('/delete/document/{id}', [DocumentController::class, 'DeleteDocument'])->name('document.delete');
+    Route::delete('/delete/document/{id}', [DocumentController::class, 'DeleteDocument'])->name('document.delete');
 });

@@ -1,6 +1,7 @@
- <?php
+<?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\backend\AuditLogController;
 use App\Http\Controllers\backend\IdstationCentralController;
 use App\Http\Controllers\backend\OperationController;
 use App\Http\Controllers\backend\PublicizeController;
@@ -24,6 +25,28 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
+       
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Audit Log
+        |--------------------------------------------------------------------------
+        */
+
+      Route::prefix('admin/audit-logs')
+    ->middleware([
+        'auth',
+        'prevent-back',
+        'form-permissions-explicit',
+    ])
+    ->group(function () {
+
+        Route::get('/', [AuditLogController::class, 'index'])
+            ->name('audit_logs.index');
+    });
+
         /*
         |--------------------------------------------------------------------------
         | Public Routes
@@ -37,6 +60,7 @@ use Illuminate\Support\Facades\Route;
             ->name('scholarship.children.public_report');
 
         Route::post('/issues', [IssueController::class, 'store'])
+            ->middleware('throttle:5,1')
             ->name('issues.store');
 
         Route::get('/news', [NewsController::class, 'index'])
@@ -50,6 +74,7 @@ use Illuminate\Support\Facades\Route;
             ->name('scholarship.create');
 
         Route::post('/scholarship/store', [ScholarshipController::class, 'store'])
+            ->middleware('throttle:5,1')
             ->name('scholarship.store');
 
 
@@ -123,6 +148,9 @@ use Illuminate\Support\Facades\Route;
                 Route::get('/edit/{publicize}', [PublicizeController::class, 'edit'])
                     ->name('publicizes.edit');
 
+                Route::get('/file/{publicize}', [PublicizeController::class, 'viewFile'])
+                    ->name('publicizes.file');
+
                 Route::put('/update/{publicize}', [PublicizeController::class, 'update'])
                     ->name('publicizes.update');
 
@@ -181,7 +209,7 @@ use Illuminate\Support\Facades\Route;
                 ->name('admin.password.update');
         });
 
-        Route::get('/admin/logout', [AdminController::class, 'AdminLogout'])
+        Route::post('/admin/logout', [AdminController::class, 'AdminLogout'])
             ->middleware('auth')
             ->name('admin.logout');
 
@@ -226,7 +254,7 @@ use Illuminate\Support\Facades\Route;
         */
 
        Route::prefix('admin/users')
-    ->middleware(['auth', 'prevent-back'])
+    ->middleware(['auth', 'prevent-back', 'form-permissions-explicit'])
     ->group(function () {
 
         Route::get('/', [UserManagementController::class, 'index'])

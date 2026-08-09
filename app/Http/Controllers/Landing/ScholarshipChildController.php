@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Landing;
 use App\Http\Controllers\Controller;
 use App\Models\ScholarshipChild;
 use App\Models\ScholarshipExpense;
+use App\Models\ScholarshipExpenseAttachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -49,15 +50,15 @@ class ScholarshipChildController extends Controller
 
     protected function saveChildPhoto($file): string
     {
-        $destinationPath = public_path('upload/scholarship_children');
+        $destinationPath = storage_path('app/private/scholarship_children');
 
         if (!File::exists($destinationPath)) {
             File::makeDirectory($destinationPath, 0755, true);
         }
 
         $filename = Str::uuid()->toString() . '.jpg';
-        $relativePath = 'upload/scholarship_children/' . $filename;
-        $fullPath = public_path($relativePath);
+        $relativePath = 'scholarship_children/' . $filename;
+        $fullPath = storage_path('app/private/' . $relativePath);
 
         $manager = new ImageManager(new Driver());
         $image = $manager->read($file->getRealPath());
@@ -78,23 +79,76 @@ class ScholarshipChildController extends Controller
             return;
         }
 
-        $normalizedPath = ltrim(str_replace('\\', '/', trim($path)), '/');
-
-        /*
-         * อนุญาตให้ลบเฉพาะโฟลเดอร์รูปทุนการศึกษาเท่านั้น
-         * ป้องกัน path ที่ผิดพลาดไปลบไฟล์ส่วนอื่นใน public
-         */
-        if (Str::startsWith($normalizedPath, 'upload/scholarship_children/')) {
-            $fullPath = public_path($normalizedPath);
-        } elseif (!Str::contains($normalizedPath, '..')) {
-            $fullPath = public_path('storage/' . $normalizedPath);
-        } else {
+        $normalized = ltrim(str_replace('\\', '/', trim($path)), '/');
+        if ($normalized === '' || Str::contains($normalized, '..')) {
             return;
         }
 
-        if (File::isFile($fullPath)) {
-            File::delete($fullPath);
+        $candidates = [];
+
+        if (Str::startsWith($normalized, 'scholarship_children/')) {
+            $candidates[] = storage_path('app/private/' . $normalized);
         }
+
+        // รองรับข้อมูลเดิมก่อนย้ายไฟล์รูปออกจาก public
+        if (Str::startsWith($normalized, 'upload/scholarship_children/')) {
+            $candidates[] = public_path($normalized);
+        } elseif (!Str::contains($normalized, '/')) {
+            $candidates[] = public_path('upload/scholarship_children/' . basename($normalized));
+        }
+
+        foreach ($candidates as $candidate) {
+            if (File::isFile($candidate)) {
+                File::delete($candidate);
+            }
+        }
+    }
+
+    private function scholarshipChildPhotoPath(ScholarshipChild $child): ?string
+    {
+        if (empty($child->photo)) {
+            return null;
+        }
+
+        $relative = ltrim(str_replace('\\', '/', trim((string) $child->photo)), '/');
+        if ($relative === '' || Str::contains($relative, '..')) {
+            return null;
+        }
+
+        $candidates = [];
+
+        if (Str::startsWith($relative, 'scholarship_children/')) {
+            $candidates[] = storage_path('app/private/' . $relative);
+        }
+
+        if (Str::startsWith($relative, 'upload/scholarship_children/')) {
+            $candidates[] = public_path($relative);
+        } elseif (!Str::contains($relative, '/')) {
+            $candidates[] = public_path('upload/scholarship_children/' . basename($relative));
+        }
+
+        return collect($candidates)->first(static fn ($candidate) => File::isFile($candidate));
+    }
+
+    public function viewPhoto(ScholarshipChild $child)
+    {
+        $path = $this->scholarshipChildPhotoPath($child);
+
+        if (!$path) {
+            $fallback = public_path('upload/no_image.jpg');
+            abort_unless(File::isFile($fallback), 404);
+            $path = $fallback;
+        }
+
+        $mime = File::mimeType($path) ?: 'image/jpeg';
+        abort_unless(in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true), 404);
+
+        return response()->file($path, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     protected function savePdfFiles(
@@ -107,20 +161,21 @@ class ScholarshipChildController extends Controller
             return;
         }
 
-        $destinationPath = public_path(
-            'upload/scholarship_expenses/'
+        $relativeDirectory = 'scholarship_expenses/'
             . $expense->scholarship_child_id
             . '/'
-            . $expense->id
-        );
+            . $expense->id;
 
-        if (!File::exists($destinationPath)) {
-            File::makeDirectory($destinationPath, 0755, true);
-        }
+        $destinationPath = storage_path('app/private/' . $relativeDirectory);
+        File::ensureDirectoryExists($destinationPath);
 
         foreach ($files as $file) {
             if (!$file) {
                 continue;
+            }
+
+            if (!$this->hasPdfSignature($file->getRealPath())) {
+                throw new \RuntimeException('พบไฟล์แนบที่ไม่ใช่ PDF ที่ถูกต้อง');
             }
 
             $originalName = Str::limit(
@@ -129,28 +184,84 @@ class ScholarshipChildController extends Controller
                 ''
             );
             $fileSize = $file->getSize();
-            $mimeType = $file->getMimeType() ?: 'application/pdf';
             $filename = Str::uuid()->toString() . '.pdf';
-
-            $relativePath = 'upload/scholarship_expenses/'
-                . $expense->scholarship_child_id
-                . '/'
-                . $expense->id
-                . '/'
-                . $filename;
+            $relativePath = $relativeDirectory . '/' . $filename;
 
             $file->move($destinationPath, $filename);
-            $storedPaths[] = public_path($relativePath);
+            $storedPaths[] = storage_path('app/private/' . $relativePath);
 
             $expense->attachments()->create([
                 'category'      => $category,
                 'file_path'     => $relativePath,
                 'original_name' => $originalName,
-                'mime_type'     => $mimeType,
+                'mime_type'     => 'application/pdf',
                 'file_size'     => $fileSize,
                 'uploaded_by'   => auth()->id(),
             ]);
         }
+    }
+
+    private function hasPdfSignature(?string $path): bool
+    {
+        if (!$path || !File::isFile($path)) {
+            return false;
+        }
+
+        $handle = @fopen($path, 'rb');
+        if (!$handle) {
+            return false;
+        }
+
+        try {
+            return fread($handle, 5) === '%PDF-';
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    private function attachmentAbsolutePath(ScholarshipExpenseAttachment $attachment): ?string
+    {
+        $relative = ltrim(str_replace('\\', '/', trim((string) $attachment->file_path)), '/');
+
+        if ($relative === '' || Str::contains($relative, '..')) {
+            return null;
+        }
+
+        if (Str::startsWith($relative, 'scholarship_expenses/')) {
+            $path = storage_path('app/private/' . $relative);
+            return File::isFile($path) ? $path : null;
+        }
+
+        // รองรับข้อมูลเดิมก่อนย้ายไฟล์ออกจาก public
+        if (Str::startsWith($relative, 'upload/scholarship_expenses/')) {
+            $path = public_path($relative);
+            return File::isFile($path) ? $path : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * เปิดเอกสารค่าใช้จ่าย/ผลการเรียนผ่าน route ที่มี auth + form permission
+     */
+    public function viewAttachment(
+        ScholarshipChild $child,
+        ScholarshipExpense $expense,
+        ScholarshipExpenseAttachment $attachment
+    ) {
+        abort_unless((int) $expense->scholarship_child_id === (int) $child->id, 404);
+        abort_unless((int) $attachment->scholarship_expense_id === (int) $expense->id, 404);
+
+        $path = $this->attachmentAbsolutePath($attachment);
+        abort_unless($path && $this->hasPdfSignature($path), 404);
+
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="scholarship-document-' . $attachment->id . '.pdf"',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     private function applicationRules(bool $includeProfile = true): array
@@ -924,7 +1035,8 @@ class ScholarshipChildController extends Controller
             ->get();
 
         $oldFilePathsToDelete = $attachmentsToRemove
-            ->map(fn ($attachment) => public_path($attachment->file_path))
+            ->map(fn ($attachment) => $this->attachmentAbsolutePath($attachment))
+            ->filter()
             ->values();
 
         $newStoredPaths = [];
@@ -1019,18 +1131,18 @@ class ScholarshipChildController extends Controller
             abort(404, 'ไม่พบรายการค่าใช้จ่ายของผู้รับทุนรายนี้');
         }
 
-        $expenseDirectory = public_path(
-            'upload/scholarship_expenses/'
-            . $child->id
-            . '/'
-            . $expense->id
-        );
+        $expenseDirectories = [
+            storage_path('app/private/scholarship_expenses/' . $child->id . '/' . $expense->id),
+            public_path('upload/scholarship_expenses/' . $child->id . '/' . $expense->id),
+        ];
 
         try {
             DB::transaction(fn () => $expense->delete());
 
-            if (File::exists($expenseDirectory)) {
-                File::deleteDirectory($expenseDirectory);
+            foreach ($expenseDirectories as $expenseDirectory) {
+                if (File::isDirectory($expenseDirectory)) {
+                    File::deleteDirectory($expenseDirectory);
+                }
             }
 
             return back()->with(
@@ -1062,15 +1174,18 @@ class ScholarshipChildController extends Controller
             : false;
 
         $photoPath = $child->photo;
-        $expenseDirectory = public_path(
-            'upload/scholarship_expenses/' . $child->id
-        );
+        $expenseDirectories = [
+            storage_path('app/private/scholarship_expenses/' . $child->id),
+            public_path('upload/scholarship_expenses/' . $child->id),
+        ];
 
         try {
             DB::transaction(fn () => $child->delete());
 
-            if (File::exists($expenseDirectory)) {
-                File::deleteDirectory($expenseDirectory);
+            foreach ($expenseDirectories as $expenseDirectory) {
+                if (File::isDirectory($expenseDirectory)) {
+                    File::deleteDirectory($expenseDirectory);
+                }
             }
 
             if (!$hasOtherApplications) {

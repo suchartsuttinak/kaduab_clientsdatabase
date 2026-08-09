@@ -124,7 +124,7 @@ class ClientController extends Controller
      */
     protected function saveClientImage($file): string
     {
-        $destinationPath = public_path('upload/client_images');
+        $destinationPath = storage_path('app/private/client_images');
 
         if (!File::exists($destinationPath)) {
             File::makeDirectory($destinationPath, 0755, true);
@@ -151,11 +151,56 @@ class ClientController extends Controller
             return;
         }
 
-        $path = public_path('upload/client_images/' . basename($filename));
+        $safeFilename = basename($filename);
+        $paths = [
+            storage_path('app/private/client_images/' . $safeFilename),
+            // รองรับไฟล์เก่าก่อนย้ายขึ้น private storage
+            public_path('upload/client_images/' . $safeFilename),
+        ];
 
-        if (File::exists($path)) {
-            File::delete($path);
+        foreach ($paths as $path) {
+            if (File::isFile($path)) {
+                File::delete($path);
+            }
         }
+    }
+
+    /**
+     * แสดงรูปผู้รับบริการผ่าน route ที่ตรวจสิทธิ์และ scope ของผู้ใช้
+     * แทนการเปิดไฟล์ส่วนบุคคลจาก public URL โดยตรง
+     */
+    public function ClientImage($id)
+    {
+        $client = $this->findAuthorizedClient($id);
+        $safeFilename = !empty($client->image)
+            ? basename((string) $client->image)
+            : '';
+
+        $candidates = [];
+
+        if ($safeFilename !== '') {
+            $candidates[] = storage_path('app/private/client_images/' . $safeFilename);
+            // Legacy fallback: อ่านไฟล์เดิมได้ แต่ public/.htaccess ของโฟลเดอร์จะกัน direct access
+            $candidates[] = public_path('upload/client_images/' . $safeFilename);
+        }
+
+        $path = collect($candidates)->first(static fn ($candidate) => File::isFile($candidate));
+
+        if (!$path) {
+            $fallback = public_path('upload/no_image.jpg');
+            abort_unless(File::isFile($fallback), 404);
+            $path = $fallback;
+        }
+
+        $mime = File::mimeType($path) ?: 'image/jpeg';
+        abort_unless(in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true), 404);
+
+        return response()->file($path, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**

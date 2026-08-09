@@ -467,16 +467,10 @@ body{
                       <div class="estimate-report-pictures">
                             @foreach($estimate->pictures as $index => $picture)
 
-                                @php
-                                    $imageUrl = str_starts_with($picture->path, 'upload/') || str_starts_with($picture->path, 'storage/')
-                                        ? asset($picture->path)
-                                        : asset('storage/' . ltrim($picture->path, '/'));
-                                @endphp
-
                                 <div class="estimate-report-picture-item">
                                     <div class="estimate-report-picture-frame">
 
-                                        <img src="{{ $imageUrl }}"
+                                        <img src="{{ route('estimate.image.view', $picture->id) }}"
                                             alt="รูปภาพประกอบ {{ $index + 1 }}"
                                             decoding="async">
 

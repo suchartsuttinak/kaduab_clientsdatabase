@@ -10,5 +10,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/outside', [OutsideController::class, 'StoreOutside'])->name('outside.store');
     Route::get('/edit/outside/{id}', [OutsideController::class, 'EditOutside'])->name('outside.edit');
     Route::post('/update/outside', [OutsideController::class, 'UpdateOutside'])->name('outside.update');
-    Route::get('/delete/outside/{id}', [OutsideController::class, 'DeleteOutside'])->name('outside.delete');
+    Route::delete('/delete/outside/{id}', [OutsideController::class, 'DeleteOutside'])->name('outside.delete');
 });

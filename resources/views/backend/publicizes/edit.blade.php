@@ -59,7 +59,7 @@
 
                         <div class="form-text mt-2">
                             ไฟล์ปัจจุบัน:
-                            <a href="{{ asset('storage/' . $publicize->file_path) }}" target="_blank">
+                            <a href="{{ route('publicizes.file', $publicize) }}" target="_blank">
                                 {{ $publicize->file_name ?? basename($publicize->file_path) }}
                             </a>
                         </div>

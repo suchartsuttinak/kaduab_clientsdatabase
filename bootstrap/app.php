@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Foundation\Application;
@@ -24,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         */
 
         $middleware->web(append: [
+            \App\Http\Middleware\EnsureUserIsActive::class,
             \App\Http\Middleware\EnforceFormPermission::class,
         ]);
 
@@ -36,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'prevent-back' => \App\Http\Middleware\PreventBackHistory::class,
+            'form-permissions-explicit' => \App\Http\Middleware\RequireExplicitFormPermissions::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

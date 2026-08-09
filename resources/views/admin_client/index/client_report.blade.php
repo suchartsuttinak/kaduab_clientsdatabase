@@ -1080,7 +1080,7 @@
             </div>
 
             <div class="photo-box">
-                <img src="{{ !empty($client->image) ? asset('upload/client_images/'.$client->image) : asset('upload/no_image.jpg') }}"
+                <img src="{{ !empty($client->image) ? route('client.image', $client->id) : asset('upload/no_image.jpg') }}"
                      alt="รูปถ่ายผู้รับการสงเคราะห์">
             </div>
         </div>

@@ -3,30 +3,52 @@
 use App\Http\Controllers\Frontend\VisitFamilyController;
 use Illuminate\Support\Facades\Route;
 
-// Vitsit_Family Route All
-    Route::prefix('vitsitFamily')->group(function () {
-    Route::get('/add/{client_id}', [VisitFamilyController::class, 'AddvisitFamily'])->name('visitFamily.create');
-    Route::post('/store/{client_id}', [VisitFamilyController::class, 'StoreVisitFamily'])->name('vitsitFamily.store');
-    Route::get('/edit/{id}', [VisitFamilyController::class, 'EditVisitFamily'])->name('vitsitFamily.edit');
-    Route::put('/update/{id}', [VisitFamilyController::class, 'UpdateVisitFamily'])->name('vitsitFamily.update');
-    Route::get('/report/{id}', [VisitFamilyController::class, 'ReportVisitFamily'])
-    ->name('vitsitFamily.report');
-  
-    // (ตัวเลือก) ถ้าจะทำ “แทนที่รูป” ให้เพิ่ม route นี้
-    Route::patch('/image/{id}', [VisitFamilyController::class, 'replaceImage'])->name('image.replace');
+Route::middleware('auth')
+    ->prefix('vitsitFamily')
+    ->group(function (): void {
+        Route::get('/add/{client_id}', [VisitFamilyController::class, 'AddvisitFamily'])
+            ->whereNumber('client_id')
+            ->name('visitFamily.create');
 
-    // ชี้ไปที่ VisitFamilyController@destroy ให้ตรงกับเมธอดที่มีอยู่
-     Route::delete('/vitsitFamily/image/{id}', [VisitFamilyController::class, 'destroy'])
-        ->name('image.destroy');
+        Route::post('/store/{client_id}', [VisitFamilyController::class, 'StoreVisitFamily'])
+            ->whereNumber('client_id')
+            ->name('vitsitFamily.store');
 
-    // Ajax Route จังหวัด-อำเภอ-ตำบล-รหัสไปรษณีย์
-    Route::get('/get-districts/{province_id}', [VisitFamilyController::class, 'getDistricts'])
-        ->name('vitsitFamily.getDistricts');
+        Route::get('/edit/{id}', [VisitFamilyController::class, 'EditVisitFamily'])
+            ->whereNumber('id')
+            ->name('vitsitFamily.edit');
 
-    Route::get('/get-subdistricts/{district_id}', [VisitFamilyController::class, 'getSubdistricts'])
-        ->name('vitsitFamily.getSubdistricts');
+        Route::put('/update/{id}', [VisitFamilyController::class, 'UpdateVisitFamily'])
+            ->whereNumber('id')
+            ->name('vitsitFamily.update');
 
-    Route::get('/get-zipcode/{subdistrict_id}', [VisitFamilyController::class, 'getZipcode'])
-        ->name('vitsitFamily.getZipcode');
+        Route::get('/report/{id}', [VisitFamilyController::class, 'ReportVisitFamily'])
+            ->whereNumber('id')
+            ->name('vitsitFamily.report');
 
-});
+        // รูปเยี่ยมบ้านเป็น Private Storage และเปิดผ่าน Controller เท่านั้น
+        Route::get('/image/{id}/view', [VisitFamilyController::class, 'viewImage'])
+            ->whereNumber('id')
+            ->name('vitsitFamily.image.view');
+
+        Route::patch('/image/{id}', [VisitFamilyController::class, 'replaceImage'])
+            ->whereNumber('id')
+            ->name('image.replace');
+
+        // คง URL เดิมไว้เพื่อไม่ให้กระทบ JavaScript/หน้าเดิม
+        Route::delete('/vitsitFamily/image/{id}', [VisitFamilyController::class, 'destroy'])
+            ->whereNumber('id')
+            ->name('image.destroy');
+
+        Route::get('/get-districts/{province_id}', [VisitFamilyController::class, 'getDistricts'])
+            ->whereNumber('province_id')
+            ->name('vitsitFamily.getDistricts');
+
+        Route::get('/get-subdistricts/{district_id}', [VisitFamilyController::class, 'getSubdistricts'])
+            ->whereNumber('district_id')
+            ->name('vitsitFamily.getSubdistricts');
+
+        Route::get('/get-zipcode/{subdistrict_id}', [VisitFamilyController::class, 'getZipcode'])
+            ->whereNumber('subdistrict_id')
+            ->name('vitsitFamily.getZipcode');
+    });

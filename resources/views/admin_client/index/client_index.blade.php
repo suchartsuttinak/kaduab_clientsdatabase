@@ -11,12 +11,9 @@
         abort(404);
     }
 
-    $profileImage = asset('upload/no_image.jpg');
-    $imagePath = !empty($client->image) ? public_path('upload/client_images/' . $client->image) : null;
-
-    if (!empty($client->image) && $imagePath && file_exists($imagePath)) {
-        $profileImage = asset('upload/client_images/' . $client->image);
-    }
+    $profileImage = !empty($client->image)
+        ? route('client.image', $client->id)
+        : asset('upload/no_image.jpg');
 
     $birthDate = !empty($client->birth_date) ? Carbon::parse($client->birth_date) : null;
     $arrivalDate = !empty($client->arrival_date) ? Carbon::parse($client->arrival_date) : null;

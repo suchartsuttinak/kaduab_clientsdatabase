@@ -1,0 +1,91 @@
+Production Security Patch Manifest - 2026-08-08
+==========================================================
+
+CHANGED FILES
+  app/Http/Controllers/AdminController.php
+  app/Http/Controllers/Landing/ScholarshipChildController.php
+  app/Http/Controllers/ProfileController.php
+  app/Http/Controllers/UserManagementController.php
+  app/Http/Controllers/backend/AuditLogController.php
+  app/Http/Controllers/backend/ClientController.php
+  app/Http/Controllers/backend/OperationController.php
+  app/Http/Controllers/backend/PublicizeController.php
+  app/Http/Middleware/EnforceFormPermission.php
+  app/Http/Requests/Auth/LoginRequest.php
+  app/Providers/AppServiceProvider.php
+  bootstrap/app.php
+  composer.json
+  config/dompdf.php
+  config/filesystems.php
+  config/user_permissions.php
+  database/migrations/2025_12_13_013932_create_scholl_followups_table.php
+  package.json
+  public/.htaccess
+  public/backend/assets/js/code.js
+  resources/views/admin/admin_master.blade.php
+  resources/views/admin/body/admin_master2.blade.php
+  resources/views/admin/body/header.blade.php
+  resources/views/admin/body/sidebar.blade.php
+  resources/views/admin_client/admin_client.blade.php
+  resources/views/admin_client/body/client_header.blade.php
+  resources/views/admin_client/body/client_sidebar.blade.php
+  resources/views/admin_client/index/client_index.blade.php
+  resources/views/admin_client/index/client_overview.blade.php
+  resources/views/admin_client/index/client_report.blade.php
+  resources/views/backend/client/client_edit.blade.php
+  resources/views/backend/client/client_show.blade.php
+  resources/views/backend/client/client_show_refer.blade.php
+  resources/views/backend/publicizes/edit.blade.php
+  resources/views/backend/publicizes/index.blade.php
+  resources/views/backend/publicizes/index2.blade.php
+  resources/views/frontend/client/helping/partials/profile-card.blade.php
+  resources/views/frontend/client/school_followup2/school_followup_create.blade.php
+  resources/views/landing/scholarship/children/index.blade.php
+  resources/views/landing/scholarship/children/report.blade.php
+  routes/auth.php
+  routes/backend/citizen.php
+  routes/backend/citizenship.php
+  routes/backend/client.php
+  routes/backend/document.php
+  routes/backend/education.php
+  routes/backend/helpType.php
+  routes/backend/income.php
+  routes/backend/institution.php
+  routes/backend/misbehavior.php
+  routes/backend/outside.php
+  routes/backend/psycho.php
+  routes/backend/scholarshipChild.php
+  routes/backend/semester.php
+  routes/backend/subject.php
+  routes/backend/translate.php
+  routes/frontend/EducationRecord.php
+  routes/web.php
+
+NEW FILES
+  .env.example
+  .env.production.example
+  app/Http/Middleware/EnsureUserIsActive.php
+  app/Http/Middleware/RequireExplicitFormPermissions.php
+  public/upload/.htaccess
+  public/upload/client_images/.htaccess
+  public/upload/news/.htaccess
+  public/upload/publicizes/.htaccess
+  public/upload/scholarship_children/.htaccess
+  public/upload/scholarship_expenses/.htaccess
+  public/upload/user_images/.htaccess
+  public/uploads/.htaccess
+  resources/views/frontend/client/followup/pdf.blade.php
+  scripts/production_preflight.php
+  docs/production/*
+
+DELETE FROM EXISTING PROJECT
+  app/Models/FactFindingDocument.php
+  public/hot (production only)
+  public/build.zip (stale artifact, if present)
+  old code backup files / SQL dumps / runtime logs before production upload
+
+NOT INCLUDED / NOT MODIFIED AUTOMATICALLY
+  composer.lock - must regenerate with Composer
+  package-lock.json - must regenerate with npm install
+  .env - create securely on production host
+  fonts - retain your own existing font assets; not distributed in this patch

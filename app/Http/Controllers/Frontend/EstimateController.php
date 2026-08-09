@@ -29,23 +29,22 @@ class EstimateController extends Controller
         return $this->imageManager ??= new ImageManager(new Driver());
     }
 
+    private const PRIVATE_IMAGE_DIRECTORY = 'estimate_pictures';
+
     /**
-     * บันทึกรูปเป็น JPEG พร้อมหมุนภาพและย่อขนาดเพื่อลดภาระ Shared Hosting
+     * บันทึกรูปเป็น JPEG ลง Private Storage พร้อมหมุนและย่อขนาด
      */
     protected function saveEstimateImage(UploadedFile $file): string
     {
-        $destinationPath = public_path('upload/estimate_pictures');
-
-        if (! File::isDirectory($destinationPath)) {
-            File::makeDirectory($destinationPath, 0755, true, true);
-        }
-
-        if (! File::isDirectory($destinationPath) || ! is_writable($destinationPath)) {
-            throw new RuntimeException('ไม่สามารถเขียนไฟล์ลงโฟลเดอร์รูปภาพการประเมินได้');
-        }
-
         $filename = Str::uuid()->toString() . '.jpg';
-        $fullPath = $destinationPath . DIRECTORY_SEPARATOR . $filename;
+        $relativePath = self::PRIVATE_IMAGE_DIRECTORY . '/' . $filename;
+        $absolutePath = storage_path('app/private/' . $relativePath);
+
+        File::ensureDirectoryExists(dirname($absolutePath), 0755, true);
+
+        if (!is_writable(dirname($absolutePath))) {
+            throw new RuntimeException('ไม่สามารถเขียนไฟล์ลงพื้นที่จัดเก็บรูปภาพการประเมินได้');
+        }
 
         try {
             $image = $this->imageManager()
@@ -53,71 +52,107 @@ class EstimateController extends Controller
                 ->orient()
                 ->scaleDown(width: 1200, height: 1200);
 
-            $image->toJpeg(quality: 72, progressive: true)->save($fullPath);
+            $image->toJpeg(quality: 72, progressive: true)->save($absolutePath);
         } catch (Throwable $exception) {
-            File::delete($fullPath);
+            File::delete($absolutePath);
             throw $exception;
         }
 
-        return 'upload/estimate_pictures/' . $filename;
+        return $relativePath;
     }
 
     /**
-     * รองรับทั้ง path รุ่นใหม่ใน public/upload และ path รุ่นเดิมใน public/storage
+     * รองรับ path เดิม แต่บังคับให้ชี้เข้า storage/app/private เท่านั้น
      */
-    protected function deleteEstimateImage(?string $path): void
+    private function normalizeEstimateImagePrivatePath(?string $path): ?string
     {
-        $fullPath = $this->resolveEstimateImagePath($path);
-
-        if ($fullPath && File::isFile($fullPath)) {
-            File::delete($fullPath);
-        }
-    }
-
-    protected function estimateImageUrl(?string $path): ?string
-    {
-        if (! $path) {
+        if (!$path) {
             return null;
         }
 
-        $normalized = ltrim(str_replace('\\', '/', $path), '/');
+        $normalized = ltrim(str_replace('\\', '/', trim($path)), '/');
 
-        if (str_contains($normalized, '..')) {
+        if ($normalized === '' || str_contains($normalized, '../') || str_contains($normalized, "\0")) {
             return null;
         }
 
-        if (Str::startsWith($normalized, ['upload/', 'storage/'])) {
-            return asset($normalized);
+        foreach ([
+            'upload/estimate_pictures/',
+            'storage/estimate_pictures/',
+            'estimate_pictures/',
+        ] as $prefix) {
+            if (!Str::startsWith($normalized, $prefix)) {
+                continue;
+            }
+
+            $relative = ltrim(substr($normalized, strlen($prefix)), '/');
+
+            if ($relative === '' || str_contains($relative, '../') || str_contains($relative, "\0")) {
+                return null;
+            }
+
+            return self::PRIVATE_IMAGE_DIRECTORY . '/' . $relative;
         }
 
-        return asset('storage/' . $normalized);
+        return null;
     }
 
     private function resolveEstimateImagePath(?string $path): ?string
     {
-        if (! $path) {
+        $privatePath = $this->normalizeEstimateImagePrivatePath($path);
+
+        if (!$privatePath) {
             return null;
         }
 
-        $normalized = ltrim(str_replace('\\', '/', $path), '/');
+        $absolutePath = storage_path('app/private/' . $privatePath);
 
-        if (str_contains($normalized, '..')) {
-            return null;
+        return File::isFile($absolutePath) ? $absolutePath : null;
+    }
+
+    protected function deleteEstimateImage(?string $path): void
+    {
+        $absolutePath = $this->resolveEstimateImagePath($path);
+
+        if ($absolutePath) {
+            File::delete($absolutePath);
+        }
+    }
+
+    /**
+     * แสดงรูปการประเมินผ่าน Laravel หลังตรวจสิทธิ์และขอบเขตผู้รับบริการ
+     */
+    public function viewImage($id)
+    {
+        $user = auth()->user();
+
+        if (!$user || !$user->hasFormPermission('registration_family_assessment', 'view')) {
+            abort(403);
         }
 
-        if (Str::startsWith($normalized, 'upload/estimate_pictures/')) {
-            return public_path($normalized);
-        }
+        $picture = EstimatePicture::query()
+            ->whereKey($id)
+            ->whereHas('estimate.client', function ($query) use ($user) {
+                $query->forUser($user);
+            })
+            ->firstOrFail();
 
-        if (Str::startsWith($normalized, 'storage/estimate_pictures/')) {
-            return public_path($normalized);
-        }
+        $absolutePath = $this->resolveEstimateImagePath($picture->path);
 
-        if (Str::startsWith($normalized, 'estimate_pictures/')) {
-            return storage_path('app/public/' . $normalized);
-        }
+        abort_unless($absolutePath, 404);
 
-        return null;
+        $mime = File::mimeType($absolutePath);
+        abort_unless(
+            is_string($mime) && in_array(strtolower($mime), ['image/jpeg', 'image/png', 'image/webp'], true),
+            404
+        );
+
+        return response()->file($absolutePath, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     private function findClientWithEstimates(int|string $clientId): Client
@@ -400,7 +435,7 @@ class EstimateController extends Controller
             'remark' => $estimate->remark,
             'pictures' => $estimate->pictures->map(fn (EstimatePicture $picture) => [
                 'id' => $picture->id,
-                'url' => $this->estimateImageUrl($picture->path),
+                'url' => route('estimate.image.view', $picture->id),
             ])->values(),
         ]);
     }

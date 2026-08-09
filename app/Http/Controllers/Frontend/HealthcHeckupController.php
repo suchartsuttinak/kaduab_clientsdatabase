@@ -11,7 +11,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -19,6 +18,8 @@ use Throwable;
 
 class HealthcHeckupController extends Controller
 {
+    private const PRIVATE_DOCUMENT_DIRECTORY = 'healthc_heckups';
+
     /**
      * แสดงหน้าหลัก พร้อมตัวกรองและรายการตรวจสุขภาพ
      */
@@ -130,7 +131,7 @@ class HealthcHeckupController extends Controller
             'hospital_name'         => $item->hospital_name,
             'checkup_result'        => $item->checkup_result,
             'abnormal_detail'       => $item->abnormal_detail,
-            'medical_document_url'  => $this->medicalDocumentUrl($item->medical_document),
+            'medical_document_url'  => $this->medicalDocumentUrl($item),
             'medical_document_name' => $item->medical_document
                 ? basename($item->medical_document)
                 : null,
@@ -458,11 +459,10 @@ class HealthcHeckupController extends Controller
 
     private function uploadMedicalDocument(UploadedFile $file): string
     {
-        $folder = 'upload/healthc_heckups';
-        $destinationPath = public_path($folder);
-
-        if (!File::exists($destinationPath)) {
-            File::makeDirectory($destinationPath, 0775, true);
+        if (!$this->hasPdfSignature($file->getRealPath())) {
+            throw ValidationException::withMessages([
+                'medical_document' => 'ไฟล์เอกสารทางการแพทย์ไม่ใช่เอกสาร PDF ที่ถูกต้อง',
+            ])->errorBag('healthcForm');
         }
 
         $filename = now('Asia/Bangkok')->format('YmdHis')
@@ -470,50 +470,122 @@ class HealthcHeckupController extends Controller
             . Str::uuid()->toString()
             . '.pdf';
 
-        $file->move($destinationPath, $filename);
+        $relativePath = self::PRIVATE_DOCUMENT_DIRECTORY . '/' . $filename;
+        $absolutePath = storage_path('app/private/' . $relativePath);
 
-        return $folder . '/' . $filename;
+        File::ensureDirectoryExists(dirname($absolutePath), 0755, true);
+        $file->move(dirname($absolutePath), basename($absolutePath));
+
+        return $relativePath;
     }
 
-    private function deleteMedicalDocument(?string $filePath): void
-    {
-        if (!$filePath) {
-            return;
-        }
-
-        $normalizedPath = ltrim(str_replace('\\', '/', $filePath), '/');
-
-        // ไฟล์ที่ระบบปัจจุบันบันทึกไว้ใน public/upload/healthc_heckups
-        if (str_starts_with($normalizedPath, 'upload/healthc_heckups/')) {
-            $publicPath = public_path($normalizedPath);
-
-            if (File::exists($publicPath)) {
-                File::delete($publicPath);
-            }
-        }
-
-        // รองรับข้อมูลเก่าที่บันทึกผ่าน storage/app/public
-        if (Storage::disk('public')->exists($normalizedPath)) {
-            Storage::disk('public')->delete($normalizedPath);
-        }
-    }
-
-    private function medicalDocumentUrl(?string $filePath): ?string
+    private function normalizeMedicalDocumentPrivatePath(?string $filePath): ?string
     {
         if (!$filePath) {
             return null;
         }
 
-        $normalizedPath = ltrim(str_replace('\\', '/', $filePath), '/');
+        $normalized = ltrim(str_replace('\\', '/', trim($filePath)), '/');
 
-        if (
-            str_starts_with($normalizedPath, 'upload/')
-            || str_starts_with($normalizedPath, 'storage/')
-        ) {
-            return asset($normalizedPath);
+        if ($normalized === '' || str_contains($normalized, '../') || str_contains($normalized, "\0")) {
+            return null;
         }
 
-        return Storage::disk('public')->url($normalizedPath);
+        foreach ([
+            'upload/healthc_heckups/',
+            'storage/healthc_heckups/',
+            'healthc_heckups/',
+        ] as $prefix) {
+            if (!str_starts_with($normalized, $prefix)) {
+                continue;
+            }
+
+            $relative = ltrim(substr($normalized, strlen($prefix)), '/');
+
+            if ($relative === '' || str_contains($relative, '../') || str_contains($relative, "\0")) {
+                return null;
+            }
+
+            return self::PRIVATE_DOCUMENT_DIRECTORY . '/' . $relative;
+        }
+
+        return null;
+    }
+
+    private function resolveMedicalDocumentPath(?string $filePath): ?string
+    {
+        $privatePath = $this->normalizeMedicalDocumentPrivatePath($filePath);
+
+        if (!$privatePath) {
+            return null;
+        }
+
+        $absolutePath = storage_path('app/private/' . $privatePath);
+
+        return File::isFile($absolutePath) ? $absolutePath : null;
+    }
+
+    private function deleteMedicalDocument(?string $filePath): void
+    {
+        $absolutePath = $this->resolveMedicalDocumentPath($filePath);
+
+        if ($absolutePath) {
+            File::delete($absolutePath);
+        }
+    }
+
+    private function medicalDocumentUrl(HealthcHeckup $item): ?string
+    {
+        if (!$item->medical_document) {
+            return null;
+        }
+
+        return route('healthc_heckups.document.view', $item->id);
+    }
+
+    /**
+     * เปิดเอกสารตรวจสุขภาพผ่าน Laravel เท่านั้น
+     */
+    public function viewMedicalDocument($id)
+    {
+        $this->authorizeRole();
+
+        $user = auth()->user();
+        abort_unless($user && $user->hasFormPermission('health_annual_checkup', 'view'), 403);
+
+        $item = $this->findAuthorizedItem($id);
+        $absolutePath = $this->resolveMedicalDocumentPath($item->medical_document);
+
+        abort_unless($absolutePath, 404, 'ไม่พบเอกสารทางการแพทย์');
+        abort_unless($this->hasPdfSignature($absolutePath), 404);
+
+        return response()->file($absolutePath, [
+            'Content-Type' => 'application/pdf',
+            'Cache-Control' => 'private, no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Frame-Options' => 'SAMEORIGIN',
+        ]);
+    }
+
+    private function hasPdfSignature(string|false $path): bool
+    {
+        if (!$path || !is_readable($path)) {
+            return false;
+        }
+
+        $handle = fopen($path, 'rb');
+
+        if (!$handle) {
+            return false;
+        }
+
+        try {
+            return str_contains((string) fread($handle, 1024), '%PDF-');
+        } finally {
+            fclose($handle);
+        }
     }
 
     /**

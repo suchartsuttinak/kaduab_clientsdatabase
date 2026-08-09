@@ -17,6 +17,8 @@ use Throwable;
 
 class ReferController extends Controller
 {
+    private const PRIVATE_MEETING_REPORT_DIRECTORY = 'refer_meeting_reports';
+
     /**
      * แสดงรายการจำหน่ายของผู้รับบริการ
      */
@@ -120,6 +122,17 @@ class ReferController extends Controller
         $authorizedClient = Client::forUser(auth()->user())
             ->findOrFail($validated['client_id']);
 
+        if (
+            $request->hasFile('meeting_report_file')
+            && !$this->hasPdfSignature($request->file('meeting_report_file')->getRealPath())
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'meeting_report_file' => 'ไฟล์รายงานการประชุมไม่ใช่เอกสาร PDF ที่ถูกต้อง',
+                ]);
+        }
+
         $canAutoApprove = auth()->check()
             && in_array(auth()->user()->role, ['admin', 'executive'], true);
 
@@ -171,8 +184,8 @@ class ReferController extends Controller
                 }
 
                 if ($request->hasFile('meeting_report_file')) {
-                    $destinationPath = public_path('uploads/refer_meeting_reports');
-                    File::ensureDirectoryExists($destinationPath, 0775, true);
+                    $destinationPath = storage_path('app/private/' . self::PRIVATE_MEETING_REPORT_DIRECTORY);
+                    File::ensureDirectoryExists($destinationPath, 0755, true);
 
                     $filename = sprintf(
                         'refer_meeting_%d_%s_%s.pdf',
@@ -450,6 +463,91 @@ class ReferController extends Controller
                 : $result['message'],
             'alert-type' => $result['ok'] ? 'success' : 'warning',
         ]);
+    }
+
+    /**
+     * เปิดรายงานการประชุมจาก Private Storage หลังตรวจสิทธิ์และขอบเขตผู้รับบริการ
+     */
+    public function viewMeetingReport($id)
+    {
+        $user = auth()->user();
+
+        if (!$user || !$user->hasFormPermission('welfare_discharge', 'view')) {
+            abort(403);
+        }
+
+        $refer = Refer::query()
+            ->whereKey($id)
+            ->whereHas('client', function ($query) use ($user) {
+                $query->forUser($user);
+            })
+            ->firstOrFail();
+
+        $absolutePath = $this->resolveMeetingReportPath($refer->meeting_report_file);
+
+        abort_unless($absolutePath, 404, 'ไม่พบไฟล์รายงานการประชุม');
+        abort_unless($this->hasPdfSignature($absolutePath), 404);
+
+        $filename = basename((string) $refer->meeting_report_file) ?: 'meeting-report.pdf';
+
+        return response()->file($absolutePath, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . addcslashes($filename, '\"') . '"',
+            'Cache-Control' => 'private, no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Frame-Options' => 'SAMEORIGIN',
+        ]);
+    }
+
+    private function resolveMeetingReportPath(?string $filePath): ?string
+    {
+        if (!$filePath) {
+            return null;
+        }
+
+        $normalized = ltrim(str_replace('\\', '/', trim($filePath)), '/');
+
+        if ($normalized === '' || str_contains($normalized, '../') || str_contains($normalized, "\0")) {
+            return null;
+        }
+
+        foreach (['uploads/refer_meeting_reports/', 'refer_meeting_reports/'] as $prefix) {
+            if (str_starts_with($normalized, $prefix)) {
+                $normalized = substr($normalized, strlen($prefix));
+                break;
+            }
+        }
+
+        if ($normalized === '' || str_contains($normalized, '/') || str_contains($normalized, '\\')) {
+            return null;
+        }
+
+        $absolutePath = storage_path(
+            'app/private/' . self::PRIVATE_MEETING_REPORT_DIRECTORY . '/' . $normalized
+        );
+
+        return File::isFile($absolutePath) ? $absolutePath : null;
+    }
+
+    private function hasPdfSignature(string|false $path): bool
+    {
+        if (!$path || !is_readable($path)) {
+            return false;
+        }
+
+        $handle = fopen($path, 'rb');
+
+        if (!$handle) {
+            return false;
+        }
+
+        try {
+            return str_contains((string) fread($handle, 1024), '%PDF-');
+        } finally {
+            fclose($handle);
+        }
     }
 
     /**

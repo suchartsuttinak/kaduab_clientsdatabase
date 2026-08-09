@@ -1,5 +1,6 @@
 @extends('admin_client.admin_client')
 
+{{-- ACCIDENT_DATATABLE_CHECKBODY_V5_FINAL --}}
 @section('content')
 @php
     $isEdit = isset($accident) && $accident;
@@ -648,6 +649,217 @@
 
     .accident-page .dataTables_wrapper .dataTables_paginate .paginate_button {
         border-radius: 8px !important;
+    }
+
+
+
+    /* ACCIDENT_DATATABLE_CHECKBODY_V5_FINAL
+       DataTable layout ใช้โครงสร้างเดียวกับหน้า check_body */
+    .accident-page .acc-table-wrap {
+        width: 100%;
+        min-width: 0;
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .accident-page .acc-table-wrap .dataTables_wrapper {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .accident-page .acc-dt-toolbar,
+    .accident-page .acc-dt-footer {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem 1rem;
+        flex-wrap: wrap;
+    }
+
+    .accident-page .acc-dt-toolbar { margin-bottom: .8rem; }
+    .accident-page .acc-dt-footer { margin-top: .85rem; }
+
+    .accident-page .acc-dt-length,
+    .accident-page .acc-dt-search,
+    .accident-page .acc-dt-info,
+    .accident-page .acc-dt-paging { min-width: 0; }
+
+    .accident-page .acc-dt-search { margin-left: auto; }
+
+    .accident-page .acc-dt-scroll {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border: 1px solid var(--acc-border-soft);
+        border-radius: 14px;
+        background: #fff;
+        scrollbar-gutter: stable;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .accident-page .acc-table {
+        width: 100% !important;
+        margin: 0 !important;
+        table-layout: fixed;
+        border-collapse: collapse !important;
+    }
+
+    .accident-page .acc-table.acc-table-compact { min-width: 1150px; }
+    .accident-page .acc-table.acc-table-expanded { min-width: 1450px; }
+
+    .accident-page .acc-col-date { width: 120px !important; min-width: 120px !important; }
+    .accident-page .acc-col-location { width: 155px !important; min-width: 155px !important; }
+    .accident-page .acc-col-detail { width: 280px !important; min-width: 280px !important; }
+    .accident-page .acc-col-cause { width: 160px !important; min-width: 160px !important; }
+    .accident-page .acc-col-treatment { width: 145px !important; min-width: 145px !important; }
+    .accident-page .acc-col-hospital { width: 165px !important; min-width: 165px !important; }
+    .accident-page .acc-col-appointment { width: 135px !important; min-width: 135px !important; }
+    .accident-page .acc-col-caretaker { width: 140px !important; min-width: 140px !important; }
+
+    .accident-page .acc-col-actions {
+        position: static !important;
+        right: auto !important;
+        width: 150px !important;
+        min-width: 150px !important;
+        max-width: 150px !important;
+        border-left: 1px solid var(--acc-border-soft) !important;
+        box-shadow: none !important;
+    }
+
+    .accident-page .acc-table thead .acc-col-actions { background: #f8fafc; }
+    .accident-page .acc-table tbody .acc-col-actions { background: #fff; }
+    .accident-page .acc-table tbody tr:hover .acc-col-actions { background: #fbfdff; }
+
+    .accident-page .dataTables_wrapper .dataTables_length,
+    .accident-page .dataTables_wrapper .dataTables_filter,
+    .accident-page .dataTables_wrapper .dataTables_info,
+    .accident-page .dataTables_wrapper .dataTables_paginate {
+        float: none !important;
+        margin: 0 !important;
+        color: #475569;
+        font-size: .82rem;
+        text-align: left !important;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_length label,
+    .accident-page .dataTables_wrapper .dataTables_filter label {
+        display: inline-flex;
+        align-items: center;
+        gap: .42rem;
+        margin: 0;
+        color: #475569;
+        font-weight: 650;
+        white-space: nowrap;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_length select,
+    .accident-page .dataTables_wrapper .dataTables_filter input {
+        min-height: 38px;
+        margin: 0 !important;
+        border: 1px solid var(--acc-border);
+        border-radius: 10px;
+        background: #fff;
+        color: #334155;
+        box-shadow: none;
+        outline: none;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_length select {
+        min-width: 76px;
+        padding: .35rem 1.9rem .35rem .65rem;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_filter input {
+        width: 230px !important;
+        max-width: 42vw;
+        padding: .45rem .7rem;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_length select:focus,
+    .accident-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--acc-primary);
+        box-shadow: 0 0 0 .18rem rgba(29, 78, 216, .10);
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_info {
+        padding-top: 0 !important;
+        color: var(--acc-muted);
+        line-height: 1.5;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_paginate {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .2rem;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        min-width: 36px;
+        min-height: 36px;
+        margin: 0 1px !important;
+        padding: .42rem .62rem !important;
+        border: 1px solid transparent !important;
+        border-radius: 9px !important;
+        background: transparent !important;
+        color: #475569 !important;
+        box-shadow: none !important;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        border-color: #cbd5e1 !important;
+        background: #f8fafc !important;
+        color: #0f172a !important;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .accident-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        border-color: var(--acc-primary) !important;
+        background: var(--acc-primary) !important;
+        color: #fff !important;
+    }
+
+    .accident-page .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+    .accident-page .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+        border-color: transparent !important;
+        background: transparent !important;
+        color: #94a3b8 !important;
+        cursor: default !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .accident-page .acc-dt-toolbar,
+        .accident-page .acc-dt-footer {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .accident-page .acc-dt-length,
+        .accident-page .acc-dt-search,
+        .accident-page .acc-dt-info,
+        .accident-page .acc-dt-paging {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        .accident-page .dataTables_wrapper .dataTables_length label,
+        .accident-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+        }
+
+        .accident-page .dataTables_wrapper .dataTables_filter input {
+            width: min(100%, 280px) !important;
+            max-width: none;
+        }
+
+        .accident-page .dataTables_wrapper .dataTables_paginate {
+            justify-content: flex-start;
+            overflow-x: auto;
+            padding-bottom: .15rem !important;
+        }
     }
 
     /*
@@ -1624,6 +1836,91 @@
         const modalElement = document.getElementById('accidentFormModal');
         const form = document.getElementById('accidentForm');
 
+        function setupAccidentDataTable() {
+            const tableElement = document.getElementById('datatable-accident');
+
+            if (!tableElement || !window.jQuery || !jQuery.fn.DataTable) {
+                return;
+            }
+
+            const $table = jQuery(tableElement);
+
+            /* เหมือนหน้า Check Body: ทำลายตัวที่ Layout สร้างก่อน แล้วสร้างของหน้านี้ใหม่ */
+            if (jQuery.fn.DataTable.isDataTable(tableElement)) {
+                $table.DataTable().destroy();
+            }
+
+            tableElement.removeAttribute('style');
+
+            const dataTable = $table.DataTable({
+                destroy: true,
+                autoWidth: false,
+                responsive: false,
+                scrollX: false,
+                order: [[0, 'desc']],
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                dom: '<"acc-dt-toolbar"<"acc-dt-length"l><"acc-dt-search"f>><"acc-dt-scroll"t><"acc-dt-footer"<"acc-dt-info"i><"acc-dt-paging"p>>',
+                columnDefs: [
+                    {
+                        orderable: false,
+                        searchable: false,
+                        width: '150px',
+                        className: 'acc-col-actions',
+                        targets: -1
+                    }
+                ],
+                language: {
+                    emptyTable: 'ไม่พบข้อมูล',
+                    info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
+                    infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
+                    infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
+                    lengthMenu: 'แสดง _MENU_ รายการ',
+                    loadingRecords: 'กำลังโหลด...',
+                    processing: 'กำลังประมวลผล...',
+                    search: 'ค้นหา:',
+                    zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
+                    paginate: {
+                        first: 'หน้าแรก',
+                        last: 'หน้าสุดท้าย',
+                        next: 'ถัดไป',
+                        previous: 'ก่อนหน้า'
+                    }
+                },
+                initComplete: function () {
+                    const api = this.api();
+                    const wrapper = tableElement.closest('.dataTables_wrapper');
+
+                    wrapper?.setAttribute('data-accident-datatable', 'checkbody-v5');
+                    wrapper?.querySelectorAll('.acc-dt-toolbar, .acc-dt-footer').forEach(function (element) {
+                        element.setAttribute('data-permission-keep', '');
+                    });
+
+                    wrapper?.querySelectorAll(
+                        '.acc-dt-toolbar input, .acc-dt-toolbar select, .acc-dt-toolbar button, .acc-dt-toolbar a, ' +
+                        '.acc-dt-footer input, .acc-dt-footer select, .acc-dt-footer button, .acc-dt-footer a'
+                    ).forEach(function (element) {
+                        element.setAttribute('data-permission-keep', '');
+                    });
+
+                    window.requestAnimationFrame(function () {
+                        api.columns.adjust();
+                    });
+                }
+            });
+
+            let resizeTimer = null;
+            window.addEventListener('resize', function () {
+                window.clearTimeout(resizeTimer);
+                resizeTimer = window.setTimeout(function () {
+                    dataTable.columns.adjust();
+                }, 140);
+            }, { passive: true });
+        }
+
+        /* ใช้ timing เดียวกับหน้า Check Body */
+        window.setTimeout(setupAccidentDataTable, 80);
+
         if (!modalElement || !form) {
             return;
         }
@@ -1809,106 +2106,6 @@
             }).show();
         }
 
-        if (window.jQuery && $.fn.DataTable && document.getElementById('datatable-accident')) {
-            const table = $('#datatable-accident');
-
-            if (!$.fn.DataTable.isDataTable(table)) {
-                const accidentDataTable = table.DataTable({
-                    autoWidth: false,
-                    scrollX: true,
-                    scrollCollapse: true,
-                    order: [[0, 'desc']],
-                    pageLength: 10,
-                    lengthMenu: [10, 25, 50, 100],
-                    columnDefs: [
-                        {
-                            orderable: false,
-                            searchable: false,
-                            width: '150px',
-                            className: 'acc-col-actions',
-                            targets: -1
-                        }
-                    ],
-                    initComplete: function () {
-                        const api = this.api();
-
-                        window.requestAnimationFrame(function () {
-                            api.columns.adjust();
-                            window.requestAnimationFrame(syncAccidentTableOverflow);
-                        });
-                    },
-                    language: {
-                        emptyTable: 'ไม่พบข้อมูล',
-                        info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
-                        infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
-                        infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
-                        lengthMenu: 'แสดง _MENU_ รายการ',
-                        loadingRecords: 'กำลังโหลด...',
-                        processing: 'กำลังประมวลผล...',
-                        search: 'ค้นหา:',
-                        zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
-                        paginate: {
-                            first: 'หน้าแรก',
-                            last: 'หน้าสุดท้าย',
-                            next: 'ถัดไป',
-                            previous: 'ก่อนหน้า'
-                        }
-                    }
-                });
-
-                function syncAccidentTableOverflow() {
-                    const tableNode = accidentDataTable.table().node();
-                    const wrapper = tableNode.closest('.dataTables_wrapper');
-
-                    if (!wrapper) {
-                        return;
-                    }
-
-                    const scrollBody = wrapper.querySelector('.dataTables_scrollBody');
-
-                    if (!scrollBody) {
-                        return;
-                    }
-
-                    /*
-                    | DataTables อาจคำนวณความกว้างเกินจริงประมาณ 1–24px
-                    | ซ่อน scrollbar เฉพาะเมื่อพื้นที่ปัจจุบันรองรับความกว้างตารางได้จริง
-                    | หากจอแคบกว่าความกว้างขั้นต่ำ ตารางยังเลื่อนแนวนอนได้ตามปกติ
-                    */
-                    const requiredTableWidth = tableNode.classList.contains('acc-table-expanded')
-                        ? 1450
-                        : 1150;
-                    const overflowAmount = Math.max(
-                        0,
-                        Math.ceil(scrollBody.scrollWidth - scrollBody.clientWidth)
-                    );
-                    const contentCanFit = scrollBody.clientWidth >= (requiredTableWidth - 24);
-                    const isTrivialOverflow = contentCanFit && overflowAmount <= 24;
-
-                    wrapper.classList.toggle('acc-no-trivial-overflow', isTrivialOverflow);
-
-                    if (isTrivialOverflow) {
-                        scrollBody.scrollLeft = 0;
-                    }
-                }
-
-                let accidentTableResizeTimer = null;
-
-                window.addEventListener('resize', function () {
-                    window.clearTimeout(accidentTableResizeTimer);
-
-                    accidentTableResizeTimer = window.setTimeout(function () {
-                        accidentDataTable.columns.adjust();
-                        window.requestAnimationFrame(syncAccidentTableOverflow);
-                    }, 120);
-                });
-
-                window.addEventListener('load', function () {
-                    accidentDataTable.columns.adjust();
-                    window.requestAnimationFrame(syncAccidentTableOverflow);
-                }, { once: true });
-            }
-        }
     });
 
     function confirmDelete(id) {

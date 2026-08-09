@@ -74,12 +74,8 @@
 
         if (Str::startsWith($value, ['http://', 'https://'])) {
             $sidebarClientImage = $value;
-        } elseif (Str::startsWith($value, ['/'])) {
-            $sidebarClientImage = url($value);
-        } elseif (Str::startsWith($value, ['upload/', 'storage/'])) {
-            $sidebarClientImage = asset($value);
-        } else {
-            $sidebarClientImage = asset('upload/client_images/' . ltrim($value, '/'));
+        } elseif ($clientId) {
+            $sidebarClientImage = route('client.image', $clientId);
         }
     }
 
@@ -370,7 +366,12 @@
                                 @endif
 
                                 @if ($clientId && $canForm('registration_family'))
-                                    <li><a href="{{ route('family.add', $clientId) }}" class="tp-link {{ Request::routeIs('family.*') || Request::routeIs('estimate.*') ? 'active' : '' }}">บันทึกข้อมูลครอบครัว</a></li>
+                                    {{-- FAMILY_ASSESSMENT_PERMISSION_V2 --}}
+                                    <li><a href="{{ route('family.add', $clientId) }}" class="tp-link {{ Request::routeIs('family.*') ? 'active' : '' }}">บันทึกข้อมูลครอบครัว</a></li>
+                                @endif
+
+                                @if ($clientId && $canForm('registration_family_assessment'))
+                                    <li><a href="{{ route('estimate.show', $clientId) }}" class="tp-link {{ Request::routeIs('estimate.*') ? 'active' : '' }}">ประเมินครอบครัว</a></li>
                                 @endif
 
                                 @if ($clientId && $canForm('registration_family_visit'))

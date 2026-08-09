@@ -10,5 +10,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/translate', [TranslateController::class, 'StoreTranslate'])->name('translate.store');
     Route::get('/edit/translate/{id}', [TranslateController::class, 'EditTranslate'])->name('translate.edit');
     Route::post('/update/translate', [TranslateController::class, 'UpdateTranslate'])->name('translate.update');
-    Route::get('/delete/translate/{id}', [TranslateController::class, 'DeleteTranslate'])->name('translate.delete');
+    Route::delete('/delete/translate/{id}', [TranslateController::class, 'DeleteTranslate'])->name('translate.delete');
 });

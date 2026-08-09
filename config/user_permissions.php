@@ -46,6 +46,10 @@ return [
                     'label' => 'บันทึกข้อมูลครอบครัว',
                     'description' => 'ข้อมูลบิดา มารดา ผู้ปกครอง และสภาพครอบครัว',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
+                ],                'registration_family_assessment' => [
+                    'label' => 'ประเมินครอบครัว',
+                    'description' => 'บันทึก แก้ไข ลบ และออกรายงานการประเมินครอบครัว',
+                    'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
                 'registration_family_visit' => [
                     'label' => 'เยี่ยมครอบครัว',
@@ -292,16 +296,45 @@ return [
             ],
         ],
 
-        'system_management' => [
+            'system_management' => [
             'label' => 'การจัดการระบบ',
             'icon' => 'bi-person-gear',
-            'description' => 'งานดูแลบัญชีผู้ใช้งานและสิทธิ์การเข้าถึงระบบ',
+            'description' => 'กำหนดผู้ใช้งาน สิทธิ์การเข้าถึง และตรวจสอบความปลอดภัยของระบบ',
+
             'items' => [
-                'system_users' => ['label' => 'จัดการผู้ใช้งาน', 'description' => 'ดูรายชื่อ เพิ่ม แก้ไข ปิดใช้งาน และลบบัญชีผู้ใช้งาน โดยยังคงการป้องกันผู้ดูแลระบบคนสุดท้าย', 'actions' => ['view', 'create', 'update', 'delete']],
+
+                'system_users' => [
+                    'label' => 'จัดการผู้ใช้งาน',
+                    'description' => 'ดูรายชื่อ เพิ่ม แก้ไข ปิดใช้งาน และลบบัญชีผู้ใช้งาน โดยยังคงการป้องกันบัญชีผู้ดูแลระบบคนสุดท้าย',
+                    'actions' => [
+                        'view',
+                        'create',
+                        'update',
+                        'delete',
+                    ],
+                ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Audit Log
+        |--------------------------------------------------------------------------
+        | เป็นข้อมูลประวัติของระบบ
+        | อนุญาตเฉพาะการดูเท่านั้น
+        |
+        | ไม่มี create / update / delete
+        |--------------------------------------------------------------------------
+        */
+        'system_audit_logs' => [
+            'label' => 'ประวัติการใช้งานระบบ',
+            'description' => 'ตรวจสอบประวัติการเข้าสู่ระบบ การเข้าถึง และเหตุการณ์สำคัญภายในระบบ',
+            'actions' => [
+                'view',
             ],
         ],
-    ],
 
+    ],
+],
+    ],  
     /*
     |--------------------------------------------------------------------------
     | เชื่อมชื่อ Route กับสิทธิ์รายฟอร์ม
@@ -330,7 +363,7 @@ return [
         ['routes' => ['landing.about.delete'], 'permissions' => ['dashboard_about'], 'action' => 'delete'],
         ['routes' => ['scholarship.index', 'scholarship.donation.index'], 'permissions' => ['dashboard_scholarship_sponsors'], 'action' => 'view'],
         ['routes' => ['scholarship.donation.create', 'scholarship.donation.store'], 'permissions' => ['dashboard_scholarship_sponsors'], 'action' => 'create'],
-        ['routes' => ['scholarship.children.index'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'view'],
+        ['routes' => ['scholarship.children.index', 'scholarship.children.photo', 'scholarship.children.attachments.view'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'view'],
         ['routes' => ['scholarship.children.store', 'scholarship.children.applications.store', 'scholarship.children.expenses.store'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'create'],
         ['routes' => ['scholarship.children.update', 'scholarship.children.status', 'scholarship.children.expenses.update'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'update'],
         ['routes' => ['scholarship.children.delete', 'scholarship.children.expenses.destroy'], 'permissions' => ['dashboard_scholarship_children'], 'action' => 'delete'],
@@ -399,12 +432,19 @@ return [
         ['routes' => ['users.create', 'users.store'], 'permissions' => ['system_users'], 'action' => 'create'],
         ['routes' => ['users.edit', 'users.update', 'users.toggle-status'], 'permissions' => ['system_users'], 'action' => 'update'],
         ['routes' => ['users.destroy'], 'permissions' => ['system_users'], 'action' => 'delete'],
+        /*
+        |--------------------------------------------------------------------------
+        | Audit Log
+        |--------------------------------------------------------------------------
+        */
+        ['routes' => ['audit_logs.index'], 'permissions' => ['system_audit_logs'], 'action' => 'view'],
 
         // ทางเข้าแฟ้มผู้รับบริการ: ต้องมีสิทธิ์ดูอย่างน้อยหนึ่งฟอร์ม
-        ['routes' => ['client.show', 'admin.index', 'admin.client.overview'], 'permissions' => [
+        ['routes' => ['client.show', 'client.image', 'admin.index', 'admin.client.overview'], 'permissions' => [
             'registration_client_profile',
             'registration_factfinding',
             'registration_family',
+            'registration_family_assessment',
             'registration_family_visit',
             'registration_family_members',
             'registration_client_files',
@@ -451,12 +491,16 @@ return [
         ['routes' => ['factfinding.edit', 'factfinding.update'], 'permissions' => ['registration_factfinding'], 'action' => 'update'],
         ['routes' => ['factfinding.delete'], 'permissions' => ['registration_factfinding'], 'action' => 'delete'],
 
-        // 1.3 ครอบครัวและการประเมินครอบครัว
-        ['routes' => ['family.add', 'estimate.show'], 'permissions' => ['registration_family'], 'action' => 'view'],
-        ['routes' => ['family.store', 'estimate.store'], 'permissions' => ['registration_family'], 'action' => 'create'],
-        ['routes' => ['estimate.edit', 'estimate.update'], 'permissions' => ['registration_family'], 'action' => 'update'],
-        ['routes' => ['estimate.delete'], 'permissions' => ['registration_family'], 'action' => 'delete'],
-        ['routes' => ['estimate.report'], 'permissions' => ['registration_family'], 'action' => 'print'],
+        // 1.3 ข้อมูลครอบครัว
+        ['routes' => ['family.add'], 'permissions' => ['registration_family'], 'action' => 'view'],
+        ['routes' => ['family.store'], 'permissions' => ['registration_family'], 'action' => 'create'],
+
+        // 1.3B ประเมินครอบครัว — แยกสิทธิ์จากข้อมูลครอบครัว
+        ['routes' => ['estimate.show', 'estimate.image.view'], 'permissions' => ['registration_family_assessment'], 'action' => 'view'],
+        ['routes' => ['estimate.store'], 'permissions' => ['registration_family_assessment'], 'action' => 'create'],
+        ['routes' => ['estimate.edit', 'estimate.update'], 'permissions' => ['registration_family_assessment'], 'action' => 'update'],
+        ['routes' => ['estimate.delete'], 'permissions' => ['registration_family_assessment'], 'action' => 'delete'],
+        ['routes' => ['estimate.report'], 'permissions' => ['registration_family_assessment'], 'action' => 'print'],
 
         // 1.4 เยี่ยมครอบครัว
         ['routes' => ['visitFamily.create'], 'permissions' => ['registration_family_visit'], 'action' => 'view'],
@@ -482,11 +526,11 @@ return [
         // 2.1 บันทึกผลการเรียน
         ['routes' => ['education_record.add', 'education_record_add'], 'permissions' => ['education_grade_entry'], 'action' => 'view'],
         ['routes' => ['education_record.store', 'education_record_store'], 'permissions' => ['education_grade_entry'], 'action' => 'create'],
-        ['routes' => ['education_record.edit', 'education_record_edit', 'education_record.update', 'education_record_update'], 'permissions' => ['education_grade_entry'], 'action' => 'update'],
+        ['routes' => ['education_record.edit', 'education_record_edit', 'education_record.update', 'education_record_update', 'education_record_update_legacy'], 'permissions' => ['education_grade_entry'], 'action' => 'update'],
         ['routes' => ['education_record_delete'], 'permissions' => ['education_grade_entry'], 'action' => 'delete'],
 
         // 2.2 แสดง/รายงานผลการเรียน
-        ['routes' => ['education_record_show'], 'permissions' => ['education_results'], 'action' => 'view'],
+        ['routes' => ['education_record_show', 'education_record_show_legacy'], 'permissions' => ['education_results'], 'action' => 'view'],
         ['routes' => ['education_record.report', 'education_record.report_by_id', 'education_record_report', 'education_record_report_by_id'], 'permissions' => ['education_results'], 'action' => 'print'],
 
         // 2.3 ติดตามการศึกษา

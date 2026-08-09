@@ -1,0 +1,12 @@
+Delete after backing up the current project:
+"
+"app/Models/FactFindingDocument.php
+"
+"public/hot (production only, if present)
+"
+"public/build.zip (stale artifact, if present)
+
+"
+"Before production upload also remove old SQL dumps, runtime logs, code-backup copies and dummy uploads that are not needed.
+"
+"Do not delete your own existing font assets; this patch does not distribute fonts.

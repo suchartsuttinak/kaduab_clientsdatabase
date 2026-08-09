@@ -15,7 +15,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/education_record/show/{client_id}',
         [EducationRecordController::class, 'EducationRecordShow']
-    )->name('education_record_show');
+    )->name('education_record_show_legacy');
 
     // รายงานผลการเรียนทั้งหมดของ client
     Route::get('/education_record/report/{client_id}',
@@ -33,7 +33,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/education_record/update/{id}',
         [EducationRecordController::class, 'EducationRecordUpdate']
-    )->name('education_record_update');
+    )->name('education_record_update_legacy');
 });
 
 // 📚 บันทึกผลการเรียน

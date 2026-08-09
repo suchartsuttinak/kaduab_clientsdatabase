@@ -1,4 +1,5 @@
 @extends('admin_client.admin_client')
+{{-- ACCIDENT_DATATABLE_CHECKBODY_LAYOUT_V3_FINAL --}}
 
 {{-- ACCIDENT_EMPTY_STATE_FULL_FIX_V4 --}}
 
@@ -432,47 +433,42 @@
     .accident-page .acc-table-wrap {
         width: 100%;
         min-width: 0;
-        overflow: hidden;
-        border: 1px solid var(--acc-border-soft);
-        border-radius: 14px;
-        background: #ffffff;
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Accident DataTable — single, stable layout
+    | Accident DataTable — layout เดียวกับหน้า Check Body
     |--------------------------------------------------------------------------
-    | DataTables ดูแลการเลื่อนแนวนอนเพียงจุดเดียว ป้องกันหัวตารางเหลื่อม
-    | ช่องค้นหา/จำนวนรายการซ้ำ และ scrollbar ซ้อนจาก wrapper หลายชั้น
+    | Toolbar (จำนวนรายการ / ค้นหา) อยู่นอกกรอบตาราง
+    | และให้เฉพาะตัวตารางเป็นส่วนที่เลื่อนแนวนอน
     */
-    .accident-page .dataTables_wrapper {
+    .accident-page .acc-table-wrap .dataTables_wrapper {
         width: 100%;
         min-width: 0;
         margin: 0;
         color: var(--acc-text);
     }
 
-    .accident-page .acc-dt-top,
-    .accident-page .acc-dt-bottom {
+    .accident-page .acc-dt-toolbar,
+    .accident-page .acc-dt-footer {
         display: flex;
         width: 100%;
-        min-width: 0;
         align-items: center;
         justify-content: space-between;
-        gap: .85rem 1rem;
-        margin: 0;
+        gap: .75rem 1rem;
+        flex-wrap: wrap;
     }
 
-    .accident-page .acc-dt-top {
-        padding: .9rem 1rem .75rem;
-        border-bottom: 1px solid #eef2f7;
-        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    .accident-page .acc-dt-toolbar {
+        margin-bottom: .8rem;
     }
 
-    .accident-page .acc-dt-bottom {
-        padding: .8rem 1rem .95rem;
-        border-top: 1px solid #eef2f7;
-        background: #ffffff;
+    .accident-page .acc-dt-footer {
+        margin-top: .85rem;
     }
 
     .accident-page .acc-dt-length,
@@ -482,14 +478,19 @@
         min-width: 0;
     }
 
-    .accident-page .acc-dt-length {
-        flex: 1 1 auto;
+    .accident-page .acc-dt-search {
+        margin-left: auto;
     }
 
-    .accident-page .acc-dt-search,
-    .accident-page .acc-dt-paging {
-        flex: 0 0 auto;
-        margin-left: auto;
+    .accident-page .acc-dt-scroll {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border: 1px solid var(--acc-border-soft);
+        border-radius: 14px;
+        background: #ffffff;
+        scrollbar-gutter: stable;
+        -webkit-overflow-scrolling: touch;
     }
 
     .accident-page .dataTables_wrapper .dataTables_length,
@@ -500,15 +501,16 @@
         width: auto !important;
         margin: 0 !important;
         padding: 0 !important;
-        color: var(--acc-muted);
+        color: #475569;
         font-size: .82rem;
+        text-align: left !important;
     }
 
     .accident-page .dataTables_wrapper .dataTables_length label,
     .accident-page .dataTables_wrapper .dataTables_filter label {
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: .5rem;
+        gap: .42rem;
         margin: 0 !important;
         color: #475569;
         font-size: .84rem;
@@ -517,78 +519,46 @@
         white-space: nowrap;
     }
 
-    .accident-page .dataTables_wrapper .dataTables_filter label {
-        justify-content: flex-end;
-    }
-
     .accident-page .dataTables_wrapper .dataTables_length select,
     .accident-page .dataTables_wrapper .dataTables_filter input {
-        height: 40px;
-        min-height: 40px;
+        min-height: 38px;
         margin: 0 !important;
         border: 1px solid var(--acc-border);
-        border-radius: 11px;
-        background-color: #ffffff;
-        color: #0f172a;
-        font-size: .86rem;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #334155;
         box-shadow: none;
         outline: none;
-        transition: border-color .16s ease, box-shadow .16s ease;
     }
 
     .accident-page .dataTables_wrapper .dataTables_length select {
         min-width: 76px;
-        padding: .38rem 2rem .38rem .72rem;
+        padding: .35rem 1.9rem .35rem .65rem;
     }
 
     .accident-page .dataTables_wrapper .dataTables_filter input {
-        width: 210px !important;
-        min-width: 210px;
-        padding: .42rem .75rem;
+        width: 230px !important;
+        max-width: 42vw;
+        padding: .45rem .7rem;
     }
 
     .accident-page .dataTables_wrapper .dataTables_length select:focus,
     .accident-page .dataTables_wrapper .dataTables_filter input:focus {
-        border-color: #93c5fd;
-        box-shadow: 0 0 0 .18rem rgba(59, 130, 246, .13);
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 .18rem rgba(59, 130, 246, .12);
     }
 
-    .accident-page .dataTables_wrapper .dataTables_scroll,
-    .accident-page .dataTables_wrapper .dataTables_scrollHead,
-    .accident-page .dataTables_wrapper .dataTables_scrollBody {
-        width: 100%;
-        min-width: 0;
+    .accident-page .dataTables_wrapper .dataTables_info {
+        padding-top: 0 !important;
+        color: var(--acc-muted);
+        line-height: 1.5;
     }
 
-    .accident-page .dataTables_wrapper .dataTables_scrollHead {
-        overflow: hidden !important;
-        border: 0 !important;
-        background: #f8fafc;
-    }
-
-    .accident-page .dataTables_wrapper .dataTables_scrollBody {
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        border: 0 !important;
-        scrollbar-width: thin;
-        scrollbar-color: #cbd5e1 transparent;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .accident-page .dataTables_wrapper .dataTables_scrollBody::-webkit-scrollbar {
-        height: 8px;
-    }
-
-    .accident-page .dataTables_wrapper .dataTables_scrollBody::-webkit-scrollbar-thumb {
-        border-radius: 999px;
-        background: #cbd5e1;
-    }
-
-    .accident-page .dataTables_wrapper .dataTables_scrollHeadInner,
-    .accident-page .dataTables_wrapper .dataTables_scrollHeadInner > table,
-    .accident-page .dataTables_wrapper .dataTables_scrollBody > table {
-        box-sizing: border-box !important;
-        margin: 0 !important;
+    .accident-page .dataTables_wrapper .dataTables_paginate {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .2rem;
     }
 
     .accident-page .acc-table {
@@ -818,34 +788,35 @@
             max-width: 100%;
         }
 
-        .accident-page .acc-dt-top,
-        .accident-page .acc-dt-bottom {
+        .accident-page .acc-dt-toolbar,
+        .accident-page .acc-dt-footer {
             align-items: stretch;
             flex-direction: column;
         }
 
+        .accident-page .acc-dt-length,
         .accident-page .acc-dt-search,
+        .accident-page .acc-dt-info,
         .accident-page .acc-dt-paging {
             width: 100%;
             margin-left: 0;
         }
 
-        .accident-page .dataTables_wrapper .dataTables_filter,
+        .accident-page .dataTables_wrapper .dataTables_length label,
         .accident-page .dataTables_wrapper .dataTables_filter label {
-            width: 100% !important;
-            justify-content: flex-start;
+            width: 100%;
+            justify-content: space-between;
         }
 
         .accident-page .dataTables_wrapper .dataTables_filter input {
-            width: 100% !important;
-            min-width: 0;
-            flex: 1 1 auto;
+            width: min(100%, 280px) !important;
+            max-width: none;
         }
 
         .accident-page .dataTables_wrapper .dataTables_paginate {
             justify-content: flex-start;
             overflow-x: auto;
-            padding-bottom: .15rem !important;
+            padding-bottom: .2rem !important;
         }
     }
 
@@ -1744,6 +1715,164 @@
 @endsection
 
 @push('scripts')
+{{--
+    ACCIDENT DATATABLE V3 FINAL
+    แยก DataTable ออกจาก Modal โดยสิ้นเชิง เพื่อไม่ให้ return/error ของ Modal
+    ขัดขวางการจัด toolbar และเพื่อชนะ auto-init จาก Layout ส่วนกลาง
+--}}
+<script>
+(function () {
+    'use strict';
+
+    let accidentDtInstance = null;
+    let accidentDtResizeBound = false;
+    let accidentDtRetryTimer = null;
+
+    function accidentDtHasCorrectLayout(tableElement) {
+        const wrapper = tableElement ? tableElement.closest('.dataTables_wrapper') : null;
+        return !!(
+            wrapper &&
+            wrapper.querySelector('.acc-dt-toolbar') &&
+            wrapper.querySelector('.acc-dt-scroll') &&
+            wrapper.querySelector('.acc-dt-footer')
+        );
+    }
+
+    function initAccidentDataTable(force) {
+        const tableElement = document.getElementById('datatable-accident');
+
+        if (!tableElement || !window.jQuery || !jQuery.fn || !jQuery.fn.DataTable) {
+            return false;
+        }
+
+        const $table = jQuery(tableElement);
+
+        // ถ้าเป็น layout ของหน้านี้อยู่แล้ว ไม่ต้องสร้างซ้ำ
+        if (!force && jQuery.fn.DataTable.isDataTable(tableElement) && accidentDtHasCorrectLayout(tableElement)) {
+            try {
+                accidentDtInstance = $table.DataTable();
+                accidentDtInstance.columns.adjust();
+            } catch (error) {}
+            return true;
+        }
+
+        // ทำลาย DataTable ที่ Layout ส่วนกลางสร้างไว้ก่อน
+        if (jQuery.fn.DataTable.isDataTable(tableElement)) {
+            try {
+                $table.DataTable().destroy();
+            } catch (error) {}
+        }
+
+        tableElement.removeAttribute('style');
+
+        accidentDtInstance = $table.DataTable({
+            destroy: true,
+            autoWidth: false,
+            responsive: false,
+            scrollX: false,
+            order: [[0, 'desc']],
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
+            dom: '<"acc-dt-toolbar"<"acc-dt-length"l><"acc-dt-search"f>><"acc-dt-scroll"t><"acc-dt-footer"<"acc-dt-info"i><"acc-dt-paging"p>>',
+            columnDefs: [
+                {
+                    orderable: false,
+                    searchable: false,
+                    width: '150px',
+                    className: 'acc-col-actions',
+                    targets: -1
+                }
+            ],
+            language: {
+                emptyTable: 'ไม่พบข้อมูล',
+                info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
+                infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
+                infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
+                lengthMenu: 'แสดง _MENU_ รายการ',
+                loadingRecords: 'กำลังโหลด...',
+                processing: 'กำลังประมวลผล...',
+                search: 'ค้นหา:',
+                zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
+                paginate: {
+                    first: 'หน้าแรก',
+                    last: 'หน้าสุดท้าย',
+                    next: 'ถัดไป',
+                    previous: 'ก่อนหน้า'
+                }
+            },
+            initComplete: function () {
+                const api = this.api();
+                const wrapper = tableElement.closest('.dataTables_wrapper');
+
+                if (wrapper) {
+                    wrapper.setAttribute('data-accident-datatable-layout', 'v3-final');
+
+                    wrapper.querySelectorAll('.acc-dt-toolbar, .acc-dt-scroll, .acc-dt-footer').forEach(function (element) {
+                        element.setAttribute('data-permission-keep', '');
+                    });
+
+                    wrapper.querySelectorAll(
+                        '.acc-dt-toolbar input, .acc-dt-toolbar select, .acc-dt-toolbar button, .acc-dt-toolbar a, ' +
+                        '.acc-dt-footer input, .acc-dt-footer select, .acc-dt-footer button, .acc-dt-footer a'
+                    ).forEach(function (element) {
+                        element.setAttribute('data-permission-keep', '');
+                    });
+                }
+
+                window.requestAnimationFrame(function () {
+                    api.columns.adjust();
+                });
+            }
+        });
+
+        if (!accidentDtResizeBound) {
+            accidentDtResizeBound = true;
+            window.addEventListener('resize', function () {
+                window.clearTimeout(accidentDtRetryTimer);
+                accidentDtRetryTimer = window.setTimeout(function () {
+                    try {
+                        if (accidentDtInstance) {
+                            accidentDtInstance.columns.adjust();
+                        }
+                    } catch (error) {}
+                }, 140);
+            }, { passive: true });
+        }
+
+        return true;
+    }
+
+    function ensureAccidentDataTable() {
+        // รอบแรก: หลัง DOM พร้อม ให้ Layout ส่วนกลางสร้างของมันก่อนเล็กน้อย
+        window.setTimeout(function () {
+            initAccidentDataTable(true);
+        }, 180);
+
+        // รอบยืนยัน: หลัง resource ทั้งหมดโหลด ป้องกัน Layout มา init ทับทีหลัง
+        window.addEventListener('load', function () {
+            window.setTimeout(function () {
+                const tableElement = document.getElementById('datatable-accident');
+                if (!tableElement) {
+                    return;
+                }
+
+                if (!accidentDtHasCorrectLayout(tableElement)) {
+                    initAccidentDataTable(true);
+                } else {
+                    initAccidentDataTable(false);
+                }
+            }, 120);
+        }, { once: true });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ensureAccidentDataTable, { once: true });
+    } else {
+        ensureAccidentDataTable();
+    }
+})();
+</script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const modalElement = document.getElementById('accidentFormModal');
@@ -1934,100 +2063,6 @@
             }).show();
         }
 
-        function setupAccidentDataTable() {
-            const tableElement = document.getElementById('datatable-accident');
-
-            if (!tableElement || !window.jQuery || !jQuery.fn.DataTable) {
-                return;
-            }
-
-            const $table = jQuery(tableElement);
-
-            /*
-             * Layout หรือสคริปต์ส่วนกลางอาจสร้าง DataTable ไว้ก่อน
-             * ทำลาย instance เดิมแล้วสร้างใหม่เพียงครั้งเดียว เพื่อไม่ให้
-             * ช่องค้นหา/จำนวนรายการซ้ำ หัวตารางเหลื่อม หรือ scrollbar ซ้อน
-             */
-            if (jQuery.fn.DataTable.isDataTable(tableElement)) {
-                $table.DataTable().destroy();
-            }
-
-            const accidentDataTable = $table.DataTable({
-                destroy: true,
-                autoWidth: false,
-                scrollX: true,
-                scrollCollapse: true,
-                order: [[0, 'desc']],
-                pageLength: 10,
-                lengthMenu: [10, 25, 50, 100],
-                dom: '<"acc-dt-top"<"acc-dt-length"l><"acc-dt-search"f>>rt<"acc-dt-bottom"<"acc-dt-info"i><"acc-dt-paging"p>>',
-                columnDefs: [
-                    {
-                        orderable: false,
-                        searchable: false,
-                        width: '150px',
-                        className: 'acc-col-actions',
-                        targets: -1
-                    }
-                ],
-                language: {
-                    emptyTable: 'ไม่พบข้อมูล',
-                    info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
-                    infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
-                    infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
-                    lengthMenu: 'แสดง _MENU_ รายการ',
-                    loadingRecords: 'กำลังโหลด...',
-                    processing: 'กำลังประมวลผล...',
-                    search: 'ค้นหา:',
-                    zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
-                    paginate: {
-                        first: 'หน้าแรก',
-                        last: 'หน้าสุดท้าย',
-                        next: 'ถัดไป',
-                        previous: 'ก่อนหน้า'
-                    }
-                },
-                initComplete: function () {
-                    const api = this.api();
-                    const wrapper = tableElement.closest('.dataTables_wrapper');
-
-                    wrapper?.setAttribute('data-permission-keep', '');
-                    wrapper?.querySelectorAll('input, select, button, a').forEach(function (element) {
-                        element.setAttribute('data-permission-keep', '');
-                    });
-
-                    window.requestAnimationFrame(function () {
-                        api.columns.adjust().draw(false);
-                    });
-                }
-            });
-
-            function adjustAccidentDataTable() {
-                window.requestAnimationFrame(function () {
-                    accidentDataTable.columns.adjust();
-                });
-            }
-
-            window.setTimeout(adjustAccidentDataTable, 100);
-            window.addEventListener('load', adjustAccidentDataTable, { once: true });
-
-            let resizeTimer = null;
-            window.addEventListener('resize', function () {
-                window.clearTimeout(resizeTimer);
-                resizeTimer = window.setTimeout(adjustAccidentDataTable, 120);
-            });
-
-            const tableCard = tableElement.closest('.acc-table-card');
-            if (tableCard && window.ResizeObserver) {
-                const observer = new ResizeObserver(function () {
-                    adjustAccidentDataTable();
-                });
-                observer.observe(tableCard);
-            }
-        }
-
-        /* รอ Layout และสคริปต์ส่วนกลางทำงานก่อน แล้ว normalize ตารางหนึ่งครั้ง */
-        window.setTimeout(setupAccidentDataTable, 60);
     });
 
     function confirmDelete(id) {

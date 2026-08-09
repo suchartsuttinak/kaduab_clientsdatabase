@@ -5,31 +5,31 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:admin,executive,social_worker'])
     ->prefix('refer')
-    ->group(function () {
-
-        // ✅ ตารางการจำหน่ายรวม
+    ->group(function (): void {
         Route::get('/refers/all', [ReferController::class, 'allRefers'])
             ->name('refers.all');
 
-        // ✅ รายงานราย client
         Route::get('/refers/report/{client_id}', [ReferController::class, 'report'])
+            ->whereNumber('client_id')
             ->name('refers.report');
 
-        // ✅ หน้า refer ราย client
         Route::get('/refers/{client_id}', [ReferController::class, 'index'])
+            ->whereNumber('client_id')
             ->name('refers.index');
 
-        // ✅ บันทึกการจำหน่าย
         Route::post('/refers/store', [ReferController::class, 'store'])
             ->name('refers.store');
 
-        // ✅ อนุมัติการจำหน่าย
-        // คงสิทธิ์เดิมใน Controller: admin / executive เท่านั้น
         Route::put('/refers/{id}/approve', [ReferController::class, 'approve'])
+            ->whereNumber('id')
             ->name('refers.approve');
 
-        // ✅ คืนสถานะ
-        // คงสิทธิ์เดิมใน Controller: admin / executive เท่านั้น
         Route::put('/refers/{id}/restore', [ReferController::class, 'restore'])
+            ->whereNumber('id')
             ->name('refers.restore');
+
+        // รายงานการประชุมเป็น Private Storage
+        Route::get('/refers/{id}/meeting-report', [ReferController::class, 'viewMeetingReport'])
+            ->whereNumber('id')
+            ->name('refers.meeting_report.view');
     });

@@ -1,0 +1,42 @@
+Production preparation commands (Windows / XAMPP)
+=================================================
+
+IMPORTANT
+- Backup project + database BEFORE running updates.
+- Do NOT use php artisan key:generate on an existing production system unless intentionally rotating the key with a migration plan.
+
+1) Update PHP dependencies
+--------------------------
+composer update laravel/framework --with-all-dependencies
+composer audit
+composer install --no-dev --optimize-autoloader
+
+2) Update frontend dependencies + build
+---------------------------------------
+npm install
+npm audit
+npm run build
+
+3) Basic syntax / readiness
+---------------------------
+php scripts\production_preflight.php
+php artisan optimize:clear
+php artisan route:list
+php artisan migrate --pretend
+
+4) After production .env and backup are verified
+------------------------------------------------
+php artisan migrate --force
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php scripts\production_preflight.php
+
+Expected before Go-Live:
+- production_preflight: 0 FAIL
+- public\build\manifest.json exists
+- public\hot does NOT exist
+- APP_ENV=production
+- APP_DEBUG=false
+- APP_URL=https://real-domain

@@ -15,6 +15,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/client', [ClientController::class, 'clientShow'])
         ->name('client.show');
 
+    // รูปผู้รับบริการเป็นข้อมูลส่วนบุคคล: ให้ผ่าน authorization ก่อนทุกครั้ง
+    Route::get('/client/{id}/image', [ClientController::class, 'ClientImage'])
+        ->whereNumber('id')
+        ->name('client.image');
+
     // =====================================================
     // ทะเบียนกลางเคสทั้งหมด
     // admin เห็นทุกโปรเจ็ค
@@ -81,7 +86,7 @@ Route::middleware('auth')->group(function () {
             // =====================================================
             Route::middleware('role:admin')->group(function () {
 
-                Route::get('/client/delete/{id}', [ClientController::class, 'ClientDelete'])
+                Route::delete('/client/delete/{id}', [ClientController::class, 'ClientDelete'])
                     ->name('client.delete');
             });
         });

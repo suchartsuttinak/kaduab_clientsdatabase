@@ -724,13 +724,7 @@
                                 $photoUrl = null;
 
                                 if (!empty($child->photo)) {
-                                    if (str_starts_with($child->photo, 'upload/')) {
-                                        $photoUrl = asset($child->photo);
-                                    } elseif (str_starts_with($child->photo, 'storage/')) {
-                                        $photoUrl = asset($child->photo);
-                                    } else {
-                                        $photoUrl = asset('storage/' . $child->photo);
-                                    }
+                                    $photoUrl = route('scholarship.children.photo', $child);
                                 }
 
                                 $rowAmount = (float) $child->report_assistance_amount;

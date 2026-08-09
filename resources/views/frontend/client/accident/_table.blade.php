@@ -30,7 +30,7 @@
 
         <div class="acc-table-wrap">
             <table id="datatable-accident"
-                   class="table table-hover align-middle acc-table {{ $hasDoctorVisit ? 'acc-table-expanded' : 'acc-table-compact' }}">
+                   class="table table-hover align-middle acc-table w-100 {{ $hasDoctorVisit ? 'acc-table-expanded' : 'acc-table-compact' }}">
 
                 <thead>
                     <tr>
@@ -141,7 +141,8 @@
                                     <a href="{{ route('accident.edit', $row->id) }}"
                                        class="btn btn-warning acc-icon-btn"
                                        title="แก้ไขข้อมูล"
-                                       aria-label="แก้ไขข้อมูลวันที่ {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}">
+                                       aria-label="แก้ไขข้อมูลวันที่ {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}"
+                                       data-permission-action="update">
                                         <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                     </a>
 
@@ -149,14 +150,16 @@
                                             class="btn btn-danger acc-icon-btn"
                                             onclick="confirmDelete({{ $row->id }})"
                                             title="ลบข้อมูล"
-                                            aria-label="ลบข้อมูลวันที่ {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}">
+                                            aria-label="ลบข้อมูลวันที่ {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}"
+                                            data-permission-action="delete">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
 
                                     <a href="{{ route('accident.report', $row->id) }}"
                                        class="btn btn-info text-white acc-icon-btn"
                                        title="พิมพ์รายงาน"
-                                       aria-label="พิมพ์รายงานวันที่ {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}">
+                                       aria-label="พิมพ์รายงานวันที่ {{ \App\Helpers\ThaiDateHelper::formatThaiShort($row->incident_date) }}"
+                                       data-permission-action="print">
                                         <i class="bi bi-printer" aria-hidden="true"></i>
                                     </a>
                                 </div>

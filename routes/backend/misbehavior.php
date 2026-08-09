@@ -10,6 +10,6 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/misbehavior', [MisbehaviorController::class, 'StoreMisbehavior'])->name('misbehavior.store');
     Route::get('/edit/misbehavior/{id}', [MisbehaviorController::class, 'EditMisbehavior'])->name('misbehavior.edit');
     Route::post('/update/misbehavior', [MisbehaviorController::class, 'UpdateMisbehavior'])->name('misbehavior.update');
-    Route::get('/delete/misbehavior/{id}', [MisbehaviorController::class, 'DeleteMisbehavior'])->name('misbehavior.delete');
+    Route::delete('/delete/misbehavior/{id}', [MisbehaviorController::class, 'DeleteMisbehavior'])->name('misbehavior.delete');
 
 });

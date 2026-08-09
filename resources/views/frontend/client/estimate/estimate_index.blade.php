@@ -706,14 +706,8 @@
                                         <td>
                                             <div class="d-flex flex-wrap align-items-start gap-2">
                                                 @forelse($item->pictures as $pic)
-                                                    @php
-                                                        $imageUrl = str_starts_with($pic->path, 'upload/') || str_starts_with($pic->path, 'storage/')
-                                                            ? asset($pic->path)
-                                                            : asset('storage/' . ltrim($pic->path, '/'));
-                                                    @endphp
-
                                                     <div class="estimate-photo-thumb">
-                                                        <img src="{{ $imageUrl }}"
+                                                        <img src="{{ route('estimate.image.view', $pic->id) }}"
                                                             class="img-thumbnail estimate-thumb-img" alt="รูปภาพประกอบการประเมิน" loading="lazy" decoding="async">
                                                     </div>
 

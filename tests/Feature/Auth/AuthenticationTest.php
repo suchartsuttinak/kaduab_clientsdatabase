@@ -17,7 +17,10 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+
+    // ผู้ใช้จาก factory ไม่มีสิทธิ์ Dashboard ตามค่าเริ่มต้นของระบบ
+    // จึงต้องถูกส่งไปหน้ารายการผู้รับบริการแทน
+    $response->assertRedirect(route('client.show', absolute: false));
 });
 
 test('users can not authenticate with invalid password', function () {

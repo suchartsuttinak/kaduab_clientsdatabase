@@ -218,10 +218,13 @@
 
                         <div class="dropdown-divider"></div>
 
-                        <a href="{{ route('admin.logout') }}" class="dropdown-item notify-item">
-                            <i class="mdi mdi-location-exit fs-16 align-middle"></i>
-                            <span>ออกจากระบบ</span>
-                        </a>
+                        <form method="POST" action="{{ route('admin.logout') }}" class="m-0">
+                            @csrf
+                            <button type="submit" class="dropdown-item notify-item border-0 bg-transparent w-100 text-start">
+                                <i class="mdi mdi-location-exit fs-16 align-middle"></i>
+                                <span>ออกจากระบบ</span>
+                            </button>
+                        </form>
                     </div>
                 </li>
 

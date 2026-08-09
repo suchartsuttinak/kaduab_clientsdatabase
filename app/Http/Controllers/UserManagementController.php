@@ -6,11 +6,13 @@ use App\Models\House;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserFormPermission;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 class UserManagementController extends Controller
@@ -112,6 +114,14 @@ class UserManagementController extends Controller
         $this->guardDelegatedRole($validated['role']);
         $formPermissionsEnabled = $request->boolean('form_permissions_enabled');
 
+        /*
+         * Snapshot เฉพาะโครงสร้างสิทธิ์ก่อนแก้ไข
+         * ใช้เปรียบเทียบในหน่วยความจำเท่านั้น
+         * ไม่บันทึกค่ารายละเอียดลง Audit Log
+         */
+        $accessBefore = $this->accessSnapshot($user);
+        $passwordWasReset = !empty($validated['password']);
+
         $this->protectLastAdmin(
             $user,
             $validated['role'],
@@ -149,6 +159,62 @@ class UserManagementController extends Controller
             }
         });
 
+        /*
+         * โหลดค่าจริงหลัง Transaction เพื่อให้ Audit สะท้อนข้อมูลที่บันทึกสำเร็จแล้ว
+         */
+        $user->refresh();
+        $user->load('formPermissions');
+
+        $accessAfter = $this->accessSnapshot($user);
+        $accessChangedFields = $this->detectAccessChangedFields(
+            $accessBefore,
+            $accessAfter
+        );
+
+        /*
+         * บันทึกเฉพาะ "ชนิดของสิ่งที่เปลี่ยน"
+         * ไม่เก็บ role/status/project/house/permission value จริงลง Audit Log
+         */
+        if ($accessChangedFields !== []) {
+            AuditLogger::log(
+                action: 'PERMISSION_CHANGE',
+                module: 'system_users',
+                subject: $user,
+                changedFields: $accessChangedFields,
+                result: 'success',
+                statusCode: 302,
+                metadata: [
+                    'security_event' => 'user_access_changed',
+                ],
+                userId: auth()->id() !== null
+                    ? (int) auth()->id()
+                    : null
+            );
+        }
+
+        /*
+         * Admin รีเซ็ตรหัสผ่านของผู้ใช้อื่น:
+         * เก็บเพียงว่า credential ถูกรีเซ็ต ไม่เก็บค่ารหัสผ่าน
+         */
+        if ($passwordWasReset) {
+            AuditLogger::log(
+                action: 'UPDATE',
+                module: 'account_security',
+                subject: $user,
+                changedFields: [
+                    'credential',
+                ],
+                result: 'success',
+                statusCode: 302,
+                metadata: [
+                    'security_event' => 'admin_password_reset',
+                ],
+                userId: auth()->id() !== null
+                    ? (int) auth()->id()
+                    : null
+            );
+        }
+
         return redirect()
             ->route('users.index')
             ->with('success', 'อัปเดตข้อมูลผู้ใช้งานและสิทธิ์เรียบร้อยแล้ว');
@@ -163,8 +229,24 @@ class UserManagementController extends Controller
             return back()->with('error', 'ไม่สามารถลบบัญชีของตนเองได้');
         }
 
-        if ($user->isAdmin() && User::where('role', User::ROLE_ADMIN)->count() <= 1) {
+        if (
+            $user->isAdmin()
+            && (string) $user->status === '1'
+            && User::where('role', User::ROLE_ADMIN)->where('status', '1')->count() <= 1
+        ) {
             return back()->with('error', 'ไม่สามารถลบผู้ดูแลระบบคนสุดท้ายได้');
+        }
+
+        /*
+         * ตาราง operations ผูก user_id แบบ cascadeOnDelete ใน schema เดิม
+         * การลบบัญชีที่เคยมีบันทึกปฏิบัติงานจึงทำให้ประวัติการทำงานหายตามไปด้วย
+         * Production จะป้องกันการลบกรณีนี้ และให้ปิดสถานะบัญชีแทน
+         */
+        if ($user->operations()->exists()) {
+            return back()->with(
+                'error',
+                'ไม่สามารถลบบัญชีนี้ได้ เนื่องจากมีประวัติการปฏิบัติงาน กรุณาปิดสถานะบัญชีแทนเพื่อรักษาประวัติข้อมูล'
+            );
         }
 
         DB::transaction(function () use ($user) {
@@ -199,14 +281,35 @@ class UserManagementController extends Controller
         $user->status = (string) $user->status === '1' ? '0' : '1';
         $user->save();
 
+        /*
+         * การเปิด/ปิดบัญชีเป็นเหตุการณ์ด้านสิทธิ์ที่ต้องตรวจสอบย้อนหลังได้
+         * เก็บเฉพาะชื่อ field ไม่เก็บค่าเดิม/ค่าใหม่
+         */
+        AuditLogger::log(
+            action: 'PERMISSION_CHANGE',
+            module: 'system_users',
+            subject: $user,
+            changedFields: [
+                'account_status',
+            ],
+            result: 'success',
+            statusCode: 302,
+            metadata: [
+                'security_event' => 'user_status_changed',
+            ],
+            userId: auth()->id() !== null
+                ? (int) auth()->id()
+                : null
+        );
+
         return back()->with('success', 'อัปเดตสถานะผู้ใช้งานเรียบร้อยแล้ว');
     }
 
     private function validateUser(Request $request, ?User $user = null): array
     {
         $passwordRules = $user
-            ? ['nullable', 'confirmed', 'min:8']
-            : ['required', 'confirmed', 'min:8'];
+            ? ['nullable', 'confirmed', Password::defaults()]
+            : ['required', 'confirmed', Password::defaults()];
 
         $emailRule = Rule::unique('users', 'email');
 
@@ -245,7 +348,9 @@ class UserManagementController extends Controller
             'email.email' => 'รูปแบบอีเมลไม่ถูกต้อง',
             'email.unique' => 'อีเมลนี้ถูกใช้งานแล้ว',
             'password.required' => 'กรุณากรอกรหัสผ่าน',
-            'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
+            'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 10 ตัวอักษร',
+            'password.letters' => 'รหัสผ่านต้องมีตัวอักษรอย่างน้อย 1 ตัว',
+            'password.numbers' => 'รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว',
             'password.confirmed' => 'ยืนยันรหัสผ่านไม่ตรงกัน',
             'role.required' => 'กรุณาเลือกบทบาทผู้ใช้งาน',
             'role.in' => 'บทบาทผู้ใช้งานไม่ถูกต้อง',
@@ -409,6 +514,94 @@ class UserManagementController extends Controller
         }
     }
 
+    /**
+     * Snapshot โครงสร้างสิทธิ์ของผู้ใช้งาน
+     *
+     * ข้อมูลชุดนี้ใช้เปรียบเทียบเฉพาะในหน่วยความจำ
+     * และจะไม่ถูกส่งเป็น value เข้า Audit Log
+     */
+    private function accessSnapshot(User $user): array
+    {
+        $user->loadMissing('formPermissions');
+
+        $houseIds = $user->houses()
+            ->pluck('houses.id')
+            ->map(static fn ($id): int => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+
+        $permissions = $user->formPermissions
+            ->map(static function (UserFormPermission $permission): array {
+                return [
+                    'permission_key' => (string) $permission->permission_key,
+                    'can_view' => (bool) $permission->can_view,
+                    'can_create' => (bool) $permission->can_create,
+                    'can_update' => (bool) $permission->can_update,
+                    'can_delete' => (bool) $permission->can_delete,
+                    'can_print' => (bool) $permission->can_print,
+                ];
+            })
+            ->sortBy('permission_key')
+            ->values()
+            ->all();
+
+        return [
+            'role' => (string) $user->role,
+            'status' => (string) $user->status,
+            'project_id' => $user->project_id !== null
+                ? (int) $user->project_id
+                : null,
+            'house_ids' => $houseIds,
+            'form_permissions_enabled' => (bool) $user->form_permissions_enabled,
+            'permissions' => $permissions,
+        ];
+    }
+
+    /**
+     * คืนเฉพาะชื่อประเภทของสิทธิ์ที่เปลี่ยน
+     *
+     * ห้ามคืนค่าเดิม/ค่าใหม่ เพื่อไม่ให้ Audit Log เก็บรายละเอียดเกินจำเป็น
+     *
+     * @return list<string>
+     */
+    private function detectAccessChangedFields(
+        array $before,
+        array $after
+    ): array {
+        $changed = [];
+
+        if (($before['role'] ?? null) !== ($after['role'] ?? null)) {
+            $changed[] = 'role';
+        }
+
+        if (($before['status'] ?? null) !== ($after['status'] ?? null)) {
+            $changed[] = 'account_status';
+        }
+
+        if (($before['project_id'] ?? null) !== ($after['project_id'] ?? null)) {
+            $changed[] = 'project_assignment';
+        }
+
+        if (($before['house_ids'] ?? []) !== ($after['house_ids'] ?? [])) {
+            $changed[] = 'house_assignments';
+        }
+
+        if (
+            ($before['form_permissions_enabled'] ?? false)
+            !==
+            ($after['form_permissions_enabled'] ?? false)
+        ) {
+            $changed[] = 'form_permission_mode';
+        }
+
+        if (($before['permissions'] ?? []) !== ($after['permissions'] ?? [])) {
+            $changed[] = 'form_permissions';
+        }
+
+        return $changed;
+    }
+
     private function storePhoto(Request $request, ?string $currentPhoto = null): ?string
     {
         if (!$request->hasFile('photo')) {
@@ -418,7 +611,10 @@ class UserManagementController extends Controller
         $directory = public_path('upload/user_images');
         File::ensureDirectoryExists($directory);
 
-        $extension = strtolower($request->file('photo')->getClientOriginalExtension());
+        $extension = strtolower((string) $request->file('photo')->extension());
+        $extension = in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)
+            ? $extension
+            : 'jpg';
         $photoName = 'user_' . now()->format('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
 
         $request->file('photo')->move($directory, $photoName);
@@ -433,7 +629,7 @@ class UserManagementController extends Controller
             return;
         }
 
-        $path = public_path('upload/user_images/' . $photo);
+        $path = public_path('upload/user_images/' . basename($photo));
 
         if (File::exists($path)) {
             File::delete($path);

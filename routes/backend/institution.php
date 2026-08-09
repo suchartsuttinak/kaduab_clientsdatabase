@@ -10,5 +10,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/institution', [InstitutionController::class, 'InstitutionStore'])->name('institution.store');
     Route::get('/edit/institution/{id}', [InstitutionController::class, 'EditInstitution'])->name('institution.edit');
     Route::post('/update/institution', [InstitutionController::class, 'UpdateInstitution'])->name('institution.update');
-    Route::get('/delete/institution/{id}', [InstitutionController::class, 'DeleteInstitution'])->name('institution.delete');
+    Route::delete('/delete/institution/{id}', [InstitutionController::class, 'DeleteInstitution'])->name('institution.delete');
 });

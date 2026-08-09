@@ -18,7 +18,6 @@ use Throwable;
 class ClientFileController extends Controller
 {
     private const PRIVATE_DISK = 'local';
-    private const LEGACY_DISK = 'public';
     private const MAX_FILE_SIZE_KB = 20480;
 
     private const FILE_TYPES = [
@@ -287,7 +286,7 @@ class ClientFileController extends Controller
             return null;
         }
 
-        foreach ([self::PRIVATE_DISK, self::LEGACY_DISK] as $disk) {
+        foreach ([self::PRIVATE_DISK] as $disk) {
             if (Storage::disk($disk)->exists($path)) {
                 return [
                     'disk' => $disk,

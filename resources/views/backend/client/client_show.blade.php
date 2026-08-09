@@ -228,7 +228,7 @@
                                         <td>{{ ($clients->firstItem() ?? 1) + $key }}</td>
                                         <td>
                                             <a href="{{ route('admin.index', $client->id) }}" title="ดูข้อมูล" class="client-link-image">
-                                                <img src="{{ !empty($client->image) ? asset('upload/client_images/' . $client->image) : asset('upload/no_image.jpg') }}"
+                                                <img src="{{ !empty($client->image) ? route('client.image', $client->id) : asset('upload/no_image.jpg') }}"
                                                      alt="รูปผู้รับบริการ {{ $client->full_name }}" class="client-avatar" loading="lazy" decoding="async"
                                                      onerror="this.onerror=null;this.src='{{ asset('upload/no_image.jpg') }}';">
                                             </a>
@@ -529,7 +529,33 @@ document.addEventListener('DOMContentLoaded', function () {
             focusCancel: true,
             allowOutsideClick: false
         }).then(function (result) {
-            if (result.isConfirmed) window.location.href = deleteUrl;
+            if (!result.isConfirmed) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                Swal.fire('ไม่สามารถดำเนินการได้', 'ไม่พบ CSRF token กรุณารีเฟรชหน้าแล้วลองใหม่อีกครั้ง', 'error');
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = deleteUrl;
+            form.style.display = 'none';
+
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = '_token';
+            csrf.value = csrfToken;
+
+            const method = document.createElement('input');
+            method.type = 'hidden';
+            method.name = '_method';
+            method.value = 'DELETE';
+
+            form.appendChild(csrf);
+            form.appendChild(method);
+            document.body.appendChild(form);
+            form.submit();
         });
     });
 

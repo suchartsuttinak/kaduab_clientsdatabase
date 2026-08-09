@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -23,7 +23,7 @@ return new class extends Migration
                     'pending',
                     'approved',
                     'rejected',
-                    'cancelled'
+                    'cancelled',
                 ])->default('pending')->after('meeting_report_file');
             }
 
@@ -40,11 +40,18 @@ return new class extends Migration
             }
         });
 
-        // เผื่อมี approve_status อยู่แล้ว แต่ยังไม่มีค่า cancelled
-        if (Schema::hasColumn('refers', 'approve_status')) {
+        /*
+         * MySQL/MariaDB only: extend an existing ENUM definition.
+         * SQLite does not support ALTER TABLE ... MODIFY, and a freshly
+         * created SQLite test column above already includes "cancelled".
+         */
+        if (
+            Schema::hasColumn('refers', 'approve_status')
+            && DB::connection()->getDriverName() !== 'sqlite'
+        ) {
             DB::statement("
-                ALTER TABLE refers 
-                MODIFY approve_status ENUM('pending','approved','rejected','cancelled') 
+                ALTER TABLE refers
+                MODIFY approve_status ENUM('pending','approved','rejected','cancelled')
                 NOT NULL DEFAULT 'pending'
             ");
         }

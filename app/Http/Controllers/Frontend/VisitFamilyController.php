@@ -26,21 +26,18 @@ class VisitFamilyController extends Controller
 {
     private const MAX_IMAGES_PER_REQUEST = 10;
     private const MAX_IMAGE_SIZE_KB = 10240;
+    private const PRIVATE_DIRECTORY = 'visit_images';
 
     /**
-     * บันทึกและลดขนาดรูปภาพให้เหมาะกับ Shared Hosting
+     * บันทึกและลดขนาดรูปภาพลง Private Storage
      */
     protected function saveVisitImage(UploadedFile $file, bool $cover = false): array
     {
-        $destinationPath = public_path('upload/visit_images');
-
-        if (!File::isDirectory($destinationPath)) {
-            File::makeDirectory($destinationPath, 0755, true, true);
-        }
-
         $filename = Str::uuid()->toString() . '.jpg';
-        $relativePath = 'upload/visit_images/' . $filename;
-        $absolutePath = public_path($relativePath);
+        $relativePath = self::PRIVATE_DIRECTORY . '/' . $filename;
+        $absolutePath = storage_path('app/private/' . $relativePath);
+
+        File::ensureDirectoryExists(dirname($absolutePath), 0755, true);
 
         $manager = new ImageManager(new Driver());
         $image = $manager->read($file->getRealPath())->orient();
@@ -65,9 +62,16 @@ class VisitFamilyController extends Controller
     }
 
     /**
-     * คืน absolute path เฉพาะตำแหน่งที่ระบบอนุญาต
+     * แปลง path เดิมและ path ใหม่ให้ชี้เข้า Private Storage เท่านั้น
+     *
+     * รองรับข้อมูลเดิม:
+     * - upload/visit_images/{file}
+     * - storage/visit_images/{file}
+     *
+     * รูปใหม่จะเก็บเป็น:
+     * - visit_images/{file}
      */
-    protected function resolveVisitImagePath(?string $path): ?string
+    protected function normalizeVisitImagePrivatePath(?string $path): ?string
     {
         if (!$path) {
             return null;
@@ -83,51 +87,100 @@ class VisitFamilyController extends Controller
             return null;
         }
 
-        if (Str::startsWith($normalized, 'upload/visit_images/')) {
-            return public_path($normalized);
+        $prefixes = [
+            'upload/visit_images/',
+            'storage/visit_images/',
+            'visit_images/',
+        ];
+
+        foreach ($prefixes as $prefix) {
+            if (!Str::startsWith($normalized, $prefix)) {
+                continue;
+            }
+
+            $relative = ltrim(substr($normalized, strlen($prefix)), '/');
+
+            if (
+                $relative === ''
+                || str_contains($relative, '../')
+                || str_contains($relative, "\0")
+            ) {
+                return null;
+            }
+
+            return self::PRIVATE_DIRECTORY . '/' . $relative;
         }
 
-        if (Str::startsWith($normalized, 'storage/')) {
-            return public_path($normalized);
+        return null;
+    }
+
+    /**
+     * คืน absolute path จาก Private Storage เท่านั้น
+     */
+    protected function resolveVisitImagePath(?string $path): ?string
+    {
+        $privatePath = $this->normalizeVisitImagePrivatePath($path);
+
+        if (!$privatePath) {
+            return null;
         }
 
-        // รองรับข้อมูลเก่าที่เก็บ path ใน public disk โดยไม่มีคำว่า storage/
-        return public_path('storage/' . $normalized);
+        $absolutePath = storage_path('app/private/' . $privatePath);
+
+        return File::isFile($absolutePath) ? $absolutePath : null;
     }
 
     protected function deleteVisitImage(?string $path): void
     {
-        $fullPath = $this->resolveVisitImagePath($path);
+        $privatePath = $this->normalizeVisitImagePrivatePath($path);
 
-        if ($fullPath && File::isFile($fullPath)) {
-            File::delete($fullPath);
+        if (!$privatePath) {
+            return;
+        }
+
+        $absolutePath = storage_path('app/private/' . $privatePath);
+
+        if (File::isFile($absolutePath)) {
+            File::delete($absolutePath);
         }
     }
 
-    protected function visitImageUrl(?string $path): ?string
+    /**
+     * ส่งรูปผ่าน Laravel หลังตรวจทั้งสิทธิ์รายฟอร์มและขอบเขตผู้รับบริการ
+     */
+    public function viewImage($id)
     {
-        if (!$path) {
-            return null;
+        $user = auth()->user();
+
+        if (!$user || !$user->hasFormPermission('registration_family_visit', 'view')) {
+            abort(403);
         }
 
-        $normalized = ltrim(str_replace('\\', '/', trim($path)), '/');
+        $image = Image::whereKey($id)
+            ->whereHas('visitFamily.client', function ($query) use ($user) {
+                $query->forUser($user);
+            })
+            ->firstOrFail();
 
-        if (
-            $normalized === ''
-            || str_contains($normalized, '../')
-            || str_contains($normalized, "\0")
-        ) {
-            return null;
+        $absolutePath = $this->resolveVisitImagePath($image->file_path);
+
+        if (!$absolutePath || !File::isFile($absolutePath)) {
+            abort(404);
         }
 
-        if (
-            Str::startsWith($normalized, 'upload/')
-            || Str::startsWith($normalized, 'storage/')
-        ) {
-            return asset($normalized);
+        $mime = File::mimeType($absolutePath);
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+        if (!is_string($mime) || !in_array(strtolower($mime), $allowedMimeTypes, true)) {
+            abort(404);
         }
 
-        return asset('storage/' . $normalized);
+        return response()->file($absolutePath, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function AddvisitFamily($client_id)
@@ -430,7 +483,7 @@ class VisitFamilyController extends Controller
         return response()->json([
             'success' => true,
             'id' => $image->id,
-            'url' => $this->visitImageUrl($saved['path']),
+            'url' => route('vitsitFamily.image.view', $image->id),
         ]);
     }
 

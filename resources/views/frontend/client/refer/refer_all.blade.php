@@ -737,7 +737,7 @@
                                 </td>
                                 <td>
                                     @if(!empty($item->meeting_report_file))
-                                        <a href="{{ asset('uploads/refer_meeting_reports/' . $item->meeting_report_file) }}"
+                                        <a href="{{ route('refers.meeting_report.view', $item->id) }}"
                                            target="_blank"
                                            rel="noopener noreferrer"
                                            class="refer-all-link">

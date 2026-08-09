@@ -9,5 +9,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/help_type', [HelpTypeController::class, 'StoreHelpType'])->name('help_type.store');
     Route::get('/edit/help_type/{id}', [HelpTypeController::class, 'EditHelpType'])->name('help_type.edit');
     Route::post('/update/help_type', [HelpTypeController::class, 'UpdateHelpType'])->name('help_type.update');
-    Route::get('/delete/help_type/{id}', [HelpTypeController::class, 'DeleteHelpType'])->name('help_type.delete');
+    Route::delete('/delete/help_type/{id}', [HelpTypeController::class, 'DeleteHelpType'])->name('help_type.delete');
 });

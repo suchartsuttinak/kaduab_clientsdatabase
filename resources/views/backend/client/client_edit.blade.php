@@ -566,7 +566,7 @@
                                         <label class="form-label d-block text-center mb-2">ภาพถ่าย</label>
 
                                         <img id="showImage"
-                                            src="{{ !empty($client->image) ? asset('upload/client_images/' . $client->image) : asset('upload/no_image.jpg') }}"
+                                            src="{{ !empty($client->image) ? route('client.image', $client->id) : asset('upload/no_image.jpg') }}"
                                             alt="image profile" class="photo-preview d-block mx-auto">
 
                                         <input type="file" name="image" id="image" class="d-none"

@@ -9,5 +9,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/education', [EducationController::class, 'StoreEducation'])->name('education.store');
     Route::get('/edit/education/{id}', [EducationController::class, 'EditEducation'])->name('education.edit');
     Route::post('/update/education', [EducationController::class, 'UpdateEducation'])->name('education.update');
-    Route::get('/delete/education/{id}', [EducationController::class, 'DeleteEducation'])->name('education.delete');
+    Route::delete('/delete/education/{id}', [EducationController::class, 'DeleteEducation'])->name('education.delete');
 });

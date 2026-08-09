@@ -249,7 +249,7 @@
 
                             <td class="text-center">
                                 @if(!empty($refer->meeting_report_file))
-                                    <a href="{{ asset('uploads/refer_meeting_reports/' . $refer->meeting_report_file) }}"
+                                    <a href="{{ route('refers.meeting_report.view', $refer->id) }}"
                                        target="_blank"
                                        rel="noopener noreferrer"
                                        class="btn btn-outline-primary rf-btn-sm">

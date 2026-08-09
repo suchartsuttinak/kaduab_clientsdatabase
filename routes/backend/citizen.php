@@ -10,5 +10,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/citizen', [CitizenController::class, 'StoreCitizen'])->name('citizen.store');
     Route::get('/edit/citizen/{id}', [CitizenController::class, 'EditCitizen'])->name('citizen.edit');
     Route::post('/update/citizen', [CitizenController::class, 'UpdateCitizen'])->name('citizen.update');
-    Route::get('/delete/citizen/{id}', [CitizenController::class, 'DeleteCitizen'])->name('citizen.delete');
+    Route::delete('/delete/citizen/{id}', [CitizenController::class, 'DeleteCitizen'])->name('citizen.delete');
 });

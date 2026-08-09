@@ -10,24 +10,6 @@
     $birthDate = !empty($client->birth_date) ? Carbon::parse($client->birth_date) : null;
     $age = $birthDate ? $birthDate->age : null;
 
-    $imageUrl = function (?string $path): ?string {
-        if (!$path) {
-            return null;
-        }
-
-        $path = ltrim(str_replace('\\', '/', trim($path)), '/');
-
-        if ($path === '' || str_contains($path, '../')) {
-            return null;
-        }
-
-        if (str_starts_with($path, 'upload/') || str_starts_with($path, 'storage/')) {
-            return asset($path);
-        }
-
-        return asset('storage/' . $path);
-    };
-
     $thaiDate = function ($date) {
         if (!$date) {
             return '-';
@@ -815,19 +797,11 @@
                     @if($imageCount > 0)
                         <div class="visit-report-pictures {{ $imageCount === 1 ? 'is-single' : '' }}">
                             @foreach($visitFamily->images as $index => $img)
-                                @php
-                                    $pictureUrl = $imageUrl($img->file_path ?? null);
-                                @endphp
-
                                 <figure class="visit-report-picture-item">
                                     <div class="visit-report-picture-frame">
                                         <div class="visit-report-picture-image-wrap">
-                                            @if($pictureUrl)
-                                                <img src="{{ $pictureUrl }}"
-                                                     alt="รูปภาพประกอบการเยี่ยมบ้าน {{ $index + 1 }}">
-                                            @else
-                                                <div class="visit-report-empty">ไม่พบไฟล์รูปภาพ</div>
-                                            @endif
+                                            <img src="{{ route('vitsitFamily.image.view', $img->id) }}"
+                                                 alt="รูปภาพประกอบการเยี่ยมบ้าน {{ $index + 1 }}">
                                         </div>
                                         <figcaption class="visit-report-picture-caption">
                                             รูปภาพประกอบ {{ $index + 1 }}

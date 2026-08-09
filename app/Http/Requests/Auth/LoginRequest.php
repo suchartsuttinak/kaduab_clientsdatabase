@@ -39,8 +39,11 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
+        $credentials = $this->only('email', 'password');
+        $credentials['status'] = '1';
+
         if (! Auth::attempt(
-            $this->only('email', 'password'),
+            $credentials,
             $this->boolean('remember')
         )) {
 

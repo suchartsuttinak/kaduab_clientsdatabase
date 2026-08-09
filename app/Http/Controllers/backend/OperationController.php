@@ -14,8 +14,6 @@ class OperationController extends Controller
     {
         $user = auth()->user();
 
-        $this->reorderAllSequences();
-
         $query = Operation::with('user');
 
         if (!$user->isAdmin()) {
@@ -181,8 +179,6 @@ class OperationController extends Controller
    public function dailyReport(Request $request)
     {
         $authUser = auth()->user();
-
-        $this->reorderAllSequences();
 
         $query = Operation::with('user');
 

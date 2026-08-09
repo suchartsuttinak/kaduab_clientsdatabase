@@ -3,11 +3,6 @@
 use App\Http\Controllers\Landing\ScholarshipChildController;
 use Illuminate\Support\Facades\Route;
 
-Route::get(
-    '/scholarship-children/public-report',
-    [ScholarshipChildController::class, 'publicReport']
-)->name('scholarship.children.public_report');
-
 Route::middleware(['auth'])->group(function () {
     Route::get(
         '/scholarship/children',
@@ -18,6 +13,12 @@ Route::middleware(['auth'])->group(function () {
         '/scholarship/children/report',
         [ScholarshipChildController::class, 'report']
     )->name('scholarship.children.report');
+
+
+    Route::get(
+        '/scholarship/children/{child}/photo',
+        [ScholarshipChildController::class, 'viewPhoto']
+    )->name('scholarship.children.photo');
 
     Route::post(
         '/scholarship/children',
@@ -49,6 +50,12 @@ Route::middleware(['auth'])->group(function () {
         '/scholarship/children/{child}/expenses/{expense}',
         [ScholarshipChildController::class, 'updateExpense']
     )->name('scholarship.children.expenses.update');
+
+
+    Route::get(
+        '/scholarship/children/{child}/expenses/{expense}/attachments/{attachment}',
+        [ScholarshipChildController::class, 'viewAttachment']
+    )->name('scholarship.children.attachments.view');
 
     Route::delete(
         '/scholarship/children/{child}/expenses/{expense}',

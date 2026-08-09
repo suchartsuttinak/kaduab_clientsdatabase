@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
 use App\Models\User;
+use App\Services\AuditLogger;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class AdminController extends Controller
 {
@@ -17,88 +22,150 @@ class AdminController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
-    } 
-
-public function AdminProfile(){
-       $id = Auth::user()->id;
-       $profileData = User::find($id);
-        return view('admin.admin_profile', compact('profileData'));
-}
-      
- public function ProfileStore(Request $request){
-        $id = Auth::user()->id;
-        $data = User::find($id);
-
-        $data->name = $request->name;
-        $data->email = $request->email;
-        $data->phone = $request->phone;
-        $data->address = $request->address;
-
-      // รูปเก่า
-      $oldPhotoPath = $data->photo;
-
-      if ($request->hasFile('photo')) {
-          $file = $request->file('photo');
-          $filename = time().'.'.$file->getClientOriginalExtension();
-          $file->move(public_path('upload/user_images'), $filename);
-          $data->photo = $filename;
-
-          if ($oldPhotoPath && $oldPhotoPath !== $filename) {
-            $this->deleteOldImage($oldPhotoPath);
-          }
-      }
-        $data->save();
-
-        $notification = array(
-            'message' => 'บ้นทึกข้อมูลเรียบร้อย',
-            'alert-type' => 'success'
-        );
-
-       return redirect()->back()->with($notification);
     }
-        // ลบรูปเก่าออก
+
+    public function AdminProfile()
+    {
+        $profileData = User::findOrFail(Auth::id());
+
+        return view('admin.admin_profile', compact('profileData'));
+    }
+
+    public function ProfileStore(Request $request)
+    {
+        $user = User::findOrFail(Auth::id());
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'address' => ['nullable', 'string', 'max:2000'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], [
+            'name.required' => 'กรุณากรอกชื่อผู้ใช้งาน',
+            'email.required' => 'กรุณากรอกอีเมล',
+            'email.email' => 'รูปแบบอีเมลไม่ถูกต้อง',
+            'email.unique' => 'อีเมลนี้ถูกใช้งานแล้ว',
+            'photo.image' => 'ไฟล์รูปประจำตัวต้องเป็นรูปภาพ',
+            'photo.mimes' => 'รองรับไฟล์รูปประเภท JPG, JPEG, PNG และ WEBP',
+            'photo.max' => 'รูปประจำตัวต้องมีขนาดไม่เกิน 2 MB',
+        ]);
+
+        $oldPhoto = $user->photo;
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->phone = $validated['phone'] ?? null;
+        $user->address = $validated['address'] ?? null;
+
+        if ($request->hasFile('photo')) {
+            $directory = public_path('upload/user_images');
+            File::ensureDirectoryExists($directory);
+
+            // extension() ใช้ชนิดไฟล์ที่ Laravel ตรวจแล้ว ไม่เชื่อ extension จากชื่อไฟล์ผู้ใช้โดยตรง
+            $extension = strtolower((string) $request->file('photo')->extension());
+            $extension = in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)
+                ? $extension
+                : 'jpg';
+
+            $filename = 'user_' . Str::uuid()->toString() . '.' . $extension;
+            $request->file('photo')->move($directory, $filename);
+            $user->photo = $filename;
+        }
+
+        $user->save();
+
+        if ($request->hasFile('photo') && $oldPhoto && $oldPhoto !== $user->photo) {
+            $this->deleteOldImage($oldPhoto);
+        }
+
+        return redirect()->back()->with([
+            'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว',
+            'alert-type' => 'success',
+        ]);
+    }
+
     private function deleteOldImage(string $oldPhotoPath): void
     {
-        $path = public_path('upload/user_images/' . $oldPhotoPath);
-        if (file_exists($path)) {
-            unlink($path);
+        $filename = basename($oldPhotoPath);
+
+        if ($filename === '' || $filename === '.' || $filename === '..') {
+            return;
+        }
+
+        $path = public_path('upload/user_images/' . $filename);
+
+        if (File::isFile($path)) {
+            File::delete($path);
         }
     }
 
+    public function PasswordUpdate(Request $request)
+    {
+        $user = Auth::user();
 
-   public function PasswordUpdate(Request $request)
-{
-    $user = Auth::user();
+        $request->validate([
+            'old_password' => ['required'],
+            'new_password' => ['required', 'confirmed', Password::defaults()],
+        ], [
+            'old_password.required' => 'กรุณากรอกรหัสผ่านปัจจุบัน',
+            'new_password.required' => 'กรุณากรอกรหัสผ่านใหม่',
+            'new_password.confirmed' => 'การยืนยันรหัสผ่านใหม่ไม่ตรงกัน',
+            'new_password.min' => 'รหัสผ่านใหม่ต้องมีอย่างน้อย 10 ตัวอักษร',
+            'new_password.letters' => 'รหัสผ่านใหม่ต้องมีตัวอักษรอย่างน้อย 1 ตัว',
+            'new_password.numbers' => 'รหัสผ่านใหม่ต้องมีตัวเลขอย่างน้อย 1 ตัว',
+        ]);
 
-    // Validate input
-    $request->validate([
-        'old_password' => 'required',
-        'new_password' => 'required|confirmed'
-    ]);
+        if (!Hash::check($request->old_password, $user->password)) {
+            AuditLogger::log(
+                action: 'UPDATE',
+                module: 'account_security',
+                result: 'failed',
+                statusCode: 302,
+                metadata: [
+                    'security_event' => 'password_change',
+                    'reason' => 'current_password_mismatch',
+                    'channel' => 'admin_profile',
+                ],
+                userId: (int) $user->getAuthIdentifier()
+            );
 
-    // ตรวจสอบรหัสผ่านเก่า
-    if (!Hash::check($request->old_password, $user->password)) {
-       $notification = array(
-        'message' => "Old Password does not Match!",
-        'alert-type' => 'error'
-       );
-       return back()->with($notification);
+            return back()->with([
+                'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง',
+                'alert-type' => 'error',
+            ]);
+        }
+
+        $userId = (int) $user->getAuthIdentifier();
+
+        User::whereKey($userId)->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        AuditLogger::log(
+            action: 'UPDATE',
+            module: 'account_security',
+            result: 'success',
+            statusCode: 302,
+            metadata: [
+                'security_event' => 'password_change',
+                'channel' => 'admin_profile',
+            ],
+            userId: $userId
+        );
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with([
+            'message' => 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว กรุณาเข้าสู่ระบบอีกครั้ง',
+            'alert-type' => 'success',
+        ]);
     }
-
-    // อัปเดตรหัสผ่านใหม่
-     User::whereId($user->id)->update([
-        'password' => Hash::make($request->new_password) 
-    ]);
-
-    // ออกจากระบบเพื่อความปลอดภัย
-    Auth::logout();
-
-     $notification = array(
-        'message' => 'Password Updated Successfully',
-        'alert-type' => 'success'
-    );
-
-    return redirect()->route('login')->with($notification);
-
-}
 }

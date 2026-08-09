@@ -705,15 +705,7 @@
             @foreach($oldImages as $img)
                 <div class="col-6 col-md-4 col-xl-3 mb-3" id="image-{{ $img->id }}">
                     <div class="visit-family-image-card">
-                        @php
-                            $imagePath = ltrim((string) $img->file_path, '/');
-                            $imageUrl = str_starts_with($imagePath, 'upload/')
-                                || str_starts_with($imagePath, 'storage/')
-                                    ? asset($imagePath)
-                                    : asset('storage/' . $imagePath);
-                        @endphp
-
-                        <img src="{{ $imageUrl }}"
+                        <img src="{{ route('vitsitFamily.image.view', $img->id) }}"
                              alt="รูปเยี่ยมบ้าน"
                              loading="lazy"
                              decoding="async">

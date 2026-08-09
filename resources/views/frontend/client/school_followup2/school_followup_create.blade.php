@@ -15,12 +15,9 @@
  $semesterName = $educationRecord->semester_label
     ?? data_get($educationRecord, 'semester.semester_name', 'ไม่พบข้อมูล');
 
-    $profileImage = asset('upload/no_image.jpg');
-    $clientImageFile = !empty($client->image) ? public_path('upload/client_images/' . $client->image) : null;
-
-    if (!empty($client->image) && $clientImageFile && file_exists($clientImageFile)) {
-        $profileImage = asset('upload/client_images/' . $client->image);
-    }
+    $profileImage = !empty($client->image)
+        ? route('client.image', $client->id)
+        : asset('upload/no_image.jpg');
 @endphp
 
 <div class="container-fluid py-4 school-followup-page">

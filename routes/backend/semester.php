@@ -11,5 +11,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/store/semester', [SemesterController::class, 'SemesterStore'])->name('semester.store');
     Route::get('/edit/semester/{id}', [SemesterController::class, 'EditSemester'])->name('semester.edit');
     Route::post('/update/semester', [SemesterController::class, 'UpdateSemester'])->name('semester.update');
-    Route::get('/delete/semester/{id}', [SemesterController::class, 'DeleteSemester'])->name('semester.delete');
+    Route::delete('/delete/semester/{id}', [SemesterController::class, 'DeleteSemester'])->name('semester.delete');
 });
