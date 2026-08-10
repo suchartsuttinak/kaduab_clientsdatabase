@@ -169,7 +169,7 @@ class ClientController extends Controller
      * แสดงรูปผู้รับบริการผ่าน route ที่ตรวจสิทธิ์และ scope ของผู้ใช้
      * แทนการเปิดไฟล์ส่วนบุคคลจาก public URL โดยตรง
      */
-    public function ClientImage($id)
+    public function ClientImage(Request $request, $id)
     {
         $client = $this->findAuthorizedClient($id);
         $safeFilename = !empty($client->image)
@@ -195,12 +195,28 @@ class ClientController extends Controller
         $mime = File::mimeType($path) ?: 'image/jpeg';
         abort_unless(in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true), 404);
 
-        return response()->file($path, [
+        $lastModified = File::lastModified($path);
+        $fileSize = File::size($path);
+        $etag = sha1(basename($path) . '|' . $lastModified . '|' . $fileSize);
+
+        $response = response()->file($path, [
             'Content-Type' => $mime,
-            'Cache-Control' => 'private, no-store, max-age=0',
-            'Pragma' => 'no-cache',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+
+        // รูปยังเป็น private และผ่าน authorization เช่นเดิม
+        // อนุญาต Browser cache ระยะสั้นเพื่อลดการโหลดรูปซ้ำทุกครั้งที่ refresh / live search
+        $response->setPrivate();
+        $response->setMaxAge(60);
+        $response->headers->addCacheControlDirective('must-revalidate');
+        $response->setEtag($etag);
+        $response->setLastModified(new \DateTimeImmutable('@' . $lastModified));
+
+        // หลัง cache หมดอายุ Browser ส่ง ETag/Last-Modified กลับมา
+        // Laravel จะตอบ 304 เมื่อรูปยังไม่เปลี่ยน ลดทั้ง bandwidth และเวลาถอดรหัสรูป
+        $response->isNotModified($request);
+
+        return $response;
     }
 
     /**

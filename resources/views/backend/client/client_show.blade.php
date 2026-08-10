@@ -2,7 +2,7 @@
 @section('admin')
 
 @php
-    /*
+    /**
      * สิทธิ์สำหรับปุ่มในคอลัมน์ “การจัดการ”
      * ผู้ใช้อ่านอย่างเดียวต้องยังเปิดหน้า client.edit เพื่อดูข้อมูลได้
      * แต่ปุ่มจะถูกแสดงเป็น “ดูทะเบียนประวัติ” แทนปุ่มแก้ไข
@@ -227,9 +227,19 @@
                                     <tr>
                                         <td>{{ ($clients->firstItem() ?? 1) + $key }}</td>
                                         <td>
+                                            @php
+                                                // แถวบนที่มองเห็นทันทีให้โหลดก่อน ลดอาการรูปทยอยขึ้นทีละภาพ
+                                                $isPriorityImage = $key < 8;
+                                            @endphp
                                             <a href="{{ route('admin.index', $client->id) }}" title="ดูข้อมูล" class="client-link-image">
                                                 <img src="{{ !empty($client->image) ? route('client.image', $client->id) : asset('upload/no_image.jpg') }}"
-                                                     alt="รูปผู้รับบริการ {{ $client->full_name }}" class="client-avatar" loading="lazy" decoding="async"
+                                                     alt="รูปผู้รับบริการ {{ $client->full_name }}"
+                                                     class="client-avatar"
+                                                     width="42"
+                                                     height="42"
+                                                     loading="{{ $isPriorityImage ? 'eager' : 'lazy' }}"
+                                                     decoding="async"
+                                                     @if($isPriorityImage) fetchpriority="high" @endif
                                                      onerror="this.onerror=null;this.src='{{ asset('upload/no_image.jpg') }}';">
                                             </a>
                                         </td>
