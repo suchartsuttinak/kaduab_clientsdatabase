@@ -339,27 +339,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    function adjustReferTable() {
-        if (!tableEl || !window.jQuery || !jQuery.fn.DataTable) return;
-        if (!jQuery.fn.DataTable.isDataTable(tableEl)) return;
-
-        const dataTable = jQuery(tableEl).DataTable();
-        dataTable.columns.adjust();
-
-        if (dataTable.responsive && typeof dataTable.responsive.recalc === 'function') {
-            dataTable.responsive.recalc();
-        }
-    }
-
-    if (tableEl) {
-        setTimeout(adjustReferTable, 150);
-        window.addEventListener('resize', adjustReferTable);
-
-        if (window.jQuery) {
-            jQuery(tableEl).on('draw.dt', adjustReferTable);
-        }
-    }
-
     if (config.preserveOldInput && createModalEl && form) {
         form.dataset.preserveOldInput = '1';
         bootstrap.Modal.getOrCreateInstance(createModalEl).show();

@@ -1,37 +1,6 @@
 @extends('admin_client.admin_client')
 
-@section('content')
-@php
-    use App\Helpers\ThaiDateHelper;
-
-    $isEdit = isset($checkbody) && $checkbody;
-    $hasRows = isset($checkbodies) && $checkbodies->isNotEmpty();
-    $normalCount = $hasRows ? $checkbodies->where('development', 'สมวัย')->count() : 0;
-    $delayedCount = $hasRows ? $checkbodies->where('development', 'ไม่สมวัย')->count() : 0;
-    $specialCount = $hasRows ? $checkbodies->where('development_type', 'เด็กกลุ่มพิเศษ')->count() : 0;
-
-    $clientDisplayName = filled($client->fullname ?? null)
-        ? $client->fullname
-        : (filled($client->name ?? null)
-            ? $client->name
-            : trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')));
-
-    $clientDisplayName = filled($clientDisplayName) ? $clientDisplayName : '-';
-    $clientAgeValue = $client->age ?? null;
-
-    if (blank($clientAgeValue) && filled($client->birth_date ?? null)) {
-        try {
-            $clientAgeValue = \Carbon\Carbon::parse($client->birth_date)->age;
-        } catch (\Throwable $exception) {
-            $clientAgeValue = null;
-        }
-    }
-
-    $clientAgeText = filled($clientAgeValue)
-        ? (is_numeric($clientAgeValue) ? $clientAgeValue . ' ปี' : $clientAgeValue)
-        : '-';
-@endphp
-
+@push('styles')
 <style>
     .checkbody-page {
         --cb-primary: #0f6f61;
@@ -375,7 +344,9 @@
     .checkbody-page .cb-table-wrap {
         width: 100%;
         min-width: 0;
-        overflow: visible;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         border: 0;
         border-radius: 0;
         background: transparent;
@@ -1424,6 +1395,41 @@
         }
     }
 </style>
+@endpush
+
+@section('content')
+@php
+    use App\Helpers\ThaiDateHelper;
+
+    $isEdit = isset($checkbody) && $checkbody;
+    $hasRows = isset($checkbodies) && $checkbodies->isNotEmpty();
+    $normalCount = $hasRows ? $checkbodies->where('development', 'สมวัย')->count() : 0;
+    $delayedCount = $hasRows ? $checkbodies->where('development', 'ไม่สมวัย')->count() : 0;
+    $specialCount = $hasRows ? $checkbodies->where('development_type', 'เด็กกลุ่มพิเศษ')->count() : 0;
+
+    $clientDisplayName = filled($client->fullname ?? null)
+        ? $client->fullname
+        : (filled($client->name ?? null)
+            ? $client->name
+            : trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')));
+
+    $clientDisplayName = filled($clientDisplayName) ? $clientDisplayName : '-';
+    $clientAgeValue = $client->age ?? null;
+
+    if (blank($clientAgeValue) && filled($client->birth_date ?? null)) {
+        try {
+            $clientAgeValue = \Carbon\Carbon::parse($client->birth_date)->age;
+        } catch (\Throwable $exception) {
+            $clientAgeValue = null;
+        }
+    }
+
+    $clientAgeText = filled($clientAgeValue)
+        ? (is_numeric($clientAgeValue) ? $clientAgeValue . ' ปี' : $clientAgeValue)
+        : '-';
+@endphp
+
+
 
 <div class="container-fluid px-2 px-lg-3 checkbody-page">
     <div class="cb-shell">
@@ -1580,89 +1586,6 @@
             $isEdit || ($errors->any() && old('_form_context') === 'checkbody_form')
         );
 
-        function setupCheckBodyDataTable() {
-            const tableElement = document.getElementById('datatable-checkbody');
-
-            if (!tableElement || !window.jQuery || !jQuery.fn.DataTable) {
-                return;
-            }
-
-            const $table = jQuery(tableElement);
-
-            /* ป้องกัน Layout หรือสคริปต์ส่วนกลางสร้าง DataTable ซ้ำ */
-            if (jQuery.fn.DataTable.isDataTable(tableElement)) {
-                $table.DataTable().destroy();
-            }
-
-            tableElement.removeAttribute('style');
-
-            const dataTable = $table.DataTable({
-                destroy: true,
-                autoWidth: false,
-                responsive: false,
-                scrollX: false,
-                order: [[0, 'desc']],
-                pageLength: 10,
-                lengthMenu: [10, 25, 50, 100],
-                dom: '<"cb-dt-toolbar"<"cb-dt-length"l><"cb-dt-search"f>><"cb-dt-scroll"t><"cb-dt-footer"<"cb-dt-info"i><"cb-dt-paging"p>>',
-                columnDefs: [
-                    {
-                        orderable: false,
-                        searchable: false,
-                        width: '150px',
-                        className: 'cb-col-actions',
-                        targets: -1
-                    }
-                ],
-                language: {
-                    emptyTable: 'ไม่พบข้อมูล',
-                    info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
-                    infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
-                    infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
-                    lengthMenu: 'แสดง _MENU_ รายการ',
-                    loadingRecords: 'กำลังโหลด...',
-                    processing: 'กำลังประมวลผล...',
-                    search: 'ค้นหา:',
-                    zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
-                    paginate: {
-                        first: 'หน้าแรก',
-                        last: 'หน้าสุดท้าย',
-                        next: 'ถัดไป',
-                        previous: 'ก่อนหน้า'
-                    }
-                },
-                initComplete: function () {
-                    const api = this.api();
-                    const wrapper = tableElement.closest('.dataTables_wrapper');
-
-                    wrapper?.querySelectorAll('.cb-dt-toolbar, .cb-dt-footer').forEach(function (element) {
-                        element.setAttribute('data-permission-keep', '');
-                    });
-
-                    wrapper?.querySelectorAll(
-                        '.cb-dt-toolbar input, .cb-dt-toolbar select, .cb-dt-toolbar button, .cb-dt-toolbar a, ' +
-                        '.cb-dt-footer input, .cb-dt-footer select, .cb-dt-footer button, .cb-dt-footer a'
-                    ).forEach(function (element) {
-                        element.setAttribute('data-permission-keep', '');
-                    });
-
-                    window.requestAnimationFrame(function () {
-                        api.columns.adjust();
-                    });
-                }
-            });
-
-            let resizeTimer = null;
-            window.addEventListener('resize', function () {
-                window.clearTimeout(resizeTimer);
-                resizeTimer = window.setTimeout(function () {
-                    dataTable.columns.adjust();
-                }, 140);
-            }, { passive: true });
-        }
-
-        /* รอ DataTable จาก Layout ทำงานก่อน แล้วจัดรูปแบบหน้านี้เพียงครั้งเดียว */
-        window.setTimeout(setupCheckBodyDataTable, 80);
 
         if (!modalElement || !form) {
             return;

@@ -1,24 +1,7 @@
 @extends('admin_client.admin_client')
 
 {{-- ACCIDENT_DATATABLE_CHECKBODY_V5_FINAL --}}
-@section('content')
-@php
-    $isEdit = isset($accident) && $accident;
-    $hasAccidentRows = isset($accidents) && $accidents->isNotEmpty();
-    $totalAccidents = $hasAccidentRows ? $accidents->count() : 0;
-    $doctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'พบแพทย์')->count() : 0;
-    $nonDoctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'ไม่พบแพทย์')->count() : 0;
-    $clientDisplayName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
-
-    if ($clientDisplayName === '') {
-        $clientDisplayName = $client->name ?? $client->fullname ?? '-';
-    }
-
-    $clientAgeDisplay = filled($client->age ?? null)
-        ? ($client->age . ' ปี')
-        : '-';
-@endphp
-
+@push('styles')
 <style>
     /*
     |--------------------------------------------------------------------------
@@ -658,7 +641,9 @@
     .accident-page .acc-table-wrap {
         width: 100%;
         min-width: 0;
-        overflow: visible;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         border: 0;
         border-radius: 0;
         background: transparent;
@@ -1666,6 +1651,27 @@
         }
     }
 </style>
+@endpush
+
+@section('content')
+@php
+    $isEdit = isset($accident) && $accident;
+    $hasAccidentRows = isset($accidents) && $accidents->isNotEmpty();
+    $totalAccidents = $hasAccidentRows ? $accidents->count() : 0;
+    $doctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'พบแพทย์')->count() : 0;
+    $nonDoctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'ไม่พบแพทย์')->count() : 0;
+    $clientDisplayName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+
+    if ($clientDisplayName === '') {
+        $clientDisplayName = $client->name ?? $client->fullname ?? '-';
+    }
+
+    $clientAgeDisplay = filled($client->age ?? null)
+        ? ($client->age . ' ปี')
+        : '-';
+@endphp
+
+
 
 <div class="container-fluid px-2 px-lg-3 accident-page">
     <div class="acc-shell">
@@ -1836,90 +1842,6 @@
         const modalElement = document.getElementById('accidentFormModal');
         const form = document.getElementById('accidentForm');
 
-        function setupAccidentDataTable() {
-            const tableElement = document.getElementById('datatable-accident');
-
-            if (!tableElement || !window.jQuery || !jQuery.fn.DataTable) {
-                return;
-            }
-
-            const $table = jQuery(tableElement);
-
-            /* เหมือนหน้า Check Body: ทำลายตัวที่ Layout สร้างก่อน แล้วสร้างของหน้านี้ใหม่ */
-            if (jQuery.fn.DataTable.isDataTable(tableElement)) {
-                $table.DataTable().destroy();
-            }
-
-            tableElement.removeAttribute('style');
-
-            const dataTable = $table.DataTable({
-                destroy: true,
-                autoWidth: false,
-                responsive: false,
-                scrollX: false,
-                order: [[0, 'desc']],
-                pageLength: 10,
-                lengthMenu: [10, 25, 50, 100],
-                dom: '<"acc-dt-toolbar"<"acc-dt-length"l><"acc-dt-search"f>><"acc-dt-scroll"t><"acc-dt-footer"<"acc-dt-info"i><"acc-dt-paging"p>>',
-                columnDefs: [
-                    {
-                        orderable: false,
-                        searchable: false,
-                        width: '150px',
-                        className: 'acc-col-actions',
-                        targets: -1
-                    }
-                ],
-                language: {
-                    emptyTable: 'ไม่พบข้อมูล',
-                    info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
-                    infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
-                    infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
-                    lengthMenu: 'แสดง _MENU_ รายการ',
-                    loadingRecords: 'กำลังโหลด...',
-                    processing: 'กำลังประมวลผล...',
-                    search: 'ค้นหา:',
-                    zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
-                    paginate: {
-                        first: 'หน้าแรก',
-                        last: 'หน้าสุดท้าย',
-                        next: 'ถัดไป',
-                        previous: 'ก่อนหน้า'
-                    }
-                },
-                initComplete: function () {
-                    const api = this.api();
-                    const wrapper = tableElement.closest('.dataTables_wrapper');
-
-                    wrapper?.setAttribute('data-accident-datatable', 'checkbody-v5');
-                    wrapper?.querySelectorAll('.acc-dt-toolbar, .acc-dt-footer').forEach(function (element) {
-                        element.setAttribute('data-permission-keep', '');
-                    });
-
-                    wrapper?.querySelectorAll(
-                        '.acc-dt-toolbar input, .acc-dt-toolbar select, .acc-dt-toolbar button, .acc-dt-toolbar a, ' +
-                        '.acc-dt-footer input, .acc-dt-footer select, .acc-dt-footer button, .acc-dt-footer a'
-                    ).forEach(function (element) {
-                        element.setAttribute('data-permission-keep', '');
-                    });
-
-                    window.requestAnimationFrame(function () {
-                        api.columns.adjust();
-                    });
-                }
-            });
-
-            let resizeTimer = null;
-            window.addEventListener('resize', function () {
-                window.clearTimeout(resizeTimer);
-                resizeTimer = window.setTimeout(function () {
-                    dataTable.columns.adjust();
-                }, 140);
-            }, { passive: true });
-        }
-
-        /* ใช้ timing เดียวกับหน้า Check Body */
-        window.setTimeout(setupAccidentDataTable, 80);
 
         if (!modalElement || !form) {
             return;

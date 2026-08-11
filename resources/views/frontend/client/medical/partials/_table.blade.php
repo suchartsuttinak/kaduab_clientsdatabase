@@ -15,7 +15,8 @@
 
     <div class="md-table-body">
         <div class="md-table-wrap">
-            <table id="datatable-medical" class="table align-middle w-100 md-table">
+            <x-stable-table-controls target="datatable-medical" />
+            <table id="datatable-medical" class="table align-middle w-100 md-table" data-stable-table data-page-length="10">
                 <thead>
                     <tr>
                         <th class="text-center md-col-seq">ลำดับ</th>
@@ -126,6 +127,7 @@
                     @endforeach
                 </tbody>
             </table>
+            <x-stable-table-footer target="datatable-medical" :total="$medicals->count()" />
         </div>
     </div>
 </div>

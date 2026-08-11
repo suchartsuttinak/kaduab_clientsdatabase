@@ -85,4 +85,4 @@
             <span class="ab-pagebar-detail-value">{{ $semesterName }}</span>
         </div>
     </div>
-</div
+</div>

@@ -97,19 +97,6 @@ function openEditAbsent(id){
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    if ($('#datatable-absent').length) {
-        $('#datatable-absent').DataTable({
-            responsive: false,
-            autoWidth: false,
-            scrollX: false,
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
-            },
-            columnDefs: [
-                { orderable: false, targets: -1 }
-            ]
-        });
-    }
 
     const openBtn = document.getElementById('btn-open-absent-modal');
     const cancelBtn = document.getElementById('btn-cancel-absent');

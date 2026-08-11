@@ -1,26 +1,7 @@
 @extends('admin_client.admin_client')
 
-@section('content')
-
-@if(session('error'))
-    <div class="alert alert-danger mx-3 mx-md-4 mb-3">
-        {{ session('error') }}
-    </div>
-@endif
-
-@if ($errors->any())
-    <div class="alert alert-danger mx-3 mx-md-4 mb-3">
-        <div class="fw-bold mb-1">กรุณาตรวจสอบข้อมูล</div>
-        <ul class="mb-0 ps-3">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
-<div class="followup-page">
-    <style>
+@push('styles')
+<style>
         .followup-page {
             --followup-footer-space: 2rem;
             min-height: auto;
@@ -723,6 +704,29 @@
             }
         }
     </style>
+@endpush
+
+@section('content')
+
+@if(session('error'))
+    <div class="alert alert-danger mx-3 mx-md-4 mb-3">
+        {{ session('error') }}
+    </div>
+@endif
+
+@if ($errors->any())
+    <div class="alert alert-danger mx-3 mx-md-4 mb-3">
+        <div class="fw-bold mb-1">กรุณาตรวจสอบข้อมูล</div>
+        <ul class="mb-0 ps-3">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+<div class="followup-page">
+    
 
     @php
         $thaiMonths = [
@@ -885,7 +889,8 @@
 
             @if($hasFollowupRows)
                 <div class="table-wrap">
-                    <table id="followupTable" class="table table-bordered table-hover followup-table">
+                    <x-stable-table-controls target="followupTable" />
+                    <table id="followupTable" class="table table-bordered table-hover followup-table" data-stable-table data-page-length="10">
                         <colgroup>
                             <col class="date-column">
                             <col class="detail-column">
@@ -950,6 +955,7 @@
                             @endforeach
                         </tbody>
                     </table>
+                    <x-stable-table-footer target="followupTable" :total="$followups->count()" />
                 </div>
             @else
                 <div class="followup-empty">
@@ -1123,84 +1129,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 filterLabel.textContent = 'ค้นหา';
             }
         });
-    }
-
-    function syncFollowupBottomSpace() {
-        if (!followupPage) {
-            return;
-        }
-
-        const isSmallScreen = window.matchMedia('(max-width: 767.98px)').matches;
-        const footerSelectors = [
-            'footer',
-            '.footer',
-            '.app-footer',
-            '.client-footer',
-            '.admin-footer'
-        ];
-
-        let footerHeight = 0;
-
-        footerSelectors.some(selector => {
-            const footer = document.querySelector(selector);
-
-            if (!footer) {
-                return false;
-            }
-
-            const footerStyle = window.getComputedStyle(footer);
-            const overlaysContent = footerStyle.position === 'fixed' || footerStyle.position === 'sticky';
-
-            if (overlaysContent) {
-                footerHeight = Math.ceil(footer.getBoundingClientRect().height || 0);
-                return true;
-            }
-
-            return false;
-        });
-
-        const minimumSpace = isSmallScreen ? 112 : 32;
-        const safeSpace = Math.max(minimumSpace, footerHeight + 32);
-        followupPage.style.setProperty('--followup-footer-space', `${safeSpace}px`);
-    }
-
-    syncFollowupBottomSpace();
-    window.addEventListener('resize', syncFollowupBottomSpace, { passive: true });
-    window.addEventListener('orientationchange', syncFollowupBottomSpace, { passive: true });
-
-    if (window.jQuery && $.fn.DataTable && document.getElementById('followupTable')) {
-        const followupDataTable = $('#followupTable').DataTable({
-            responsive: false,
-            autoWidth: false,
-            scrollX: false,
-            pageLength: 10,
-            order: [],
-            columnDefs: [
-                { targets: 3, orderable: false, searchable: false }
-            ],
-            language: {
-                search: 'ค้นหา:',
-                lengthMenu: 'แสดง _MENU_ รายการ',
-                info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
-                infoEmpty: 'แสดง 0 ถึง 0 จาก 0 รายการ',
-                zeroRecords: 'ไม่พบข้อมูลที่ค้นหา',
-                paginate: {
-                    first: 'หน้าแรก',
-                    last: 'หน้าสุดท้าย',
-                    next: 'ถัดไป',
-                    previous: 'ก่อนหน้า'
-                }
-            },
-            dom: '<"row align-items-center mb-3"<"col-md-6"l><"col-md-6 text-md-end"f>>rt<"row align-items-center mt-3"<"col-md-6"i><"col-md-6 text-md-end"p>>'
-        });
-
-        let tableResizeTimer = null;
-        window.addEventListener('resize', function () {
-            window.clearTimeout(tableResizeTimer);
-            tableResizeTimer = window.setTimeout(function () {
-                followupDataTable.columns.adjust();
-            }, 150);
-        }, { passive: true });
     }
 
     const editButtons = document.querySelectorAll('.edit-followup-btn');

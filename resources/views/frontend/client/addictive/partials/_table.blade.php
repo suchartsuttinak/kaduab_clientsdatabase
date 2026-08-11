@@ -12,7 +12,8 @@
     <div class="ad-table-body">
         @if($addictives->isNotEmpty())
             <div class="ad-table-wrap" data-permission-keep>
-                <table id="datatable-addictive" class="table align-middle w-100 ad-table" data-permission-keep>
+                <x-stable-table-controls target="datatable-addictive" />
+                <table id="datatable-addictive" class="table align-middle w-100 ad-table" data-permission-keep data-stable-table data-page-length="10">
                     <thead>
                         <tr>
                             <th>วันที่ตรวจ</th>
@@ -126,6 +127,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                <x-stable-table-footer target="datatable-addictive" :total="$addictives->count()" />
             </div>
         @else
             <div class="ad-empty">

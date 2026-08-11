@@ -7,7 +7,8 @@
     <div class="ab-table-body">
         @if($absents->isNotEmpty())
             <div class="ab-table-wrap">
-                <table id="datatable-absent" class="table modern-table align-middle w-100 ab-table">
+                <x-stable-table-controls target="datatable-absent" />
+                <table id="datatable-absent" class="table modern-table align-middle w-100 ab-table" data-stable-table data-page-length="10">
                     <thead>
                         <tr>
                             <th>วันที่ขาดเรียน</th>
@@ -95,6 +96,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                <x-stable-table-footer target="datatable-absent" :total="$absents->count()" />
             </div>
         @else
             <div class="ab-empty">

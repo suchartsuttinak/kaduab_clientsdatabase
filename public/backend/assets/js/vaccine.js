@@ -56,52 +56,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function initVaccineDataTable() {
-        if (!window.jQuery || !$.fn.DataTable || !$('#datatable-vaccine').length) {
-            return;
-        }
 
-        if ($.fn.DataTable.isDataTable('#datatable-vaccine')) {
-            $('#datatable-vaccine').DataTable().destroy();
-        }
-
-        $('#datatable-vaccine').DataTable({
-            responsive: false,
-            autoWidth: false,
-            scrollX: true,
-            pageLength: 10,
-            order: [],
-            language: {
-                processing: 'กำลังประมวลผล...',
-                lengthMenu: 'แสดง _MENU_ รายการต่อหน้า',
-                zeroRecords: 'ไม่พบข้อมูล',
-                emptyTable: 'ยังไม่มีข้อมูลในตาราง',
-                info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
-                infoEmpty: 'แสดง 0 ถึง 0 จาก 0 รายการ',
-                infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
-                search: 'ค้นหา:',
-                loadingRecords: 'กำลังโหลดข้อมูล...',
-                paginate: {
-                    first: 'หน้าแรก',
-                    last: 'หน้าสุดท้าย',
-                    next: 'ถัดไป',
-                    previous: 'ก่อนหน้า'
-                },
-                aria: {
-                    sortAscending: ': เรียงข้อมูลจากน้อยไปมาก',
-                    sortDescending: ': เรียงข้อมูลจากมากไปน้อย'
-                }
-            },
-            dom:
-                "<'row g-3 align-items-center mb-2'<'col-12 col-md-6'l><'col-12 col-md-6'f>>" +
-                "t" +
-                "<'row g-3 align-items-center mt-2'<'col-12 col-md-5'i><'col-12 col-md-7'p>>"
-        });
-    }
 
     initModalBehavior(addModal);
     initModalBehavior(editModal);
-    initVaccineDataTable();
 });
 
 function vaccineEdit(id) {

@@ -1,0 +1,197 @@
+/* KADUAB_STABLE_TABLE_V4
+ * Lightweight table controls without DataTables DOM rebuilding.
+ */
+.kst-toolbar,
+.kst-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    flex-wrap: wrap;
+    width: 100%;
+    min-width: 0;
+    color: #64748b;
+    font-size: .82rem;
+}
+
+.kst-toolbar {
+    min-height: 42px;
+    margin: 0 0 .65rem;
+}
+
+.kst-footer {
+    min-height: 42px;
+    margin: .65rem 0 0;
+}
+
+.kst-length,
+.kst-search,
+.kst-paging {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    min-width: 0;
+}
+
+.kst-length label,
+.kst-search label {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.kst-length select,
+.kst-search input {
+    min-height: 34px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: #fff;
+    color: #334155;
+    box-shadow: none;
+    font-size: .82rem;
+}
+
+.kst-length select {
+    width: auto;
+    min-width: 72px;
+    padding: .35rem 1.9rem .35rem .65rem;
+}
+
+.kst-search input {
+    width: min(240px, 42vw);
+    padding: .4rem .7rem;
+}
+
+.kst-search input:focus,
+.kst-length select:focus {
+    border-color: #93c5fd;
+    outline: 0;
+    box-shadow: 0 0 0 .18rem rgba(37, 99, 235, .10);
+}
+
+.kst-info {
+    min-width: 210px;
+    line-height: 1.45;
+}
+
+.kst-paging {
+    justify-content: flex-end;
+}
+
+.kst-page-label {
+    min-width: 88px;
+    text-align: center;
+    color: #475569;
+    font-weight: 600;
+}
+
+.kst-page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: .38rem .68rem;
+    border: 1px solid #d5dee9;
+    border-radius: 9px;
+    background: #fff;
+    color: #334155;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.kst-page-btn:hover:not(:disabled) {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.kst-page-btn:disabled {
+    cursor: default;
+    opacity: .45;
+}
+
+/* Reserve the initial 10-row layout before JS runs so the table does not shrink after first paint. */
+table[data-stable-table][data-page-length="10"]:not(.kst-ready) tbody > tr:nth-child(n+11),
+table[data-stable-table]:not([data-page-length]):not(.kst-ready) tbody > tr:nth-child(n+11) {
+    display: none;
+}
+
+table[data-stable-table][data-page-length="25"]:not(.kst-ready) tbody > tr:nth-child(n+26) {
+    display: none;
+}
+
+table[data-stable-table] thead th {
+    position: relative;
+    padding-right: 1.45rem !important;
+}
+
+table[data-stable-table] thead th[data-kst-sortable="1"] {
+    cursor: pointer;
+    user-select: none;
+}
+
+table[data-stable-table] thead th[data-kst-sortable="1"]::after {
+    content: "↕";
+    position: absolute;
+    right: .45rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: .72rem;
+    opacity: .85;
+}
+
+table[data-stable-table] thead th[aria-sort="ascending"]::after {
+    content: "↑";
+    color: #2563eb;
+}
+
+table[data-stable-table] thead th[aria-sort="descending"]::after {
+    content: "↓";
+    color: #2563eb;
+}
+
+.kst-no-results td {
+    padding: 1.3rem !important;
+    text-align: center !important;
+    color: #64748b !important;
+    background: #f8fafc !important;
+}
+
+@media (max-width: 767.98px) {
+    .kst-toolbar,
+    .kst-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .kst-length,
+    .kst-search,
+    .kst-paging,
+    .kst-length label,
+    .kst-search label {
+        width: 100%;
+    }
+
+    .kst-length label,
+    .kst-search label {
+        justify-content: space-between;
+    }
+
+    .kst-search input {
+        width: 100%;
+        max-width: none;
+    }
+
+    .kst-paging {
+        justify-content: center;
+    }
+
+    .kst-info {
+        min-width: 0;
+        text-align: center;
+    }
+}

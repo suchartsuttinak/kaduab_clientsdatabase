@@ -57,7 +57,8 @@
                     <!-- Outside Table -->
                     <div class="card-body">
                         @if($outside->isNotEmpty())
-                            <table id="datatable" class="table table-bordered dt-responsive nowrap w-100">
+                            <x-stable-table-controls target="datatable" />
+                            <table id="datatable" class="table table-bordered dt-responsive nowrap w-100" data-stable-table data-page-length="10">
                                 <thead>
                                     <tr>
                                         <th style="width: 10%; text-align: center;">ลำดับที่</th>
@@ -90,6 +91,7 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                            <x-stable-table-footer target="datatable" :total="$outside->count()" />
                         @else
                             <div class="alert alert-info mb-0">
                                 ไม่มีข้อมูลในตาราง

@@ -27,8 +27,9 @@
 
     <div class="cb-card-body">
         <div class="cb-table-wrap">
+            <x-stable-table-controls target="datatable-checkbody" />
             <table id="datatable-checkbody"
-                   class="table table-hover align-middle cb-table w-100">
+                   class="table table-hover align-middle cb-table w-100" data-stable-table data-page-length="10">
                 <thead>
                     <tr>
                         <th class="cb-col-date">วันที่ตรวจ</th>
@@ -170,6 +171,7 @@
                     @endforeach
                 </tbody>
             </table>
+            <x-stable-table-footer target="datatable-checkbody" :total="$checkbodies->count()" />
         </div>
     </div>
 </section>

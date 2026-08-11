@@ -1,64 +1,6 @@
 @extends('admin_client.admin_client')
 
-@section('title', 'ข้อมูลการตรวจสุขภาพ')
-
-@section('content')
-@php
-    $hasRows = isset($healthcHeckups) && $healthcHeckups->count() > 0;
-    $hasAnyRows = isset($hasAnyHealthcHeckups)
-        ? (bool) $hasAnyHealthcHeckups
-        : $hasRows;
-
-    $hasFilter = request()->filled('keyword')
-        || request()->filled('client_id')
-        || request()->filled('date_from')
-        || request()->filled('date_to')
-        || request()->filled('checkup_result');
-
-    // เมื่อระบบยังไม่มีข้อมูลเลย ให้ซ่อนตัวกรองและตาราง
-    // แต่หากกำลังกรองแล้วไม่พบข้อมูล ให้คงตัวกรองไว้เพื่อแก้ไขหรือล้างค่า
-    $showListingSection = $hasAnyRows || $hasFilter;
-    $today = now('Asia/Bangkok')->toDateString();
-    $healthcFormErrors = $errors->getBag('healthcForm');
-    $healthcFilterErrors = $errors->getBag('healthcFilter');
-    $healthcFormHasErrors = $healthcFormErrors->any();
-
-    $healthcOldValues = [
-        'client_id' => (string) old('client_id', ''),
-        'checkup_date' => old('checkup_date', ''),
-        'hospital_name' => old('hospital_name', ''),
-        'checkup_result' => old('checkup_result', 'normal'),
-        'abnormal_detail' => old('abnormal_detail', ''),
-    ];
-
-    $clientName = static function ($client): string {
-        $name = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
-
-        $preferred = trim((string) ($client->fullname ?? $client->full_name ?? ''));
-
-        return $preferred !== ''
-            ? $preferred
-            : ($name !== '' ? $name : '-');
-    };
-
-    $documentUrl = static function (?string $path): ?string {
-        if (!$path) {
-            return null;
-        }
-
-        $normalized = ltrim(str_replace('\\', '/', $path), '/');
-
-        if (
-            str_starts_with($normalized, 'upload/')
-            || str_starts_with($normalized, 'storage/')
-        ) {
-            return asset($normalized);
-        }
-
-        return \Illuminate\Support\Facades\Storage::disk('public')->url($normalized);
-    };
-@endphp
-
+@push('styles')
 <style>
     .healthc-page {
         --hc-primary: #2563eb;
@@ -805,6 +747,68 @@
         }
     }
 </style>
+@endpush
+
+@section('title', 'ข้อมูลการตรวจสุขภาพ')
+
+@section('content')
+@php
+    $hasRows = isset($healthcHeckups) && $healthcHeckups->count() > 0;
+    $hasAnyRows = isset($hasAnyHealthcHeckups)
+        ? (bool) $hasAnyHealthcHeckups
+        : $hasRows;
+
+    $hasFilter = request()->filled('keyword')
+        || request()->filled('client_id')
+        || request()->filled('date_from')
+        || request()->filled('date_to')
+        || request()->filled('checkup_result');
+
+    // เมื่อระบบยังไม่มีข้อมูลเลย ให้ซ่อนตัวกรองและตาราง
+    // แต่หากกำลังกรองแล้วไม่พบข้อมูล ให้คงตัวกรองไว้เพื่อแก้ไขหรือล้างค่า
+    $showListingSection = $hasAnyRows || $hasFilter;
+    $today = now('Asia/Bangkok')->toDateString();
+    $healthcFormErrors = $errors->getBag('healthcForm');
+    $healthcFilterErrors = $errors->getBag('healthcFilter');
+    $healthcFormHasErrors = $healthcFormErrors->any();
+
+    $healthcOldValues = [
+        'client_id' => (string) old('client_id', ''),
+        'checkup_date' => old('checkup_date', ''),
+        'hospital_name' => old('hospital_name', ''),
+        'checkup_result' => old('checkup_result', 'normal'),
+        'abnormal_detail' => old('abnormal_detail', ''),
+    ];
+
+    $clientName = static function ($client): string {
+        $name = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+
+        $preferred = trim((string) ($client->fullname ?? $client->full_name ?? ''));
+
+        return $preferred !== ''
+            ? $preferred
+            : ($name !== '' ? $name : '-');
+    };
+
+    $documentUrl = static function (?string $path): ?string {
+        if (!$path) {
+            return null;
+        }
+
+        $normalized = ltrim(str_replace('\\', '/', $path), '/');
+
+        if (
+            str_starts_with($normalized, 'upload/')
+            || str_starts_with($normalized, 'storage/')
+        ) {
+            return asset($normalized);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($normalized);
+    };
+@endphp
+
+
 
 <div class="container-fluid py-3 healthc-page">
     <div class="healthc-shell">
@@ -1284,9 +1288,12 @@
             return;
         }
 
-        if (modalElement.parentElement !== document.body) {
-            document.body.appendChild(modalElement);
-        }
+        /* ย้าย Modal เฉพาะตอนกำลังเปิด เพื่อลด DOM mutation ระหว่าง first paint */
+        modalElement.addEventListener('show.bs.modal', function moveHealthcModalToBody() {
+            if (modalElement.parentElement !== document.body) {
+                document.body.appendChild(modalElement);
+            }
+        }, { once: true });
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalElement, {
             backdrop: 'static',
@@ -1311,7 +1318,14 @@
         const submitButton = form.querySelector('button[type="submit"]');
         const submitButtonText = document.getElementById('submitButtonText');
         const modalBody = modalElement.querySelector('.healthc-modal-body');
-        const clientOptions = Array.from(document.querySelectorAll('#client_list option'));
+        let clientOptions = null;
+
+        function getClientOptions() {
+            if (!clientOptions) {
+                clientOptions = Array.from(document.querySelectorAll('#client_list option'));
+            }
+            return clientOptions;
+        }
         const oldValues = @json($healthcOldValues);
         const hasFormErrors = @json($healthcFormHasErrors);
         const oldFormContext = @json(old('_form_context'));
@@ -1336,14 +1350,14 @@
         }
 
         function findClientOptionById(id) {
-            return clientOptions.find(function (option) {
+            return getClientOptions().find(function (option) {
                 return String(option.dataset.id) === String(id);
             });
         }
 
         function syncClientIdFromName() {
             const value = (clientSearch.value || '').trim();
-            const option = clientOptions.find(function (item) {
+            const option = getClientOptions().find(function (item) {
                 return item.value.trim() === value;
             });
 

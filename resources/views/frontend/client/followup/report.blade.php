@@ -37,26 +37,31 @@
 <style>
     @page {
         size: A4 portrait;
-        margin: 12mm;
+        margin: 10mm 12mm;
     }
 
     .followup-report-page {
-        --report-border: #dbe3ec;
+        --report-border: #d9e2ec;
         --report-text: #1f2937;
         --report-muted: #64748b;
         width: 100%;
+        max-width: 1200px;
         min-width: 0;
-        padding: .25rem .75rem 2.5rem;
+        margin: 0 auto;
+        padding: .5rem .75rem 2rem;
+        box-sizing: border-box;
     }
 
-    .followup-report-page,
-    .followup-report-page * {
+    .followup-report-page *,
+    .followup-report-page *::before,
+    .followup-report-page *::after {
         box-sizing: border-box;
     }
 
     .followup-report-card {
         width: 100%;
         min-width: 0;
+        margin: 0;
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 16px;
@@ -128,58 +133,74 @@
     }
 
     .followup-report-header {
-        padding: 1.25rem;
+        padding: 1.3rem 1.35rem 1.15rem;
         border-bottom: 1px solid #edf2f7;
     }
 
     .followup-report-title {
         margin: 0;
         color: var(--report-text);
-        font-size: 1.3rem;
+        font-size: 1.35rem;
         font-weight: 700;
         line-height: 1.35;
     }
 
     .followup-report-subtitle {
-        margin: .4rem 0 0;
+        margin: .35rem 0 0;
         color: var(--report-muted);
-        font-size: .93rem;
-        line-height: 1.6;
+        font-size: .92rem;
+        line-height: 1.55;
     }
 
     .followup-report-info {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .7rem 1rem;
-        margin-top: 1rem;
-        padding-top: 1rem;
+        margin-top: .95rem;
+        padding-top: .9rem;
         border-top: 1px solid #edf2f7;
     }
 
-    .followup-report-info-item {
+    .followup-report-info-row {
         display: grid;
-        grid-template-columns: max-content minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: .65rem 1.25rem;
+        min-width: 0;
+    }
+
+    .followup-report-info-row + .followup-report-info-row {
+        margin-top: .55rem;
+    }
+
+    .followup-report-info-row--name {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .followup-report-info-item {
+        display: flex;
+        align-items: flex-start;
         gap: .35rem;
         min-width: 0;
         color: var(--report-text);
         font-size: .92rem;
+        line-height: 1.5;
     }
 
     .followup-report-info-label {
+        flex: 0 0 auto;
         font-weight: 700;
+        white-space: nowrap;
     }
 
     .followup-report-info-value {
         min-width: 0;
         overflow-wrap: anywhere;
+        word-break: normal;
     }
 
     .followup-report-body {
-        padding: 1.25rem;
+        padding: 1.15rem 1.35rem 1.35rem;
     }
 
     .followup-report-section-title {
-        margin: 0 0 .75rem;
+        margin: 0 0 .65rem;
         color: var(--report-text);
         font-size: 1rem;
         font-weight: 700;
@@ -195,7 +216,8 @@
 
     .followup-report-table {
         width: 100%;
-        min-width: 760px;
+        min-width: 680px;
+        margin: 0;
         border-collapse: collapse;
         table-layout: fixed;
     }
@@ -203,30 +225,36 @@
     .followup-report-table th,
     .followup-report-table td {
         border: 1px solid var(--report-border);
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .followup-report-table th {
-        padding: .72rem;
+        padding: .68rem .7rem;
         background: #f1f5f9;
         color: var(--report-text);
         font-size: .9rem;
         font-weight: 700;
         line-height: 1.35;
         text-align: center;
+        vertical-align: middle;
     }
 
     .followup-report-table td {
-        padding: .75rem;
+        padding: .7rem;
         background: #fff;
         color: var(--report-text);
         font-size: .9rem;
-        line-height: 1.65;
+        line-height: 1.55;
         vertical-align: top;
-        overflow-wrap: anywhere;
     }
 
     .followup-col-date {
-        width: 132px;
+        width: 18%;
+    }
+
+    .followup-col-detail {
+        width: 52%;
     }
 
     .followup-col-note {
@@ -240,7 +268,7 @@
     }
 
     .text-preline {
-        white-space: pre-line;
+        white-space: pre-wrap;
     }
 
     .followup-report-empty {
@@ -263,19 +291,9 @@
         color: var(--report-muted);
     }
 
-    @media (max-width: 991.98px) {
-        .followup-report-info {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .followup-report-info-item:last-child {
-            grid-column: 1 / -1;
-        }
-    }
-
     @media (max-width: 767.98px) {
         .followup-report-page {
-            padding: 0 .5rem 2rem;
+            padding: 0 .5rem 1.5rem;
         }
 
         .followup-report-card {
@@ -304,12 +322,13 @@
             font-size: 1.12rem;
         }
 
-        .followup-report-info {
+        .followup-report-info-row {
             grid-template-columns: 1fr;
+            gap: .45rem;
         }
 
-        .followup-report-info-item:last-child {
-            grid-column: auto;
+        .followup-report-info-row + .followup-report-info-row {
+            margin-top: .45rem;
         }
 
         .followup-report-table-wrap {
@@ -351,6 +370,7 @@
             border: 0;
             border-bottom: 1px solid #edf2f7;
             text-align: left;
+            white-space: normal;
         }
 
         .followup-report-table td:last-child {
@@ -369,7 +389,12 @@
     }
 
     @media (max-width: 479.98px) {
-        .followup-report-info-item,
+        .followup-report-info-item {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: .15rem;
+        }
+
         .followup-report-table td {
             grid-template-columns: 1fr;
             gap: .25rem;
@@ -377,6 +402,22 @@
     }
 
     @media print {
+        html,
+        body {
+            width: auto !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: #fff !important;
+        }
+
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
         .navbar-custom,
         .leftside-menu,
         .footer,
@@ -386,36 +427,75 @@
             display: none !important;
         }
 
-        html,
-        body {
-            background: #fff !important;
-        }
-
+        .wrapper,
         .content-page,
         .content,
+        .container,
         .container-fluid,
-        .followup-report-page {
+        main {
+            position: static !important;
+            float: none !important;
             width: 100% !important;
             max-width: none !important;
+            min-width: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
+            overflow: visible !important;
+            transform: none !important;
+        }
+
+        .content-page {
+            margin-left: 0 !important;
+        }
+
+        .followup-report-page {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            break-before: auto !important;
+            break-after: auto !important;
+            page-break-before: auto !important;
+            page-break-after: auto !important;
         }
 
         .followup-report-card {
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
             border: 0 !important;
             border-radius: 0 !important;
             box-shadow: none !important;
             overflow: visible !important;
+            break-after: auto !important;
+            page-break-after: auto !important;
         }
 
         .followup-report-header {
-            padding: 0 0 10px !important;
+            margin: 0 !important;
+            padding: 0 0 7px !important;
             border-bottom: 1px solid #000 !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
 
         .followup-report-title {
-            font-size: 18pt !important;
-            text-align: center;
+            margin: 0 !important;
+            font-size: 16pt !important;
+            line-height: 1.15 !important;
+            text-align: center !important;
+            color: #000 !important;
         }
 
         .followup-report-subtitle {
@@ -423,33 +503,64 @@
         }
 
         .followup-report-info {
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-            gap: 4px 10px !important;
-            margin-top: 8px !important;
-            padding-top: 8px !important;
+            margin-top: 6px !important;
+            padding-top: 6px !important;
             border-top: 0 !important;
         }
 
-        .followup-report-info-item {
-            display: block !important;
-            font-size: 11pt !important;
+        .followup-report-info-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+            gap: 3px 16px !important;
+            margin: 0 !important;
         }
 
-        .followup-report-info-label,
+        .followup-report-info-row--name {
+            grid-template-columns: minmax(0, 1fr) !important;
+            margin-top: 2px !important;
+        }
+
+        .followup-report-info-item {
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 3px !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            font-size: 10.5pt !important;
+            line-height: 1.25 !important;
+            color: #000 !important;
+        }
+
+        .followup-report-info-label {
+            flex: 0 0 auto !important;
+            font-weight: 700 !important;
+            white-space: nowrap !important;
+        }
+
         .followup-report-info-value {
-            display: inline !important;
+            min-width: 0 !important;
+            color: #000 !important;
+            overflow-wrap: anywhere !important;
         }
 
         .followup-report-body {
-            padding: 10px 0 0 !important;
+            margin: 0 !important;
+            padding: 7px 0 0 !important;
         }
 
         .followup-report-section-title {
-            margin-bottom: 6px !important;
-            font-size: 12pt !important;
+            margin: 0 0 4px !important;
+            font-size: 11pt !important;
+            line-height: 1.2 !important;
+            color: #000 !important;
         }
 
         .followup-report-table-wrap {
+            display: block !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
             overflow: visible !important;
         }
 
@@ -457,6 +568,8 @@
             display: table !important;
             width: 100% !important;
             min-width: 0 !important;
+            max-width: 100% !important;
+            margin: 0 !important;
             border-collapse: collapse !important;
             table-layout: fixed !important;
         }
@@ -471,19 +584,37 @@
 
         .followup-report-table tr {
             display: table-row !important;
-            page-break-inside: avoid;
+            width: auto !important;
+            margin: 0 !important;
             border: 0 !important;
+            border-radius: 0 !important;
+            overflow: visible !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
 
         .followup-report-table th,
         .followup-report-table td {
             display: table-cell !important;
-            padding: 5px 6px !important;
+            width: auto;
+            max-width: none !important;
+            padding: 4px 5px !important;
             border: 1px solid #000 !important;
             background: #fff !important;
             color: #000 !important;
-            font-size: 10.5pt !important;
-            line-height: 1.35 !important;
+            font-size: 9.5pt !important;
+            line-height: 1.25 !important;
+            vertical-align: top !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            overflow-wrap: anywhere !important;
+            word-break: break-word !important;
+        }
+
+        .followup-report-table th {
+            font-weight: 700 !important;
+            text-align: center !important;
+            vertical-align: middle !important;
         }
 
         .followup-report-table td::before {
@@ -491,16 +622,40 @@
             content: none !important;
         }
 
-        .followup-col-date {
-            width: 16% !important;
+        .followup-report-table .followup-col-date {
+            width: 18% !important;
         }
 
-        .followup-col-detail {
-            width: 54% !important;
+        .followup-report-table .followup-col-detail {
+            width: 52% !important;
         }
 
-        .followup-col-note {
+        .followup-report-table .followup-col-note {
             width: 30% !important;
+        }
+
+        .followup-report-table .followup-date-cell {
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+
+        .followup-report-table .text-preline {
+            white-space: pre-wrap !important;
+        }
+
+        .followup-report-empty {
+            margin: 0 !important;
+            padding: 12px !important;
+            border: 1px solid #000 !important;
+            border-radius: 0 !important;
+            background: #fff !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+        }
+
+        .followup-report-empty h4,
+        .followup-report-empty p {
+            color: #000 !important;
         }
     }
 </style>
@@ -530,19 +685,23 @@
             </p>
 
             <div class="followup-report-info">
-                <div class="followup-report-info-item">
-                    <span class="followup-report-info-label">รหัสผู้รับบริการ:</span>
-                    <span class="followup-report-info-value">{{ $client->id }}</span>
+                <div class="followup-report-info-row">
+                    <div class="followup-report-info-item">
+                        <span class="followup-report-info-label">รหัสผู้รับบริการ:</span>
+                        <span class="followup-report-info-value">{{ $client->id }}</span>
+                    </div>
+
+                    <div class="followup-report-info-item">
+                        <span class="followup-report-info-label">ช่วงวันที่:</span>
+                        <span class="followup-report-info-value">{{ $dateRangeThai }}</span>
+                    </div>
                 </div>
 
-                <div class="followup-report-info-item">
-                    <span class="followup-report-info-label">ชื่อผู้รับบริการ:</span>
-                    <span class="followup-report-info-value">{{ $client->fullname ?? $client->name ?? '-' }}</span>
-                </div>
-
-                <div class="followup-report-info-item">
-                    <span class="followup-report-info-label">ช่วงวันที่:</span>
-                    <span class="followup-report-info-value">{{ $dateRangeThai }}</span>
+                <div class="followup-report-info-row followup-report-info-row--name">
+                    <div class="followup-report-info-item">
+                        <span class="followup-report-info-label">ชื่อผู้รับบริการ:</span>
+                        <span class="followup-report-info-value">{{ $client->fullname ?? $client->name ?? '-' }}</span>
+                    </div>
                 </div>
             </div>
         </header>
@@ -553,6 +712,11 @@
             @if($followups->count() > 0)
                 <div class="followup-report-table-wrap">
                     <table class="followup-report-table">
+                        <colgroup>
+                            <col class="followup-col-date">
+                            <col class="followup-col-detail">
+                            <col class="followup-col-note">
+                        </colgroup>
                         <thead>
                             <tr>
                                 <th class="followup-col-date">วันเดือนปี</th>

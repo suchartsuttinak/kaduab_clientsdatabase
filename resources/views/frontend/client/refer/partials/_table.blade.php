@@ -192,7 +192,8 @@
         </div>
 
         <div class="rf-table-wrap">
-            <table id="datatable-refer" class="table table-hover align-middle rf-table">
+            <x-stable-table-controls target="datatable-refer" />
+            <table id="datatable-refer" class="table table-hover align-middle rf-table" data-stable-table data-page-length="10">
                 <thead>
                     <tr>
                         <th>วันที่นำส่ง</th>
@@ -343,6 +344,7 @@
                     @endforeach
                 </tbody>
             </table>
+            <x-stable-table-footer target="datatable-refer" :total="$refers->count()" />
         </div>
     </div>
 @else

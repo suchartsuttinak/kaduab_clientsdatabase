@@ -375,27 +375,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function adjustJobAgencyTable() {
-        if (
-            window.jQuery &&
-            jQuery.fn.DataTable &&
-            jQuery.fn.DataTable.isDataTable('#datatable-jobagency')
-        ) {
-            const table = jQuery('#datatable-jobagency').DataTable();
-            table.columns.adjust();
 
-            if (table.responsive && typeof table.responsive.recalc === 'function') {
-                table.responsive.recalc();
-            }
-        }
-    }
-
-    setTimeout(adjustJobAgencyTable, 150);
-    window.addEventListener('resize', adjustJobAgencyTable);
-
-    if (window.jQuery && document.getElementById('datatable-jobagency')) {
-        jQuery('#datatable-jobagency').on('draw.dt', adjustJobAgencyTable);
-    }
 });
 </script>
 @endpush

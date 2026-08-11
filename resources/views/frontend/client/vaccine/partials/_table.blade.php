@@ -17,8 +17,9 @@
 
     <div class="card-body p-0">
         <div class="vaccine-table-wrapper vaccine-record-table-wrapper">
+            <x-stable-table-controls target="datatable-vaccine" />
             <table id="datatable-vaccine"
-                   class="table table-hover align-middle mb-0 vaccine-table vaccine-record-table">
+                   class="table table-hover align-middle mb-0 vaccine-table vaccine-record-table" data-stable-table data-page-length="10">
                 <thead>
                     <tr>
                         <th class="vaccine-col-date">วันที่รับวัคซีน</th>
@@ -86,6 +87,7 @@
                     @endforeach
                 </tbody>
             </table>
+            <x-stable-table-footer target="datatable-vaccine" :total="$vaccinations->count()" />
         </div>
     </div>
 </div>
@@ -96,7 +98,9 @@
 .vaccine-page .vaccine-record-table-wrapper{
     width:100%;
     min-width:0;
-    overflow:visible;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
 }
 
 .vaccine-page .vaccine-record-table{

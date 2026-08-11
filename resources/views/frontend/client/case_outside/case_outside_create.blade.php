@@ -336,23 +336,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function adjustTable() {
-        if (
-            window.jQuery &&
-            jQuery.fn.DataTable &&
-            jQuery.fn.DataTable.isDataTable('#datatable-caseoutside')
-        ) {
-            const table = jQuery('#datatable-caseoutside').DataTable();
-            table.columns.adjust();
-
-            if (table.responsive && typeof table.responsive.recalc === 'function') {
-                table.responsive.recalc();
-            }
-        }
-    }
-
-    setTimeout(adjustTable, 150);
-    window.addEventListener('resize', adjustTable);
 });
 </script>
 @endpush

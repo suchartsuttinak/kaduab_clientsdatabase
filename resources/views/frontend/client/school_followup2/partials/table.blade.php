@@ -262,7 +262,8 @@
     <div class="school-followup-card-body">
         @if($followups->isNotEmpty())
             <div class="table-responsive school-followup-table-wrap">
-                <table id="datatable-followup" class="table align-middle w-100 school-followup-table">
+                <x-stable-table-controls target="datatable-followup" />
+                <table id="datatable-followup" class="table align-middle w-100 school-followup-table" data-stable-table data-page-length="10">
                     <thead>
                         <tr>
                             <th>วันที่ติดตาม</th>
@@ -320,6 +321,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                <x-stable-table-footer target="datatable-followup" :total="$followups->count()" />
             </div>
         @else
             <div class="school-followup-empty">

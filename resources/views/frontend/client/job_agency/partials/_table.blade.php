@@ -173,7 +173,8 @@
 
     @if($jobAgencies->isNotEmpty())
         <div class="ja-table-wrap">
-            <table id="datatable-jobagency" class="table table-hover align-middle ja-table">
+            <x-stable-table-controls target="datatable-jobagency" />
+            <table id="datatable-jobagency" class="table table-hover align-middle ja-table" data-stable-table data-page-length="10">
                 <thead>
                     <tr>
                         <th style="width: 125px;">วันที่เริ่มงาน</th>
@@ -248,6 +249,7 @@
                     @endforeach
                 </tbody>
             </table>
+            <x-stable-table-footer target="datatable-jobagency" :total="$jobAgencies->count()" />
         </div>
     @else
         <div class="ja-filter-empty" role="status">

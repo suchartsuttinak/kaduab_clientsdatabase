@@ -44,7 +44,8 @@
             @endif
 
             <div class="table-responsive">
-                <table id="houseTransferTable" class="table table-hover align-middle w-100">
+                <x-stable-table-controls target="houseTransferTable" :page-length="25" />
+                <table id="houseTransferTable" class="table table-hover align-middle w-100" data-stable-table data-page-length="25">
                     <thead class="table-light">
                         <tr>
                             <th width="60">#</th>
@@ -114,6 +115,7 @@
                         @endforelse
                     </tbody>
                 </table>
+                <x-stable-table-footer target="houseTransferTable" :total="$clients->count()" :page-length="25" />
             </div>
 
         </div>
@@ -263,25 +265,6 @@ document.addEventListener('DOMContentLoaded', function () {
         btnSaveHouse.querySelector('span').textContent = 'กำลังบันทึก...';
     });
 
-    if (typeof $ !== 'undefined' && $.fn.DataTable) {
-        $('#houseTransferTable').DataTable({
-            pageLength: 25,
-            ordering: true,
-            responsive: false,
-            scrollX: true,
-            autoWidth: false,
-            language: {
-                search: "ค้นหา:",
-                lengthMenu: "แสดง _MENU_ รายการ",
-                info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
-                paginate: {
-                    previous: "ก่อนหน้า",
-                    next: "ถัดไป"
-                },
-                zeroRecords: "ไม่พบข้อมูล"
-            }
-        });
-    }
 });
 </script>
 @endpush

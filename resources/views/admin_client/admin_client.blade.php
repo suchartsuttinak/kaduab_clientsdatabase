@@ -14,6 +14,7 @@
 
     <link href="{{ asset('backend/assets/css/app.min.css') }}" rel="stylesheet" type="text/css" id="app-style" />
     <link href="{{ asset('backend/assets/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('backend/assets/css/kaduab-stable-table.css') }}?v=20260811v4" rel="stylesheet" type="text/css" />
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css">
 
@@ -65,6 +66,10 @@
         *::before,
         *::after {
             box-sizing: border-box;
+        }
+
+        html {
+            scrollbar-gutter: stable;
         }
 
         html,
@@ -1362,13 +1367,13 @@
     <script src="{{ asset('backend/assets/libs/datatables.net/js/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('backend/assets/libs/datatables.net-bs5/js/dataTables.bootstrap5.min.js') }}"></script>
     <script src="{{ asset('backend/assets/libs/datatables.net-buttons/js/dataTables.buttons.min.js') }}"></script>
-    <script src="{{ asset('backend/assets/js/pages/datatable.init.js') }}"></script>
+    {{-- Theme sample DataTable initializer disabled; client tables use explicit ownership. --}}
 
     <script>
         $(function() {
             $.extend(true, $.fn.dataTable.defaults, {
                 responsive: false,
-                destroy: true,
+                destroy: false,
                 autoWidth: false,
                 scrollX: true,
                 language: {
@@ -1387,13 +1392,13 @@
                 }
             });
 
-            $('table[id^="datatable"], table.data-table-auto').each(function() {
-                const $table = $(this);
-                if ($.fn.dataTable.isDataTable(this)) {
-                    $table.DataTable().destroy();
-                }
-                $table.DataTable();
-            });
+            $('table[id^="datatable"], table.data-table-auto')
+                .not('[data-stable-table]')
+                .each(function() {
+                    if (!$.fn.dataTable.isDataTable(this)) {
+                        $(this).DataTable();
+                    }
+                });
         });
     </script>
 
@@ -1484,6 +1489,8 @@
         });
     </script>
 
+    <script src="{{ asset('backend/assets/js/kaduab-stable-table.js') }}?v=20260811v4"></script>
+
     @stack('scripts')
 
     <script>
@@ -1561,17 +1568,14 @@
                 window.setTimeout(function () {
                     window.dispatchEvent(new Event('resize'));
 
-                    if (
-                        window.jQuery &&
-                        $.fn.dataTable &&
-                        typeof $.fn.dataTable.tables === 'function'
-                    ) {
-                        $.fn.dataTable
-                            .tables({
-                                visible: true,
-                                api: true
-                            })
-                            .columns.adjust();
+                    if (window.jQuery && $.fn.dataTable) {
+                        $('table[id^="datatable"], table.data-table-auto')
+                            .not('[data-stable-table]')
+                            .each(function () {
+                                if ($.fn.dataTable.isDataTable(this)) {
+                                    $(this).DataTable().columns.adjust();
+                                }
+                            });
                     }
                 }, 260);
             }

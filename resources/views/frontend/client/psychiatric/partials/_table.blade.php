@@ -473,7 +473,9 @@
             .psychiatric-page .psy-inline-table-wrap {
                 width: 100%;
                 min-width: 0;
-                overflow: visible;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
             }
 
             .psychiatric-page .psy-inline-table {
@@ -707,7 +709,8 @@
             </div>
 
             <div class="psy-inline-table-wrap">
-                <table id="datatable-psychiatric" class="table align-middle psy-inline-table" data-permission-keep>
+                <x-stable-table-controls target="datatable-psychiatric" />
+                <table id="datatable-psychiatric" class="table align-middle psy-inline-table" data-permission-keep data-stable-table data-page-length="10">
                     <thead>
                         <tr>
                             {{-- <th style="min-width: 40px;">#</th> --}}
@@ -810,6 +813,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                <x-stable-table-footer target="datatable-psychiatric" :total="$psychiatrics->count()" />
             </div>
 
            

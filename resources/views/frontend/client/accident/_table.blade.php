@@ -29,8 +29,9 @@
         @endphp
 
         <div class="acc-table-wrap">
+            <x-stable-table-controls target="datatable-accident" />
             <table id="datatable-accident"
-                   class="table table-hover align-middle acc-table w-100 {{ $hasDoctorVisit ? 'acc-table-expanded' : 'acc-table-compact' }}">
+                   class="table table-hover align-middle acc-table w-100 {{ $hasDoctorVisit ? 'acc-table-expanded' : 'acc-table-compact' }}" data-stable-table data-page-length="10">
 
                 <thead>
                     <tr>
@@ -176,6 +177,7 @@
                     @endforeach
                 </tbody>
             </table>
+            <x-stable-table-footer target="datatable-accident" :total="$accidents->count()" />
         </div>
     </div>
 </section>

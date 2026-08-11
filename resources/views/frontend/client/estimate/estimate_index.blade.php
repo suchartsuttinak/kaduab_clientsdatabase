@@ -1,7 +1,6 @@
 @extends('admin_client.admin_client')
-@section('content')
-
-    <style>
+@push('styles')
+<style>
         .estimate-page {
             --estimate-border: #d9e0ea;
             --estimate-soft: #f8fafc;
@@ -591,6 +590,11 @@
         }
 
     </style>
+@endpush
+
+@section('content')
+
+    
 
     <div class="estimate-page">
 
@@ -642,7 +646,8 @@
                     </div>
                 @else
                     <div class="table-responsive">
-                        <table id="datatable-estimate" class="table table-bordered table-striped align-middle w-100">
+                        <x-stable-table-controls target="datatable-estimate" />
+                        <table id="datatable-estimate" class="table table-bordered table-striped align-middle w-100" data-stable-table data-page-length="10">
                             <thead>
                                 <tr>
                                     <th scope="col">ครั้งที่</th>
@@ -744,6 +749,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        <x-stable-table-footer target="datatable-estimate" :total="$client->estimates->count()" />
                     </div>
                 @endif
             </div>

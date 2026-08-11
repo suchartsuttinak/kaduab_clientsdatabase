@@ -3,23 +3,7 @@
 
 {{-- ACCIDENT_EMPTY_STATE_FULL_FIX_V4 --}}
 
-@section('content')
-@php
-    $isEdit = isset($accident) && $accident;
-    $hasAccidentRows = isset($accidents) && $accidents->isNotEmpty();
-    $doctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'พบแพทย์')->count() : 0;
-    $nonDoctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'ไม่พบแพทย์')->count() : 0;
-    $clientDisplayName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
-
-    if ($clientDisplayName === '') {
-        $clientDisplayName = $client->name ?? $client->fullname ?? '-';
-    }
-
-    $clientAgeDisplay = filled($client->age ?? null)
-        ? ($client->age . ' ปี')
-        : '-';
-@endphp
-
+@push('styles')
 <style>
     /*
     |--------------------------------------------------------------------------
@@ -433,7 +417,9 @@
     .accident-page .acc-table-wrap {
         width: 100%;
         min-width: 0;
-        overflow: visible;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         border: 0;
         border-radius: 0;
         background: transparent;
@@ -1534,6 +1520,26 @@
         }
     }
 </style>
+@endpush
+
+@section('content')
+@php
+    $isEdit = isset($accident) && $accident;
+    $hasAccidentRows = isset($accidents) && $accidents->isNotEmpty();
+    $doctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'พบแพทย์')->count() : 0;
+    $nonDoctorVisitCount = $hasAccidentRows ? $accidents->where('treat_no', 'ไม่พบแพทย์')->count() : 0;
+    $clientDisplayName = trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+
+    if ($clientDisplayName === '') {
+        $clientDisplayName = $client->name ?? $client->fullname ?? '-';
+    }
+
+    $clientAgeDisplay = filled($client->age ?? null)
+        ? ($client->age . ' ปี')
+        : '-';
+@endphp
+
+
 
 <div class="container-fluid px-2 px-lg-3 accident-page">
     <div class="acc-shell">
@@ -1715,164 +1721,7 @@
 @endsection
 
 @push('scripts')
-{{--
-    ACCIDENT DATATABLE V3 FINAL
-    แยก DataTable ออกจาก Modal โดยสิ้นเชิง เพื่อไม่ให้ return/error ของ Modal
-    ขัดขวางการจัด toolbar และเพื่อชนะ auto-init จาก Layout ส่วนกลาง
---}}
-<script>
-(function () {
-    'use strict';
-
-    let accidentDtInstance = null;
-    let accidentDtResizeBound = false;
-    let accidentDtRetryTimer = null;
-
-    function accidentDtHasCorrectLayout(tableElement) {
-        const wrapper = tableElement ? tableElement.closest('.dataTables_wrapper') : null;
-        return !!(
-            wrapper &&
-            wrapper.querySelector('.acc-dt-toolbar') &&
-            wrapper.querySelector('.acc-dt-scroll') &&
-            wrapper.querySelector('.acc-dt-footer')
-        );
-    }
-
-    function initAccidentDataTable(force) {
-        const tableElement = document.getElementById('datatable-accident');
-
-        if (!tableElement || !window.jQuery || !jQuery.fn || !jQuery.fn.DataTable) {
-            return false;
-        }
-
-        const $table = jQuery(tableElement);
-
-        // ถ้าเป็น layout ของหน้านี้อยู่แล้ว ไม่ต้องสร้างซ้ำ
-        if (!force && jQuery.fn.DataTable.isDataTable(tableElement) && accidentDtHasCorrectLayout(tableElement)) {
-            try {
-                accidentDtInstance = $table.DataTable();
-                accidentDtInstance.columns.adjust();
-            } catch (error) {}
-            return true;
-        }
-
-        // ทำลาย DataTable ที่ Layout ส่วนกลางสร้างไว้ก่อน
-        if (jQuery.fn.DataTable.isDataTable(tableElement)) {
-            try {
-                $table.DataTable().destroy();
-            } catch (error) {}
-        }
-
-        tableElement.removeAttribute('style');
-
-        accidentDtInstance = $table.DataTable({
-            destroy: true,
-            autoWidth: false,
-            responsive: false,
-            scrollX: false,
-            order: [[0, 'desc']],
-            pageLength: 10,
-            lengthMenu: [10, 25, 50, 100],
-            dom: '<"acc-dt-toolbar"<"acc-dt-length"l><"acc-dt-search"f>><"acc-dt-scroll"t><"acc-dt-footer"<"acc-dt-info"i><"acc-dt-paging"p>>',
-            columnDefs: [
-                {
-                    orderable: false,
-                    searchable: false,
-                    width: '150px',
-                    className: 'acc-col-actions',
-                    targets: -1
-                }
-            ],
-            language: {
-                emptyTable: 'ไม่พบข้อมูล',
-                info: 'แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ',
-                infoEmpty: 'แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ',
-                infoFiltered: '(กรองจากทั้งหมด _MAX_ รายการ)',
-                lengthMenu: 'แสดง _MENU_ รายการ',
-                loadingRecords: 'กำลังโหลด...',
-                processing: 'กำลังประมวลผล...',
-                search: 'ค้นหา:',
-                zeroRecords: 'ไม่พบข้อมูลที่ตรงกับการค้นหา',
-                paginate: {
-                    first: 'หน้าแรก',
-                    last: 'หน้าสุดท้าย',
-                    next: 'ถัดไป',
-                    previous: 'ก่อนหน้า'
-                }
-            },
-            initComplete: function () {
-                const api = this.api();
-                const wrapper = tableElement.closest('.dataTables_wrapper');
-
-                if (wrapper) {
-                    wrapper.setAttribute('data-accident-datatable-layout', 'v3-final');
-
-                    wrapper.querySelectorAll('.acc-dt-toolbar, .acc-dt-scroll, .acc-dt-footer').forEach(function (element) {
-                        element.setAttribute('data-permission-keep', '');
-                    });
-
-                    wrapper.querySelectorAll(
-                        '.acc-dt-toolbar input, .acc-dt-toolbar select, .acc-dt-toolbar button, .acc-dt-toolbar a, ' +
-                        '.acc-dt-footer input, .acc-dt-footer select, .acc-dt-footer button, .acc-dt-footer a'
-                    ).forEach(function (element) {
-                        element.setAttribute('data-permission-keep', '');
-                    });
-                }
-
-                window.requestAnimationFrame(function () {
-                    api.columns.adjust();
-                });
-            }
-        });
-
-        if (!accidentDtResizeBound) {
-            accidentDtResizeBound = true;
-            window.addEventListener('resize', function () {
-                window.clearTimeout(accidentDtRetryTimer);
-                accidentDtRetryTimer = window.setTimeout(function () {
-                    try {
-                        if (accidentDtInstance) {
-                            accidentDtInstance.columns.adjust();
-                        }
-                    } catch (error) {}
-                }, 140);
-            }, { passive: true });
-        }
-
-        return true;
-    }
-
-    function ensureAccidentDataTable() {
-        // รอบแรก: หลัง DOM พร้อม ให้ Layout ส่วนกลางสร้างของมันก่อนเล็กน้อย
-        window.setTimeout(function () {
-            initAccidentDataTable(true);
-        }, 180);
-
-        // รอบยืนยัน: หลัง resource ทั้งหมดโหลด ป้องกัน Layout มา init ทับทีหลัง
-        window.addEventListener('load', function () {
-            window.setTimeout(function () {
-                const tableElement = document.getElementById('datatable-accident');
-                if (!tableElement) {
-                    return;
-                }
-
-                if (!accidentDtHasCorrectLayout(tableElement)) {
-                    initAccidentDataTable(true);
-                } else {
-                    initAccidentDataTable(false);
-                }
-            }, 120);
-        }, { once: true });
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', ensureAccidentDataTable, { once: true });
-    } else {
-        ensureAccidentDataTable();
-    }
-})();
-</script>
-
+{{-- Stable Table V4: ตารางถูก render สำเร็จตั้งแต่ฝั่ง Blade ไม่ต้อง re-init หลังโหลด --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const modalElement = document.getElementById('accidentFormModal');

@@ -1268,24 +1268,6 @@
             input.max = today;
         });
 
-        function renumberRows() {
-            if (!window.jQuery || !$.fn.DataTable || !$.fn.DataTable.isDataTable('#datatable-medical')) return;
-
-            const api = $('#datatable-medical').DataTable();
-            const pageInfo = api.page.info();
-            api.rows({ page: 'current', order: 'applied', search: 'applied' })
-                .nodes()
-                .each(function (row, index) {
-                    const cell = row.querySelector('.medical-row-number');
-                    if (cell) cell.textContent = pageInfo.start + index + 1;
-                });
-        }
-
-        if (window.jQuery && $.fn.DataTable) {
-            $('#datatable-medical').on('draw.dt column-sizing.dt', renumberRows);
-            window.requestAnimationFrame(renumberRows);
-        }
-
         @if($medicalFlashMessage)
             if (window.Swal) {
                 Swal.fire({

@@ -11,8 +11,9 @@
     </div>
 
     <div class="co-table-wrap">
+        <x-stable-table-controls target="datatable-caseoutside" />
         <table id="datatable-caseoutside"
-               class="table table-hover align-middle co-table">
+               class="table table-hover align-middle co-table" data-stable-table data-page-length="10">
             <thead>
                 <tr>
                     <th style="width: 9%;">ครั้งที่</th>
@@ -102,5 +103,6 @@
                 @endforeach
             </tbody>
         </table>
+        <x-stable-table-footer target="datatable-caseoutside" :total="$caseoutsides->count()" />
     </div>
 </section>

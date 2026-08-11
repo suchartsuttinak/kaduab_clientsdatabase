@@ -63,7 +63,8 @@
 
                     <!-- Subject Table -->
                     <div class="card-body">
-                        <table id="datatable" class="table table-bordered dt-responsive nowrap">
+                        <x-stable-table-controls target="datatable" />
+                        <table id="datatable" class="table table-bordered dt-responsive nowrap" data-stable-table data-page-length="10">
                             <thead>
                                 <tr>
                                     <th>ลำดับที่</th>
@@ -94,6 +95,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        <x-stable-table-footer target="datatable" :total="$misbehavior->count()" />
                     </div>
                     <!--End Subject Table -->
 
