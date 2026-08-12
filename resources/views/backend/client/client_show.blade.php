@@ -232,7 +232,7 @@
                                                 $isPriorityImage = $key < 8;
                                             @endphp
                                             <a href="{{ route('admin.index', $client->id) }}" title="ดูข้อมูล" class="client-link-image">
-                                                <img src="{{ !empty($client->image) ? route('client.image', $client->id) : asset('upload/no_image.jpg') }}"
+                                                <img src="{{ !empty($client->image) ? (route('client.image', $client->id) . '?v=' . substr(sha1((string) $client->image), 0, 12)) /* CLIENT_IMAGE_URL_VERSION_V3 */ : asset('upload/no_image.jpg') }}"
                                                      alt="รูปผู้รับบริการ {{ $client->full_name }}"
                                                      class="client-avatar"
                                                      width="42"

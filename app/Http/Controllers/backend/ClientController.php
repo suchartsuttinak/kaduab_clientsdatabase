@@ -171,7 +171,12 @@ class ClientController extends Controller
      */
     public function ClientImage(Request $request, $id)
     {
-        $client = $this->findAuthorizedClient($id);
+        // CLIENT_IMAGE_CACHE_V3
+        // Route รูปยังตรวจสิทธิ์ด้วย forUser() เหมือนเดิม แต่เลือกเฉพาะคอลัมน์ที่จำเป็น
+        // เพื่อลด payload/หน่วยความจำของทุก image request
+        $client = Client::forUser(auth()->user())
+            ->select(['clients.id', 'clients.image'])
+            ->findOrFail($id);
         $safeFilename = !empty($client->image)
             ? basename((string) $client->image)
             : '';
@@ -207,8 +212,9 @@ class ClientController extends Controller
         // รูปยังเป็น private และผ่าน authorization เช่นเดิม
         // อนุญาต Browser cache ระยะสั้นเพื่อลดการโหลดรูปซ้ำทุกครั้งที่ refresh / live search
         $response->setPrivate();
-        $response->setMaxAge(60);
+        $response->setMaxAge(3600);
         $response->headers->addCacheControlDirective('must-revalidate');
+        $response->setVary('Cookie');
         $response->setEtag($etag);
         $response->setLastModified(new \DateTimeImmutable('@' . $lastModified));
 
