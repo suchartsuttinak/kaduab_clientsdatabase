@@ -642,5 +642,6 @@ use Illuminate\Support\Facades\Route;
         require __DIR__.'/frontend/vaccination.php';
         require __DIR__.'/frontend/HelpSession.php';
         require __DIR__.'/frontend/client_files.php';
+        require __DIR__.'/frontend/individual_development.php';
         require __DIR__.'/frontend/followup.php';
         require __DIR__.'/frontend/healthcCheckup.php';
