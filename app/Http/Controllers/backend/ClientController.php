@@ -142,6 +142,9 @@ class ClientController extends Controller
             ->toJpeg(quality: 70, progressive: true)
             ->save($destinationPath . DIRECTORY_SEPARATOR . $filename);
 
+        // CLIENT_IMAGE_THUMBNAIL_ON_UPLOAD_V5
+        $this->ensureClientListThumbnail($filename);
+
         return $filename;
     }
 
@@ -156,6 +159,8 @@ class ClientController extends Controller
             storage_path('app/private/client_images/' . $safeFilename),
             // รองรับไฟล์เก่าก่อนย้ายขึ้น private storage
             public_path('upload/client_images/' . $safeFilename),
+            // CLIENT_IMAGE_THUMBNAIL_DELETE_V5
+            storage_path('app/private/client_thumbnails/' . sha1($safeFilename) . '.jpg'),
         ];
 
         foreach ($paths as $path) {
@@ -166,12 +171,141 @@ class ClientController extends Controller
     }
 
     /**
+     * CLIENT_IMAGE_BATCH_V5
+     * คืน path ของรูปผู้รับบริการ โดยคง private storage เป็นลำดับแรก
+     */
+    protected function resolveClientImagePath(?string $filename): ?string
+    {
+        if (empty($filename)) {
+            return null;
+        }
+
+        $safeFilename = basename((string) $filename);
+        $candidates = [
+            storage_path('app/private/client_images/' . $safeFilename),
+            public_path('upload/client_images/' . $safeFilename),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (File::isFile($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * สร้าง thumbnail สำหรับหน้า list เท่านั้น ลด bandwidth/decode cost
+     * ไฟล์ต้นฉบับไม่ถูกแก้ไข
+     */
+    protected function ensureClientListThumbnail(?string $filename): ?string
+    {
+        $sourcePath = $this->resolveClientImagePath($filename);
+        if (!$sourcePath) {
+            return null;
+        }
+
+        $safeFilename = basename((string) $filename);
+        $thumbnailDir = storage_path('app/private/client_thumbnails');
+        $thumbnailPath = $thumbnailDir . DIRECTORY_SEPARATOR . sha1($safeFilename) . '.jpg';
+
+        try {
+            if (!File::exists($thumbnailDir)) {
+                File::makeDirectory($thumbnailDir, 0755, true);
+            }
+
+            $sourceMtime = File::lastModified($sourcePath);
+            if (File::isFile($thumbnailPath) && File::lastModified($thumbnailPath) >= $sourceMtime) {
+                return $thumbnailPath;
+            }
+
+            $manager = new ImageManager(new Driver());
+            $image = $manager
+                ->read($sourcePath)
+                ->orient()
+                ->scaleDown(width: 96);
+
+            $image
+                ->toJpeg(quality: 68, progressive: true)
+                ->save($thumbnailPath);
+
+            return File::isFile($thumbnailPath) ? $thumbnailPath : null;
+        } catch (Throwable $e) {
+            Log::warning('Client thumbnail generation failed', [
+                'filename' => $safeFilename,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Batch thumbnail endpoint ใช้ route client.image เดิมด้วย ?batch=1&ids=...
+     * ตรวจสิทธิ์ผู้ใช้เพียง query เดียว และไม่ cache response ข้าม session
+     */
+    protected function clientImageBatch(Request $request)
+    {
+        $ids = collect(explode(',', (string) $request->query('ids', '')))
+            ->map(static fn ($id) => trim($id))
+            ->filter(static fn ($id) => $id !== '' && ctype_digit($id) && (int) $id > 0)
+            ->map(static fn ($id) => (int) $id)
+            ->unique()
+            ->take(100)
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return response()->json(['images' => []], 200, [
+                'Cache-Control' => 'private, no-store, max-age=0',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        }
+
+        $clients = Client::forUser(auth()->user())
+            ->select(['clients.id', 'clients.image'])
+            ->whereIn('clients.id', $ids->all())
+            ->get()
+            ->keyBy('id');
+
+        $images = [];
+
+        foreach ($ids as $id) {
+            $client = $clients->get($id);
+            if (!$client || empty($client->image)) {
+                continue;
+            }
+
+            $thumbnailPath = $this->ensureClientListThumbnail((string) $client->image);
+            if (!$thumbnailPath || !File::isFile($thumbnailPath)) {
+                continue;
+            }
+
+            $bytes = File::get($thumbnailPath);
+            if ($bytes === false) {
+                continue;
+            }
+
+            $images[(string) $id] = 'data:image/jpeg;base64,' . base64_encode($bytes);
+        }
+
+        return response()->json(['images' => $images], 200, [
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+    /**
      * แสดงรูปผู้รับบริการผ่าน route ที่ตรวจสิทธิ์และ scope ของผู้ใช้
      * แทนการเปิดไฟล์ส่วนบุคคลจาก public URL โดยตรง
      */
     public function ClientImage(Request $request, $id)
     {
-        // CLIENT_IMAGE_CACHE_V3
+        // CLIENT_IMAGE_BATCH_ENTRY_V5
+        if ($request->boolean('batch')) {
+            return $this->clientImageBatch($request);
+        }
+// CLIENT_IMAGE_CACHE_V3
         // Route รูปยังตรวจสิทธิ์ด้วย forUser() เหมือนเดิม แต่เลือกเฉพาะคอลัมน์ที่จำเป็น
         // เพื่อลด payload/หน่วยความจำของทุก image request
         $client = Client::forUser(auth()->user())
@@ -211,10 +345,14 @@ class ClientController extends Controller
 
         // รูปยังเป็น private และผ่าน authorization เช่นเดิม
         // อนุญาต Browser cache ระยะสั้นเพื่อลดการโหลดรูปซ้ำทุกครั้งที่ refresh / live search
+        // CLIENT_IMAGE_CACHE_V4
+        // URL รูปถูก version ด้วยชื่อไฟล์ + session อยู่แล้ว จึงไม่ใช้ Vary: Cookie
+        // เพื่อป้องกัน cache miss เมื่อ Cookie อื่นเปลี่ยนระหว่างการใช้งาน
+        // private = ไม่ให้ shared/proxy cache เก็บรูปส่วนบุคคล
+        // 6 ชั่วโมงครอบคลุมการใช้งานต่อเนื่องในหนึ่งช่วงงาน โดยไม่ต้อง revalidate รูปซ้ำ
         $response->setPrivate();
-        $response->setMaxAge(3600);
-        $response->headers->addCacheControlDirective('must-revalidate');
-        $response->setVary('Cookie');
+        $response->setMaxAge(21600);
+        $response->headers->addCacheControlDirective('immutable');
         $response->setEtag($etag);
         $response->setLastModified(new \DateTimeImmutable('@' . $lastModified));
 
