@@ -13,10 +13,12 @@
 </style>
 <div class="idp-report-screen">
     <div class="rp-toolbar">
-        <a href="{{ route('individual-development.index',$client->id) }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>กลับหน้าหลัก</a>
+        <a href="{{ route('individual-development.index',['client'=>$client->id,'plan'=>$plan->id]) }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>กลับหน้าหลัก</a>
         <div class="rp-toolbar-group">
-            <a href="{{ route('individual-development.report.pdf',$client->id) }}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-pdf me-1"></i>ดาวน์โหลด PDF</a>
-            <button type="button" onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer me-1"></i>พิมพ์ A4</button>
+            {{-- IDP_BROWSER_PRINT_FINAL_V1: พิมพ์จาก Browser และเลือก Save as PDF ได้ --}}
+            <button type="button" onclick="window.print()" class="btn btn-primary">
+                <i class="bi bi-printer me-1"></i>พิมพ์ / บันทึก PDF
+            </button>
         </div>
     </div>
     @include('frontend.client.individual_development.report._content')
