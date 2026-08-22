@@ -790,21 +790,14 @@
             : ($name !== '' ? $name : '-');
     };
 
-    $documentUrl = static function (?string $path): ?string {
-        if (!$path) {
+    $documentUrl = static function ($item): ?string {
+        if (!$item || empty($item->id) || empty($item->medical_document)) {
             return null;
         }
 
-        $normalized = ltrim(str_replace('\\', '/', $path), '/');
-
-        if (
-            str_starts_with($normalized, 'upload/')
-            || str_starts_with($normalized, 'storage/')
-        ) {
-            return asset($normalized);
-        }
-
-        return \Illuminate\Support\Facades\Storage::disk('public')->url($normalized);
+        // เอกสารตรวจสุขภาพเก็บใน Private Storage
+        // เปิดผ่าน Controller เพื่อให้ตรวจ auth + สิทธิ์ + ขอบเขตผู้รับบริการก่อนเสมอ
+        return route('healthc_heckups.document.view', $item->id);
     };
 @endphp
 
@@ -975,7 +968,7 @@
                             </thead>
                             <tbody>
                                 @forelse($healthcHeckups as $index => $item)
-                                    @php($itemDocumentUrl = $documentUrl($item->medical_document))
+                                    @php($itemDocumentUrl = $documentUrl($item))
                                     <tr>
                                         <td class="text-center">
                                             {{ ($healthcHeckups->firstItem() ?? 1) + $index }}

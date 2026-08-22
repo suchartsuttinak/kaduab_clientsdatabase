@@ -99,7 +99,14 @@ return [
                     'description' => 'บันทึก แก้ไข และรายงานการขาดเรียน',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
-            ],
+            
+                // 2.x เด็กมหาวิทยาลัย / ติดตามระดับอุดมศึกษา
+                'education_university' => [
+                    'label' => 'เด็กมหาวิทยาลัย',
+                    'description' => 'Dashboard ผลการเรียนรายวิชา PDF การติดตาม ความเสี่ยง และผลสำเร็จ/ออกกลางคัน',
+                    'actions' => ['view', 'create', 'update', 'delete', 'print'],
+                ],
+],
         ],
 
         'health' => [
@@ -168,6 +175,24 @@ return [
                 'screening_nutrition' => [
                     'label' => 'แบบประเมินโภชนาการ',
                     'description' => 'ส่วนสูง น้ำหนัก BMI และผลประเมินโภชนาการ',
+                    'actions' => ['view', 'create', 'update', 'delete', 'print'],
+                ],
+            ],
+        ],
+
+        'individual_development' => [
+            'label' => 'พัฒนาและติดตามรายบุคคล',
+            'icon' => 'bi-person-up',
+            'description' => 'ศูนย์กลางข้อมูลเด็กทุกบ้าน และการวางแผนพัฒนา/ติดตามผลรายบุคคล',
+            'items' => [
+                'individual_development_center' => [
+                    'label' => 'ศูนย์กลางการพัฒนาเด็ก',
+                    'description' => 'ข้อมูลกลางระดับองค์กรสำหรับดูเด็กทุกบ้าน แผน เป้าหมาย งานติดตาม และผลล่าสุด — ควรให้เฉพาะผู้ที่ได้รับมอบหมายให้ดูข้อมูลข้ามบ้าน',
+                    'actions' => ['view'],
+                ],
+                'individual_development' => [
+                    'label' => 'แผนพัฒนาและติดตามรายบุคคล',
+                    'description' => 'จุดแข็ง/ความต้องการ → Baseline → เป้าหมาย → กิจกรรม → ติดตาม → Outcome → รายงาน → ปิดแผน',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
             ],
@@ -308,16 +333,6 @@ return [
 
             'items' => [
 
-                'system_users' => [
-                    'label' => 'จัดการผู้ใช้งาน',
-                    'description' => 'ดูรายชื่อ เพิ่ม แก้ไข ปิดใช้งาน และลบบัญชีผู้ใช้งาน โดยยังคงการป้องกันบัญชีผู้ดูแลระบบคนสุดท้าย',
-                    'actions' => [
-                        'view',
-                        'create',
-                        'update',
-                        'delete',
-                    ],
-                ],
 
         /*
         |--------------------------------------------------------------------------
@@ -350,6 +365,85 @@ return [
     |
     */
     'route_permissions' => [
+        /*
+        |--------------------------------------------------------------------------
+        | พัฒนาและติดตามรายบุคคล (Individual Development)
+        |--------------------------------------------------------------------------
+        | Permission key: individual_development
+        | Lifecycle guard ใน Controller/Service ยังคงเป็นด่านสุดท้ายเสมอ
+        */
+        ['routes' => [
+            'individual-development.center',
+        ], 'permissions' => ['individual_development_center'], 'action' => 'view'],
+
+        ['routes' => [
+            'individual-development.index',
+            'individual-development.timeline',
+            'individual-development.baseline.show',
+            'individual-development.goals.index',
+            'individual-development.followups.show',
+            'individual-development.outcomes.index',
+            'individual-development.outcomes.show',
+        ], 'permissions' => ['individual_development'], 'action' => 'view'],
+
+        ['routes' => [
+            'individual-development.create',
+            'individual-development.store',
+            'individual-development.baseline.create',
+            'individual-development.baseline.store',
+            'individual-development.goals.create',
+            'individual-development.goals.store',
+            'individual-development.activities.create',
+            'individual-development.activities.store',
+            'individual-development.followups.create',
+            'individual-development.followups.store',
+            'individual-development.outcomes.create',
+            'individual-development.outcomes.store',
+            'individual-development.coordinations.store',
+        ], 'permissions' => ['individual_development'], 'action' => 'create'],
+
+        ['routes' => [
+            'individual-development.edit',
+            'individual-development.update',
+            'individual-development.profile.update',
+            'individual-development.support-network.update',
+            'individual-development.discharge-plan.update',
+            'individual-development.documents.update',
+            'individual-development.coordinations.update',
+            'individual-development.close.form',
+            'individual-development.close',
+            'individual-development.cancel',
+            'individual-development.baseline.edit',
+            'individual-development.baseline.update',
+            'individual-development.goals.edit',
+            'individual-development.goals.update',
+            'individual-development.goals.achieve',
+            'individual-development.goals.cancel',
+            'individual-development.goals.reopen',
+            'individual-development.activities.edit',
+            'individual-development.activities.update',
+            'individual-development.activities.cancel',
+            'individual-development.followups.edit',
+            'individual-development.followups.update',
+            'individual-development.outcomes.edit',
+            'individual-development.outcomes.update',
+        ], 'permissions' => ['individual_development'], 'action' => 'update'],
+
+        ['routes' => [
+            'individual-development.destroy',
+            'individual-development.goals.destroy',
+            'individual-development.activities.destroy',
+            'individual-development.followups.destroy',
+            'individual-development.coordinations.destroy',
+        ], 'permissions' => ['individual_development'], 'action' => 'delete'],
+
+        ['routes' => [
+            'individual-development.report.hub',
+            'individual-development.report.progress',
+            'individual-development.report.summary',
+            'individual-development.report.show',
+            'individual-development.report.pdf',
+        ], 'permissions' => ['individual_development'], 'action' => 'print'],
         // สิทธิ์ส่วนกลางเพิ่มเติม
         ['routes' => ['client.cases'], 'permissions' => ['registration_central_cases'], 'action' => 'view'],
         ['routes' => ['client.transfers'], 'permissions' => ['registration_project_transfer'], 'action' => 'view'],
@@ -433,10 +527,8 @@ return [
         ['routes' => ['translate.delete'], 'permissions' => ['master_release_types'], 'action' => 'delete'],
 
         ['routes' => ['refers.all'], 'permissions' => ['report_discharge_all'], 'action' => 'view'],
-        ['routes' => ['users.index'], 'permissions' => ['system_users'], 'action' => 'view'],
-        ['routes' => ['users.create', 'users.store'], 'permissions' => ['system_users'], 'action' => 'create'],
-        ['routes' => ['users.edit', 'users.update', 'users.toggle-status'], 'permissions' => ['system_users'], 'action' => 'update'],
-        ['routes' => ['users.destroy'], 'permissions' => ['system_users'], 'action' => 'delete'],
+        // User Management ใช้ role:admin,executive + controller guard โดยตรง
+        // จงใจไม่เปิดให้มอบสิทธิ์ส่วนนี้ผ่าน permission checkbox
         /*
         |--------------------------------------------------------------------------
         | Audit Log
@@ -458,6 +550,7 @@ return [
             'education_results',
             'education_followup',
             'education_absence',
+            'education_university',
             'health_accident',
             'health_body_check',
             'health_medical',
@@ -469,6 +562,7 @@ return [
             'screening_snap_iv',
             'screening_depression',
             'screening_nutrition',
+            'individual_development',
             'welfare_counseling',
             'welfare_behavior_problem',
             'welfare_escape',
@@ -596,7 +690,7 @@ return [
         ['routes' => ['addictive.report', 'addictive.report.all'], 'permissions' => ['health_addictive'], 'action' => 'print'],
 
         // 3.7 ตรวจสุขภาพประจำปี
-        ['routes' => ['healthc_heckups.index', 'healthc_heckups.edit_json'], 'permissions' => ['health_annual_checkup'], 'action' => 'view'],
+        ['routes' => ['healthc_heckups.index', 'healthc_heckups.edit_json', 'healthc_heckups.document.view'], 'permissions' => ['health_annual_checkup'], 'action' => 'view'],
         ['routes' => ['healthc_heckups.store'], 'permissions' => ['health_annual_checkup'], 'action' => 'create'],
         ['routes' => ['healthc_heckups.update'], 'permissions' => ['health_annual_checkup'], 'action' => 'update'],
         ['routes' => ['healthc_heckups.delete'], 'permissions' => ['health_annual_checkup'], 'action' => 'delete'],
@@ -716,5 +810,12 @@ return [
             'health_accident', 'health_body_check', 'health_medical', 'health_vaccination',
             'health_psychiatric', 'health_addictive', 'health_annual_checkup',
         ], 'action' => 'view'],
-    ],
+    
+        // 2.x เด็กมหาวิทยาลัย / ติดตามระดับอุดมศึกษา
+        ['routes' => ['university.dashboard', 'university.enrollments.index', 'university.client', 'university.enrollments.show', 'university.semesters.show', 'university.documents.view', 'university.outcomes.form'], 'permissions' => ['education_university'], 'action' => 'view'],
+        ['routes' => ['university.enrollments.create', 'university.enrollments.store', 'university.semesters.create', 'university.semesters.store', 'university.followups.create', 'university.followups.store', 'university.outcomes.store', 'university.documents.store'], 'permissions' => ['education_university'], 'action' => 'create'],
+        ['routes' => ['university.enrollments.edit', 'university.enrollments.update', 'university.semesters.edit', 'university.semesters.update', 'university.followups.edit', 'university.followups.update', 'university.outcomes.update'], 'permissions' => ['education_university'], 'action' => 'update'],
+        ['routes' => ['university.enrollments.destroy', 'university.semesters.destroy', 'university.followups.destroy', 'university.outcomes.destroy', 'university.documents.destroy'], 'permissions' => ['education_university'], 'action' => 'delete'],
+        ['routes' => ['university.documents.download', 'university.reports.semester', 'university.reports.enrollment'], 'permissions' => ['education_university'], 'action' => 'print'],
+],
 ];

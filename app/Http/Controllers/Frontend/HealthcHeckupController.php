@@ -622,16 +622,9 @@ class HealthcHeckupController extends Controller
 
     private function authorizeRole(): void
     {
-        abort_unless(
-            auth()->check()
-                && in_array(
-                    auth()->user()->role,
-                    ['admin', 'executive', 'social_worker'],
-                    true
-                ),
-            403,
-            'คุณไม่มีสิทธิ์เข้าถึงข้อมูลการตรวจสุขภาพ'
-        );
+        // สิทธิ์รายฟอร์ม health_annual_checkup ถูกตรวจโดย EnforceFormPermission
+        // Route นี้มี auth middleware อยู่แล้ว จึงตรวจเพียงสถานะการเข้าสู่ระบบซ้ำแบบ defensive
+        abort_unless(auth()->check(), 401, 'Unauthenticated.');
     }
 
     private function findAuthorizedClient(int $clientId, string $errorBag): Client

@@ -3,7 +3,7 @@
 use App\Http\Controllers\Frontend\HealthcHeckupController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'role:admin,executive,social_worker'])
+Route::middleware(['auth'])
     ->prefix('healthc-checkups')
     ->group(function (): void {
         Route::get('/', [HealthcHeckupController::class, 'index'])
