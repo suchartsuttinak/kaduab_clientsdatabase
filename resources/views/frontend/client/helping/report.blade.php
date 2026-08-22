@@ -65,11 +65,12 @@
         line-height: 1.4;
     }
 
-    .help-report-subtitle{
-        margin: 6px 0 0;
-        font-size: .95rem;
-        color: #6b7280;
-        line-height: 1.6;
+    .help-report-client-name{
+        margin: 5px 0 0;
+        font-size: .96rem;
+        color: #475569;
+        line-height: 1.55;
+        font-weight: 400;
     }
 
     .help-report-actions{
@@ -90,33 +91,6 @@
         gap: 8px;
         line-height: 1.2;
         white-space: nowrap;
-    }
-
-    .help-report-meta{
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-
-    .help-report-meta-item{
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 14px;
-        background: #fafafa;
-    }
-
-    .help-report-meta-label{
-        font-size: .85rem;
-        color: #6b7280;
-        margin-bottom: 6px;
-    }
-
-    .help-report-meta-value{
-        font-size: 1rem;
-        font-weight: 700;
-        color: #111827;
-        line-height: 1.5;
     }
 
     .help-report-table-wrap{
@@ -274,38 +248,12 @@
         margin:0 !important;
     }
 
-    .help-report-subtitle{
-        font-size:11px !important;
-        color:#64748b !important;
+    .help-report-client-name{
+        font-size:11.5px !important;
+        color:#475569 !important;
         margin-top:2px !important;
-        line-height:1.1 !important;
-        font-weight:600 !important;
-    }
-
-    .help-report-meta{
-        display:flex !important;
-        align-items:center !important;
-        justify-content:flex-start !important;
-        flex-wrap:wrap !important;
-        gap:4px 22px !important;
-        margin:0 0 6px !important;
-        padding:0 0 5px 4px !important;
-        border-bottom:1px solid #dbe4f0 !important;
-    }
-
-    .help-report-meta > *{
-        border:none !important;
-        background:none !important;
-        box-shadow:none !important;
-        padding:0 !important;
-        margin:0 !important;
-        min-width:auto !important;
-        width:auto !important;
-        flex:none !important;
-        font-size:12.5px !important;
-        font-weight:800 !important;
-        color:#2563eb !important;
-        line-height:1.1 !important;
+        line-height:1.15 !important;
+        font-weight:400 !important;
     }
 
     .help-report-table-wrap{
@@ -392,8 +340,8 @@
         <div class="help-report-header">
             <div>
                 <h1 class="help-report-title">รายงานการช่วยเหลือผู้รับบริการ</h1>
-                <p class="help-report-subtitle">
-                    รายงานเฉพาะรายการวันที่ {{ thaiDateHelpingReport($session->help_date) }}
+                <p class="help-report-client-name">
+                    ผู้รับบริการ: {{ $client->fullname ?? $client->full_name ?? '-' }}
                 </p>
             </div>
 
@@ -407,23 +355,6 @@
                     <i class="bi bi-printer"></i>
                     <span>พิมพ์รายงาน</span>
                 </button>
-            </div>
-        </div>
-
-        <div class="help-report-meta">
-            <div class="help-report-meta-item">
-                <div class="help-report-meta-label">ชื่อผู้รับบริการ</div>
-                <div class="help-report-meta-value">{{ $client->fullname ?? $client->full_name ?? '-' }}</div>
-            </div>
-
-            <div class="help-report-meta-item">
-                <div class="help-report-meta-label">วันที่ให้ความช่วยเหลือ</div>
-                <div class="help-report-meta-value">{{ thaiDateHelpingReport($session->help_date) }}</div>
-            </div>
-
-            <div class="help-report-meta-item">
-                <div class="help-report-meta-label">ยอดรวมทั้งหมด</div>
-                <div class="help-report-meta-value">{{ number_format($grandTotal, 2) }} บาท</div>
             </div>
         </div>
 
