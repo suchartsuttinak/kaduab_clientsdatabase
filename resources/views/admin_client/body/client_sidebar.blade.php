@@ -92,6 +92,7 @@
 
     $isHealthOpen = Request::routeIs('accident.*')
         || Request::routeIs('check_body.*')
+        || Request::routeIs('healthcare_rights.*')
         || Request::routeIs('medical.*')
         || Request::routeIs('vaccine.*')
         || Request::routeIs('psychiatric.*')
@@ -449,6 +450,10 @@
 
                                 @if ($clientId && $canForm('health_body_check'))
                                     <li><a href="{{ route('check_body.add', $clientId) }}" class="tp-link {{ Request::routeIs('check_body.*') ? 'active' : '' }}">ตรวจสุขภาพเบื้องต้น</a></li>
+                                @endif
+
+                                @if ($clientId && $canForm('health_treatment_rights'))
+                                    <li><a href="{{ route('healthcare_rights.index', $clientId) }}" class="tp-link {{ Request::routeIs('healthcare_rights.*') ? 'active' : '' }}">สิทธิรักษาพยาบาล</a></li>
                                 @endif
 
                                 @if ($clientId && $canForm('health_medical'))

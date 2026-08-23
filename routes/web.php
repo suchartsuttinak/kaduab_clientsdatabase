@@ -633,6 +633,7 @@ use Illuminate\Support\Facades\Route;
         require __DIR__.'/frontend/VisitFamily.php';
         require __DIR__.'/frontend/jobAgency.php';
         require __DIR__.'/frontend/medical.php';
+        require __DIR__.'/frontend/healthcareRights.php';
         require __DIR__.'/frontend/member.php';
         require __DIR__.'/frontend/observe.php';
         require __DIR__.'/frontend/psychiatric.php';

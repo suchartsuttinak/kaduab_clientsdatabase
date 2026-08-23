@@ -245,6 +245,20 @@ $latestActivityDate = $latestActivity?->occurred_at;
         $fileLatestType = $latestFile->file_type ?? 'ไม่มีข้อมูล';
         $fileLatestDate = $latestFile->uploaded_at ?? null;
 
+        // HEALTHCARE_RIGHTS_PROFILE_SUMMARY_V1_CONTROLLER
+        // แสดงเฉพาะผู้ใช้ที่มีสิทธิ์ดูฟอร์มสิทธิรักษาพยาบาล
+        $canViewHealthcareRightSummary = (bool) (
+            auth()->user()?->canViewForm('health_treatment_rights') ?? false
+        );
+
+        $latestHealthcareRight = $canViewHealthcareRightSummary
+            ? \App\Models\HealthcareRight::query()
+                ->where('client_id', $client->id)
+                ->orderByDesc('record_date')
+                ->orderByDesc('id')
+                ->first()
+            : null;
+
         return view('admin_client.index.client_index', compact(
             'client',
             'currentEducationRecord',
@@ -280,7 +294,9 @@ $latestActivityDate = $latestActivity?->occurred_at;
             'fileLatestDate',
             'activitiesCount',
             'latestActivityType',
-            'latestActivityDate'
+            'latestActivityDate',
+            'canViewHealthcareRightSummary',
+            'latestHealthcareRight'
         ));
     }
 

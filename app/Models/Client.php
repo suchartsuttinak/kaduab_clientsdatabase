@@ -184,6 +184,11 @@ class Client extends Model
         return $this->hasMany(Vaccination::class, 'client_id');
     }
 
+    public function healthcareRights()
+    {
+        return $this->hasMany(HealthcareRight::class, 'client_id');
+    }
+
     public function members()
     {
         return $this->hasMany(Member::class, 'client_id');

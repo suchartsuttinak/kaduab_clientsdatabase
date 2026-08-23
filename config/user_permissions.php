@@ -124,6 +124,11 @@ return [
                     'description' => 'ผลการตรวจสภาพร่างกายและบาดแผล',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
+                'health_treatment_rights' => [
+                    'label' => 'สิทธิรักษาพยาบาล',
+                    'description' => 'สถานะสิทธิและสถานพยาบาลที่เข้ารับการรักษาเบื้องต้น',
+                    'actions' => ['view', 'create', 'update', 'delete', 'print'],
+                ],
                 'health_medical' => [
                     'label' => 'บันทึกการรักษาพยาบาล',
                     'description' => 'ประวัติการเจ็บป่วยและการรักษาพยาบาล',
@@ -553,6 +558,7 @@ return [
             'education_university',
             'health_accident',
             'health_body_check',
+            'health_treatment_rights',
             'health_medical',
             'health_vaccination',
             'health_psychiatric',
@@ -661,7 +667,14 @@ return [
         ['routes' => ['check_body.delete'], 'permissions' => ['health_body_check'], 'action' => 'delete'],
         ['routes' => ['check_body.report'], 'permissions' => ['health_body_check'], 'action' => 'print'],
 
-        // 3.3 รักษาพยาบาล
+        // 3.3 สิทธิรักษาพยาบาล
+        ['routes' => ['healthcare_rights.index'], 'permissions' => ['health_treatment_rights'], 'action' => 'view'],
+        ['routes' => ['healthcare_rights.store'], 'permissions' => ['health_treatment_rights'], 'action' => 'create'],
+        ['routes' => ['healthcare_rights.edit', 'healthcare_rights.update'], 'permissions' => ['health_treatment_rights'], 'action' => 'update'],
+        ['routes' => ['healthcare_rights.destroy'], 'permissions' => ['health_treatment_rights'], 'action' => 'delete'],
+        ['routes' => ['healthcare_rights.report'], 'permissions' => ['health_treatment_rights'], 'action' => 'print'],
+
+        // 3.4 รักษาพยาบาล
         ['routes' => ['medical.add', 'medical.json'], 'permissions' => ['health_medical'], 'action' => 'view'],
         ['routes' => ['medical.store'], 'permissions' => ['health_medical'], 'action' => 'create'],
         ['routes' => ['medical.update'], 'permissions' => ['health_medical'], 'action' => 'update'],
@@ -807,7 +820,7 @@ return [
 
         // Dashboard สุขภาพของผู้รับบริการ: ต้องมีสิทธิ์ดูอย่างน้อยหนึ่งฟอร์มสุขภาพ
         ['routes' => ['admin.client.health'], 'permissions' => [
-            'health_accident', 'health_body_check', 'health_medical', 'health_vaccination',
+            'health_accident', 'health_body_check', 'health_treatment_rights', 'health_medical', 'health_vaccination',
             'health_psychiatric', 'health_addictive', 'health_annual_checkup',
         ], 'action' => 'view'],
     

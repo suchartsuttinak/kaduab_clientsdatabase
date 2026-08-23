@@ -50,6 +50,7 @@
     $isHealthActive =
         Request::routeIs('accident.*') ||
         Request::routeIs('check_body.*') ||
+        Request::routeIs('healthcare_rights.*') ||
         Request::routeIs('medical.*') ||
         Request::routeIs('vaccine.*') ||
         Request::routeIs('psychiatric.*') ||
@@ -249,6 +250,9 @@
                                 @endif
                                 @if ($clientId && $canForm('health_body_check'))
                                     <li><a class="dropdown-item {{ Request::routeIs('check_body.*') ? 'active' : '' }}" href="{{ route('check_body.add', $clientId) }}">บันทึกการตรวจสุขภาพ</a></li>
+                                @endif
+                                @if ($clientId && $canForm('health_treatment_rights'))
+                                    <li><a class="dropdown-item {{ Request::routeIs('healthcare_rights.*') ? 'active' : '' }}" href="{{ route('healthcare_rights.index', $clientId) }}">สิทธิรักษาพยาบาล</a></li>
                                 @endif
                                 @if ($clientId && $canForm('health_medical'))
                                     <li><a class="dropdown-item {{ Request::routeIs('medical.*') ? 'active' : '' }}" href="{{ route('medical.add', $clientId) }}">บันทึกการรักษาพยาบาล</a></li>

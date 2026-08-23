@@ -112,6 +112,24 @@
                             {{ $client->residence_duration ?? 'ไม่มีข้อมูลวันที่เข้าระบบ' }}
                         </span>
                     </div>
+
+                    {{-- HEALTHCARE_RIGHTS_PROFILE_SUMMARY_V1_VIEW --}}
+                    @if($canViewHealthcareRightSummary ?? false)
+                        <div class="healthcare-right-summary mt-3">
+                            <i class="bi bi-heart-pulse-fill" aria-hidden="true"></i>
+                            @if($latestHealthcareRight)
+                                <span>
+                                    <strong>สิทธิรักษาพยาบาล</strong>
+                                    ({{ $latestHealthcareRight->coverage_status }})
+                                    @if(!empty($latestHealthcareRight->primary_hospital))
+                                        {{ $latestHealthcareRight->primary_hospital }}
+                                    @endif
+                                </span>
+                            @else
+                                <span><strong>สิทธิรักษาพยาบาล</strong> ยังไม่มีข้อมูล</span>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <div class="col-xl-8">
@@ -844,6 +862,33 @@
         white-space: normal;
         word-break: break-word;
         text-align: center;
+    }
+
+    /* HEALTHCARE_RIGHTS_PROFILE_SUMMARY_V1_CSS */
+    .healthcare-right-summary {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: .45rem;
+        width: 100%;
+        padding: .7rem .85rem 0;
+        border-top: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.96);
+        font-size: .9rem;
+        line-height: 1.55;
+        text-align: center;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .healthcare-right-summary i {
+        flex: 0 0 auto;
+        margin-top: .15rem;
+        font-size: 1rem;
+    }
+
+    .healthcare-right-summary strong {
+        font-weight: 800;
     }
 
     .detail-title {
