@@ -39,6 +39,8 @@ final class FormPermissionUi
         }
 
         $permissionKeys = self::permissionKeys($currentRule);
+        // EPC_CAPABILITY_AWARE_READONLY_V1
+        $availableActions = self::availableActions($permissionKeys);
         $current = [
             'view'   => self::isAllowed($user, $permissionKeys, 'view'),
             'create' => self::isAllowed($user, $permissionKeys, 'create'),
@@ -47,16 +49,31 @@ final class FormPermissionUi
             'print'  => self::isAllowed($user, $permissionKeys, 'print'),
         ];
 
+        // หน้า report/view-only โดยธรรมชาติ (เช่น Dashboard/Analytics/Center)
+        // ไม่ควรถูกตีความว่าเป็น "โหมดอ่านอย่างเดียว" เพราะไม่มี write action ให้มอบตั้งแต่แรก
+        $writeActions = array_values(array_intersect(
+            ['create', 'update', 'delete'],
+            $availableActions
+        ));
+
+        $hasGrantedWrite = false;
+        foreach ($writeActions as $writeAction) {
+            if (($current[$writeAction] ?? false) === true) {
+                $hasGrantedWrite = true;
+                break;
+            }
+        }
+
         $current['readonly'] = $current['view']
-            && !$current['create']
-            && !$current['update']
-            && !$current['delete'];
+            && $writeActions !== []
+            && !$hasGrantedWrite;
 
         return [
             'enabled'         => true,
             'route_name'      => $routeName,
             'route_action'    => (string) ($currentRule['action'] ?? 'view'),
             'permission_keys' => $permissionKeys,
+            'available_actions' => $availableActions,
             'current'         => $current,
             'denied_routes'   => self::deniedRoutes($user),
         ];
@@ -69,6 +86,7 @@ final class FormPermissionUi
             'route_name'      => $routeName,
             'route_action'    => null,
             'permission_keys' => [],
+            'available_actions' => [],
             'current'         => null,
             'denied_routes'   => [],
         ];
@@ -124,6 +142,31 @@ final class FormPermissionUi
         )));
     }
 
+    /** @return list<string> */
+    private static function availableActions(array $permissionKeys): array
+    {
+        if ($permissionKeys === []) {
+            return ['view', 'create', 'update', 'delete', 'print'];
+        }
+
+        $found = [];
+        foreach ((array) config('user_permissions.groups', []) as $group) {
+            foreach (($group['items'] ?? []) as $permissionKey => $item) {
+                if (!in_array((string) $permissionKey, $permissionKeys, true)) {
+                    continue;
+                }
+
+                foreach ((array) ($item['actions'] ?? []) as $action) {
+                    $action = strtolower(trim((string) $action));
+                    if ($action !== '') {
+                        $found[$action] = true;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_keys($found));
+    }
     private static function isAllowed(mixed $user, array $permissionKeys, string $action): bool
     {
         if ($permissionKeys === []) {

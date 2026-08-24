@@ -1009,7 +1009,7 @@
                             <div class="form-check copy-check">
                                 <input class="form-check-input" type="checkbox" id="sameAsCurrentAddress">
                                 <label class="form-check-label" for="sameAsCurrentAddress">
-                                    ที่อยู่ปัจจุบันตรงกับภูมิลำเนาเดิม
+                                    ที่อยู่ปัจจุบันตรงกับที่อยู่ตามทะเบียนบ้าน
                                 </label>
                             </div>
 
@@ -1124,7 +1124,7 @@
 
                         {{-- ภูมิลำเนาเดิม --}}
                         <div class="panel-box">
-                            <div class="panel-title">ภูมิลำเนาเดิม</div>
+                            <div class="panel-title">ที่อยู่ตามทะเบียนบ้าน</div>
 
                             <div class="row compact-row">
                                 <div class="col-md-6">

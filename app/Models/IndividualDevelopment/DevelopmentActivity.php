@@ -21,13 +21,19 @@ class DevelopmentActivity extends Model
 
     protected $fillable = [
         'goal_id', 'activity_date', 'end_date', 'activity_type', 'detail', 'frequency',
-        'status', 'responsible_user_id', 'responsible_name', 'result', 'problem',
+        'status', 'completed_at', 'cancel_reason', 'cancelled_at', 'cancelled_by',
+        'responsible_user_id', 'responsible_name', 'result', 'problem',
         'next_action', 'created_by', 'updated_by',
     ];
 
     protected function casts(): array
     {
-        return ['activity_date' => 'date', 'end_date' => 'date'];
+        return [
+            'activity_date' => 'date',
+            'end_date' => 'date',
+            'completed_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+        ];
     }
 
     public function goal(): BelongsTo { return $this->belongsTo(DevelopmentGoal::class, 'goal_id'); }

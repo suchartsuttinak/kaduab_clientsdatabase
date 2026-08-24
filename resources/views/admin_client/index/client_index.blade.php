@@ -11,8 +11,9 @@
         abort(404);
     }
 
+    // CLIENT_IMAGE_VERSION_V8: Browser cache ได้ตามปกติ แต่ชื่อไฟล์เปลี่ยน = URL เปลี่ยนทันที
     $profileImage = !empty($client->image)
-        ? route('client.image', $client->id)
+        ? (route('client.image', $client->id) . '?v=' . substr(sha1((string) $client->image), 0, 12))
         : asset('upload/no_image.jpg');
 
     $birthDate = !empty($client->birth_date) ? Carbon::parse($client->birth_date) : null;

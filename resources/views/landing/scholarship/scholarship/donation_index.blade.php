@@ -19,10 +19,13 @@
             </p>
 
             <div class="mt-5 flex flex-col sm:flex-row gap-3">
-                <a href="{{ route('scholarship.donation.create', $scholarship->id) }}"
-                   class="inline-flex justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
-                    + บันทึกการบริจาคเพิ่ม
-                </a>
+                {{-- EPC_SCHOLARSHIP_VIEW_ACTIONS_V1 --}}
+                @if(auth()->user()?->canCreateForm('dashboard_scholarship_sponsors'))
+                    <a href="{{ route('scholarship.donation.create', $scholarship->id) }}"
+                       class="inline-flex justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+                        + บันทึกการบริจาคเพิ่ม
+                    </a>
+                @endif
 
                 <a href="{{ route('scholarship.index') }}"
                    class="inline-flex justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">

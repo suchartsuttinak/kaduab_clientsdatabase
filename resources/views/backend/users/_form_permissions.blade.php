@@ -51,6 +51,13 @@
             </span>
         </div>
 
+        <div class="ufp-admin-note">
+            <i class="bi bi-shield-lock-fill"></i>
+            <span>
+                สิทธิ์ “จัดการผู้ใช้งาน” ไม่สามารถมอบผ่านช่องเลือกด้านล่าง: Admin และผู้บริหารเข้าตามบทบาทเท่านั้น และบัญชี Admin ถูกป้องกันจากการแก้ไขในโมดูลนี้
+            </span>
+        </div>
+
         <div class="ufp-admin-note d-none" id="permissionAdminNote">
             <i class="bi bi-shield-check"></i>
             <span>ผู้ดูแลระบบได้รับสิทธิ์เต็มระบบเสมอ แม้กำหนดช่องด้านล่างไว้ก็ตาม</span>

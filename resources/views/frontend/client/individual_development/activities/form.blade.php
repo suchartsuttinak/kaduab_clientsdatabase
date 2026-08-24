@@ -28,16 +28,16 @@
 
     @if($errors->any())<div class="alert alert-danger rounded-3"><div class="fw-bold mb-1">กรุณาตรวจสอบข้อมูล</div><ul class="mb-0 ps-3">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 
-    <form method="POST" action="{{ $isEdit ? route('individual-development.activities.update', [$client->id,$activity->id]) : route('individual-development.activities.store', [$client->id,$goal->id]) }}">
+    <form data-idp-th-validation="1" method="POST" action="{{ $isEdit ? route('individual-development.activities.update', [$client->id,$activity->id]) : route('individual-development.activities.store', [$client->id,$goal->id]) }}">
         @csrf
         @if($isEdit) @method('PATCH') @endif
         <div class="af-card">
-            <div class="af-card-head">รายละเอียดกิจกรรม</div>
+            <div class="af-card-head">รายละเอียดกิจกรรม <span class="fw-normal text-muted small ms-1">วางแผนก่อน → ทำจริง → บันทึกผล → จึงนำไปใช้ประกอบ Follow-up</span></div>
             <div class="af-card-body">
                 <div class="row g-3">
                     <div class="col-12 col-md-3">
                         <label class="form-label">วันที่เริ่มกิจกรรม <span class="text-danger">*</span></label>
-                        <input type="date" name="activity_date" class="form-control" value="{{ old('activity_date', optional($activity?->activity_date)->format('Y-m-d') ?? now('Asia/Bangkok')->format('Y-m-d')) }}" required>
+                        <input type="date" name="activity_date" class="form-control" min="{{ optional($plan->start_date)->format('Y-m-d') }}" value="{{ old('activity_date', optional($activity?->activity_date)->format('Y-m-d') ?? now('Asia/Bangkok')->format('Y-m-d')) }}" required>
                     </div>
                     <div class="col-12 col-md-3">
                         <label class="form-label">วันที่สิ้นสุด</label>
@@ -64,8 +64,8 @@
                         <input type="text" name="responsible_name" class="form-control" maxlength="255" value="{{ old('responsible_name', $activity?->responsible_name ?? $goal->responsible_name) }}" placeholder="ชื่อเจ้าหน้าที่/ครู/ผู้ดูแล">
                     </div>
                     <div class="col-12 col-lg-4">
-                        <label class="form-label">ผลการดำเนินงาน</label>
-                        <textarea name="result" class="form-control" maxlength="10000" placeholder="บันทึกเมื่อมีผลการดำเนินงาน">{{ old('result', $activity?->result) }}</textarea>
+                        <label class="form-label">ผลการดำเนินงาน <span class="text-danger" id="activityResultRequired" style="display:none">*</span></label>
+                        <textarea name="result" id="activityResult" class="form-control" maxlength="10000" placeholder="ตอนวางแผนปล่อยว่างได้ เมื่อเสร็จสิ้นต้องบันทึกผล">{{ old('result', $activity?->result) }}</textarea>
                     </div>
                     <div class="col-12 col-lg-4">
                         <label class="form-label">ปัญหา/อุปสรรค</label>
@@ -84,4 +84,12 @@
         </div>
     </form>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+ const status=document.querySelector('select[name="status"]'); const result=document.getElementById('activityResult'); const mark=document.getElementById('activityResultRequired');
+ function sync(){const value=status?status.value:''; const done=value==='completed'; const started=value==='in_progress'||done; const activityDate=document.querySelector('input[name="activity_date"]'); const endDate=document.querySelector('input[name="end_date"]'); const today=@json(now('Asia/Bangkok')->format('Y-m-d')); if(result) result.required=done; if(mark) mark.style.display=done?'inline':'none'; if(activityDate){if(started)activityDate.max=today;else activityDate.removeAttribute('max');} if(endDate){if(done)endDate.max=today;else endDate.removeAttribute('max');}}
+ if(status){status.addEventListener('change',sync);sync();}
+});
+</script>
+@include('frontend.client.individual_development.partials._thai_validation')
 @endsection

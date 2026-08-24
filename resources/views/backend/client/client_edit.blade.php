@@ -566,11 +566,19 @@
                                         <label class="form-label d-block text-center mb-2">ภาพถ่าย</label>
 
                                         <img id="showImage"
-                                            src="{{ !empty($client->image) ? route('client.image', $client->id) : asset('upload/no_image.jpg') }}"
-                                            alt="image profile" class="photo-preview d-block mx-auto">
+                                            src="{{ !empty($client->image)
+                                                ? (route('client.image', $client->id) . '?v=' . substr(sha1((string) $client->image), 0, 12))
+                                                : asset('upload/no_image.jpg') }}"
+                                            alt="image profile"
+                                            class="photo-preview d-block mx-auto"
+                                            width="160"
+                                            height="160"
+                                            loading="eager"
+                                            decoding="async"
+                                            fetchpriority="high">
 
                                         <input type="file" name="image" id="image" class="d-none"
-                                            accept=".jpg,.jpeg,.png,.webp">
+                                            accept=".jpg,.jpeg,.png,.gif,.webp">
 
                                         <button type="button" class="btn btn-light btn-sm photo-btn"
                                             onclick="document.getElementById('image').click()">
@@ -717,12 +725,12 @@
                             </div>
 
                             <div class="panel-box">
-                                <div class="panel-title">ภูมิลำเนาเดิม</div>
+                                <div class="panel-title">ที่อยู่ตามทะเบียนบ้าน</div>
 
                                 <div class="form-check copy-check">
                                     <input class="form-check-input" type="checkbox" id="sameAsCurrentAddress">
                                     <label class="form-check-label" for="sameAsCurrentAddress">
-                                        ที่อยู่ปัจจุบันตรงกับภูมิลำเนาเดิม
+                                        ที่อยู่ปัจจุบันตรงกับที่อยู่ตามทะเบียนบ้าน
                                     </label>
                                 </div>
 
@@ -1193,17 +1201,52 @@
 
             const imageInput = document.getElementById('image');
             const imagePreview = document.getElementById('showImage');
+            const sidebarImagePreview = document.getElementById('sidebarClientAvatarImage');
             let previewUrl = null;
 
             if (imageInput && imagePreview) {
+                const allowedImageTypes = new Set([
+                    'image/jpeg',
+                    'image/png',
+                    'image/gif',
+                    'image/webp'
+                ]);
+                const maxImageBytes = 2 * 1024 * 1024;
+
                 imageInput.addEventListener('change', function () {
                     const file = this.files?.[0];
-                    if (!file || !file.type.startsWith('image/')) return;
+                    if (!file) return;
+
+                    if (!allowedImageTypes.has(file.type) || file.size > maxImageBytes) {
+                        this.value = '';
+
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'ไม่สามารถใช้รูปนี้ได้',
+                                text: file.size > maxImageBytes
+                                    ? 'รูปภาพต้องมีขนาดไม่เกิน 2MB'
+                                    : 'รองรับเฉพาะไฟล์ JPG, JPEG, PNG, GIF และ WEBP',
+                                confirmButtonText: 'ตกลง'
+                            });
+                        }
+
+                        return;
+                    }
 
                     if (previewUrl) URL.revokeObjectURL(previewUrl);
                     previewUrl = URL.createObjectURL(file);
                     imagePreview.src = previewUrl;
+
+                    // CLIENT_IMAGE_PREVIEW_SYNC_V8: ให้ภาพใน Sidebar เปลี่ยนพร้อม Preview ก่อนบันทึก
+                    if (sidebarImagePreview) {
+                        sidebarImagePreview.src = previewUrl;
+                    }
                 });
+
+                window.addEventListener('pagehide', function () {
+                    if (previewUrl) URL.revokeObjectURL(previewUrl);
+                }, { once: true });
             }
 
             const submitButton = document.getElementById('client-edit-submit');

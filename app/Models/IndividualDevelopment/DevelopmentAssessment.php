@@ -17,6 +17,7 @@ class DevelopmentAssessment extends Model
     public const TYPE_BASELINE = 'baseline';
     public const TYPE_REVIEW = 'review';
     public const TYPE_FINAL = 'final';
+    public const TYPE_POST_DISCHARGE = 'post_discharge';
 
     protected $table = 'individual_development_assessments';
 

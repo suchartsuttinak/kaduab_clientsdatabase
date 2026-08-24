@@ -109,6 +109,7 @@
                                 @endforeach
                             </select>
                             @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="form-text">บทบาท Admin ไม่สามารถสร้างหรือมอบจากหน้านี้ และผู้บริหารไม่สามารถแต่งตั้งผู้บริหารเพิ่มเอง</div>
                         </div>
 
                         <div class="col-lg-6">
@@ -122,9 +123,10 @@
                                 class="form-control form-control-modern @error('password') is-invalid @enderror"
                                 autocomplete="new-password"
                             >
-                            @if($editingUser)
-                                <div class="form-text">เว้นว่างไว้เมื่อต้องการใช้รหัสผ่านเดิม</div>
-                            @endif
+                            <div class="form-text">
+                                {{ $editingUser ? 'เว้นว่างไว้เมื่อต้องการใช้รหัสผ่านเดิม • ' : '' }}
+                                รหัสผ่านต้องมีอย่างน้อย 10 ตัวอักษร และมีทั้งตัวอักษรกับตัวเลข
+                            </div>
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
@@ -136,9 +138,10 @@
                             <input
                                 type="password"
                                 name="password_confirmation"
-                                class="form-control form-control-modern"
+                                class="form-control form-control-modern @error('password_confirmation') is-invalid @enderror"
                                 autocomplete="new-password"
                             >
+                            @error('password_confirmation')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="col-lg-6">

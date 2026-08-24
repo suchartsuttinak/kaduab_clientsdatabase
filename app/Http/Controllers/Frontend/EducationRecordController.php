@@ -119,11 +119,18 @@ class EducationRecordController extends Controller
             })
             ->findOrFail($id);
 
+        // EDUCATION_RECORD_UNIVERSITY_HISTORY_GUARD_V1
+        $universitySemesterLink = DB::table('university_semester_records')
+            ->where('education_record_id', $record->id)
+            ->first(['id', 'academic_year', 'term', 'year_level']);
+
         return view(
             'frontend.client.education_record.education_record_edit',
             array_merge([
                 'record' => $record,
                 'client' => $record->client,
+                'isUniversityEducationLocked' => (bool) $universitySemesterLink,
+                'universitySemesterLink' => $universitySemesterLink,
             ], $this->formOptions())
         );
     }
@@ -142,6 +149,69 @@ class EducationRecordController extends Controller
             $this->validationMessages()
         );
 
+        // EDUCATION_RECORD_UNIVERSITY_HISTORY_GUARD_UPDATE_V1
+        $universitySemesterLink = DB::table('university_semester_records')
+            ->where('education_record_id', $record->id)
+            ->first(['id', 'academic_year', 'term', 'year_level']);
+
+        if ($universitySemesterLink) {
+            $linkedPeriod = (int) $universitySemesterLink->term
+                . '/' . (int) $universitySemesterLink->academic_year;
+
+            $submittedSemesterName = DB::table('semesters')
+                ->where('id', (int) $validated['semester_id'])
+                ->value('semester_name');
+
+            $submittedEducationName = DB::table('education_levels')
+                ->where('id', (int) $validated['education_id'])
+                ->value('education_name');
+
+            $expectedEducationName = 'ปริญญาตรีชั้นปีที่ '
+                . (int) $universitySemesterLink->year_level;
+
+            $schoolChanged = trim((string) $validated['school_name'])
+                !== trim((string) $record->school_name);
+
+            $identityMatchesLinkedHistory = trim((string) $submittedSemesterName) === $linkedPeriod
+                && trim((string) $submittedEducationName) === $expectedEducationName
+                && !$schoolChanged;
+
+            $currentlyMatchesLinkedHistory = (int) $record->semester_id === (int) $validated['semester_id']
+                && (int) $record->education_id === (int) $validated['education_id']
+                && !$schoolChanged;
+
+            // ถ้าข้อมูลปัจจุบันเคยถูกแก้จน mismatch อนุญาตเฉพาะการ "ซ่อมกลับ"
+            // ให้ตรงกับ University Semester เดิมเท่านั้น
+            if (!$currentlyMatchesLinkedHistory && !$identityMatchesLinkedHistory) {
+                return back()
+                    ->withInput()
+                    ->with(
+                        'error',
+                        'รายการนี้ถูกใช้ในเด็กมหาวิทยาลัย ภาคเรียน '
+                        . $linkedPeriod
+                        . ' แล้ว จึงไม่อนุญาตให้เปลี่ยนระดับการศึกษา ภาคเรียน หรือสถานศึกษา '
+                        . 'หากขึ้นภาคเรียนใหม่ กรุณากด “เพิ่มข้อมูลผลการเรียน” เพื่อสร้างรายการใหม่ '
+                        . 'สำหรับรายการนี้อนุญาตเฉพาะการแก้กลับให้ตรงกับภาคเรียนเดิม'
+                    );
+            }
+
+            if ($currentlyMatchesLinkedHistory) {
+                $educationChanged = (int) $validated['education_id'] !== (int) $record->education_id;
+                $semesterChanged = (int) $validated['semester_id'] !== (int) $record->semester_id;
+
+                if ($educationChanged || $semesterChanged || $schoolChanged) {
+                    return back()
+                        ->withInput()
+                        ->with(
+                            'error',
+                            'รายการนี้ถูกใช้ในเด็กมหาวิทยาลัย ภาคเรียน '
+                            . $linkedPeriod
+                            . ' แล้ว จึงล็อกระดับการศึกษา ภาคเรียน และสถานศึกษาไว้ '
+                            . 'หากขึ้นภาคเรียนใหม่ กรุณากด “เพิ่มข้อมูลผลการเรียน”'
+                        );
+                }
+            }
+        }
         if ($this->hasDuplicateRecord(
             $record->client_id,
             (int) $validated['semester_id'],
@@ -230,6 +300,19 @@ class EducationRecordController extends Controller
             })
             ->findOrFail($id);
 
+        // EDUCATION_RECORD_UNIVERSITY_HISTORY_GUARD_DELETE_V1
+        $universitySemesterLink = DB::table('university_semester_records')
+            ->where('education_record_id', $record->id)
+            ->first(['id', 'academic_year', 'term']);
+
+        if ($universitySemesterLink) {
+            return back()->with(
+                'error',
+                'ไม่สามารถลบ Education Record นี้ได้ เนื่องจากถูกใช้ในเด็กมหาวิทยาลัย ภาคเรียน '
+                . $universitySemesterLink->term . '/' . $universitySemesterLink->academic_year
+                . ' แล้ว หากเป็นข้อมูลทดสอบหรือบันทึกผิด กรุณาจัดการรายการมหาวิทยาลัยที่เชื่อมอยู่ก่อน'
+            );
+        }
         $clientId = $record->client_id;
 
         DB::transaction(function () use ($record, $clientId) {

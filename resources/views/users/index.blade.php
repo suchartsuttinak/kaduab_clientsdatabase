@@ -690,6 +690,43 @@
         padding: .85rem .75rem;
     }
 }
+
+/* ADMIN_USERS_SCROLL_HOTFIX_V1
+   Keep exactly one horizontal scrollbar on /admin/users.
+   DataTables owns horizontal scrolling; the outer .ump-table-wrap must not scroll. */
+.user-manage-page .ump-table-wrap {
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+}
+
+.user-manage-page div.dataTables_wrapper,
+.user-manage-page div.dt-container {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.user-manage-page .dataTables_scroll,
+.user-manage-page .dt-scroll {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.user-manage-page .dataTables_scrollBody,
+.user-manage-page .dt-scroll-body {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Keep summary and pagination clear of the remaining scrollbar. */
+.user-manage-page div.dataTables_wrapper div.dataTables_info,
+.user-manage-page div.dataTables_wrapper div.dataTables_paginate,
+.user-manage-page div.dt-container div.dt-info,
+.user-manage-page div.dt-container div.dt-paging {
+    position: relative;
+    z-index: 1;
+}
 </style>
 
 <script>

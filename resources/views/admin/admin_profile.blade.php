@@ -189,105 +189,156 @@
             {{-- ========================================================
                 Change password
             ======================================================== --}}
-            <div class="col-12 col-xl-5">
-                <div class="app-profile-card h-100">
-                    <div class="app-profile-card__header">
-                        <div class="app-profile-card__header-icon app-profile-card__header-icon--green">
-                            <i class="bi bi-shield-lock"></i>
-                        </div>
-                        <div>
-                            <h5 class="app-profile-card__title mb-1">เปลี่ยนรหัสผ่าน</h5>
-                            <div class="app-profile-card__subtitle">
-                                ยืนยันรหัสผ่านปัจจุบันก่อนกำหนดรหัสผ่านใหม่
-                            </div>
-                        </div>
-                    </div>
+         <div class="col-12 col-xl-5" id="change-password">
+    {{-- DASHBOARD_USER_MENU_LOGOUT_HOTFIX_V1: anchor used by topbar account menu --}}
+    <div class="app-profile-card h-100">
 
-                    <form
-                        action="{{ route('admin.password.update') }}"
-                        method="POST"
-                        class="app-profile-form js-safe-submit"
-                    >
-                        @csrf
-
-                        <div class="app-profile-card__body">
-                            <div class="app-profile-security-note">
-                                <i class="bi bi-info-circle-fill"></i>
-                                <span>
-                                    หลังเปลี่ยนรหัสผ่านสำเร็จ ระบบจะออกจากระบบอัตโนมัติ
-                                    และให้เข้าสู่ระบบใหม่ด้วยรหัสผ่านใหม่
-                                </span>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="old_password" class="form-label">
-                                    รหัสผ่านปัจจุบัน <span class="text-danger">*</span>
-                                </label>
-                                <input
-                                    type="password"
-                                    id="old_password"
-                                    name="old_password"
-                                    class="form-control @error('old_password') is-invalid @enderror"
-                                    placeholder="กรอกรหัสผ่านปัจจุบัน"
-                                    autocomplete="current-password"
-                                    required
-                                >
-                                @error('old_password')
-                                    <div class="invalid-feedback">กรุณากรอกรหัสผ่านปัจจุบัน</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="new_password" class="form-label">
-                                    รหัสผ่านใหม่ <span class="text-danger">*</span>
-                                </label>
-                                <input
-                                    type="password"
-                                    id="new_password"
-                                    name="new_password"
-                                    class="form-control @error('new_password') is-invalid @enderror"
-                                    placeholder="กรอกรหัสผ่านใหม่"
-                                    autocomplete="new-password"
-                                    required
-                                >
-                                @error('new_password')
-                                    <div class="invalid-feedback">
-                                        กรุณากรอกรหัสผ่านใหม่ และตรวจสอบการยืนยันรหัสผ่านให้ตรงกัน
-                                    </div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-0">
-                                <label for="new_password_confirmation" class="form-label">
-                                    ยืนยันรหัสผ่านใหม่ <span class="text-danger">*</span>
-                                </label>
-                                <input
-                                    type="password"
-                                    id="new_password_confirmation"
-                                    name="new_password_confirmation"
-                                    class="form-control"
-                                    placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
-                                    autocomplete="new-password"
-                                    required
-                                >
-                            </div>
-                        </div>
-
-                        <div class="app-profile-card__footer">
-                            <button
-                                type="submit"
-                                class="btn app-profile-btn-primary js-submit-button"
-                                data-loading-text="กำลังเปลี่ยนรหัสผ่าน..."
-                            >
-                                <i class="bi bi-key-fill"></i>
-                                <span>เปลี่ยนรหัสผ่าน</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
+        {{-- Header --}}
+        <div class="app-profile-card__header">
+            <div class="app-profile-card__header-icon app-profile-card__header-icon--green">
+                <i class="bi bi-shield-lock"></i>
             </div>
 
+            <div>
+                <h5 class="app-profile-card__title mb-1">
+                    เปลี่ยนรหัสผ่าน
+                </h5>
+
+                <div class="app-profile-card__subtitle">
+                    ยืนยันรหัสผ่านปัจจุบันก่อนกำหนดรหัสผ่านใหม่
+                </div>
+            </div>
         </div>
+
+        {{-- Password Form --}}
+        <form
+            action="{{ route('admin.password.update') }}"
+            method="POST"
+            class="app-profile-form js-safe-submit"
+            autocomplete="off"
+        >
+            @csrf
+
+            <div class="app-profile-card__body">
+
+                {{-- Security Notice --}}
+                <div class="app-profile-security-note">
+                    <i class="bi bi-info-circle-fill"></i>
+
+                    <span>
+                        หลังเปลี่ยนรหัสผ่านสำเร็จ ระบบจะออกจากระบบอัตโนมัติ
+                        และให้เข้าสู่ระบบใหม่ด้วยรหัสผ่านใหม่
+                    </span>
+                </div>
+
+                {{-- รหัสผ่านปัจจุบัน --}}
+                <div class="mb-3">
+                    <label for="old_password" class="form-label">
+                        รหัสผ่านปัจจุบัน
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <input
+                        type="password"
+                        id="old_password"
+                        name="old_password"
+                        class="form-control @error('old_password') is-invalid @enderror"
+                        placeholder="กรอกรหัสผ่านปัจจุบัน"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                    @error('old_password')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+
+                {{-- รหัสผ่านใหม่ --}}
+                <div class="mb-3">
+                    <label for="new_password" class="form-label">
+                        รหัสผ่านใหม่
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <input
+                        type="password"
+                        id="new_password"
+                        name="new_password"
+                        class="form-control @error('new_password') is-invalid @enderror"
+                        placeholder="กรอกรหัสผ่านใหม่"
+                        autocomplete="new-password"
+                        minlength="10"
+                        aria-describedby="newPasswordHelp"
+                        required
+                    >
+
+                    @error('new_password')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+
+                    <div
+                        id="newPasswordHelp"
+                        class="form-text mt-2"
+                    >
+                        <i class="bi bi-info-circle me-1"></i>
+                        รหัสผ่านต้องมีอย่างน้อย
+                        <strong>10 ตัวอักษร</strong>
+                        และต้องประกอบด้วย
+                        <strong>ตัวอักษรและตัวเลขอย่างน้อยอย่างละ 1 ตัว</strong>
+                    </div>
+                </div>
+
+                {{-- ยืนยันรหัสผ่านใหม่ --}}
+                <div class="mb-0">
+                    <label
+                        for="new_password_confirmation"
+                        class="form-label"
+                    >
+                        ยืนยันรหัสผ่านใหม่
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <input
+                        type="password"
+                        id="new_password_confirmation"
+                        name="new_password_confirmation"
+                        class="form-control @error('new_password_confirmation') is-invalid @enderror"
+                        placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+                        autocomplete="new-password"
+                        minlength="10"
+                        required
+                    >
+
+                    @error('new_password_confirmation')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+
+                    <div class="form-text mt-2">
+                        กรุณากรอกรหัสผ่านใหม่อีกครั้งให้ตรงกัน
+                    </div>
+                </div>
+
+            </div>
+
+            {{-- Footer --}}
+            <div class="app-profile-card__footer">
+                <button
+                    type="submit"
+                    class="btn app-profile-btn-primary js-submit-button"
+                    data-loading-text="กำลังเปลี่ยนรหัสผ่าน..."
+                >
+                    <i class="bi bi-key-fill"></i>
+                    <span>เปลี่ยนรหัสผ่าน</span>
+                </button>
+            </div>
+
+        </form>
     </div>
 </div>
 

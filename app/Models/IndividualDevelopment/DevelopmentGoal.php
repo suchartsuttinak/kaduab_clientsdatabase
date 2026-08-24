@@ -24,6 +24,7 @@ class DevelopmentGoal extends Model
         'plan_id', 'domain_id', 'indicator_id', 'title', 'description',
         'baseline_level', 'target_level', 'success_indicator', 'measurement_method',
         'target_value', 'target_unit', 'target_date', 'priority', 'status',
+        'achieved_at', 'achieved_by', 'cancel_reason', 'cancelled_at', 'cancelled_by', 'status_note',
         'sort_order', 'responsible_user_id', 'responsible_name', 'created_by', 'updated_by',
     ];
 
@@ -34,6 +35,8 @@ class DevelopmentGoal extends Model
             'target_level' => 'integer',
             'target_value' => 'decimal:2',
             'target_date' => 'date',
+            'achieved_at' => 'datetime',
+            'cancelled_at' => 'datetime',
             'sort_order' => 'integer',
         ];
     }

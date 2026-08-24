@@ -381,4 +381,9 @@ public function counselings(): HasMany
         ->orderByDesc('session_date')
         ->orderByDesc('session_no');
 }
+
+    public function individualDevelopmentPlans()
+    {
+        return $this->hasMany(\App\Models\IndividualDevelopment\DevelopmentPlan::class, 'client_id');
+    }
 }

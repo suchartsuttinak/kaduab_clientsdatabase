@@ -41,8 +41,8 @@
         <!-- Contact & Social -->
         <div>
             <h3 class="text-lg font-semibold mb-3">ติดต่อเรา</h3>
-            <p class="text-gray-300 text-sm">📞 โทร: 089-856-3256</p>
-            <p class="text-gray-300 text-sm">✉️ อีเมล: support@example.com</p>
+            <p class="text-gray-300 text-sm">📞 โทร: 088-534-6727</p>
+            <p class="text-gray-300 text-sm">✉️ อีเมล: suchartsuttinak@gmail.com</p>
             <div class="flex justify-center md:justify-start gap-4 mt-3">
                 <a href="#" class="text-gray-300 hover:text-blue-500 transition-colors">
                     <i class="fab fa-facebook fa-lg"></i>

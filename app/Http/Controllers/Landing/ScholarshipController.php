@@ -31,6 +31,9 @@ class ScholarshipController extends Controller
 
     public function index(Request $request): View
     {
+        // EPC_SCHOLARSHIP_CONTROLLER_V1
+        $this->ensureScholarshipPermission('view');
+
         if (auth()->check() && (auth()->user()->role ?? null) === 'admin') {
             Scholarship::query()
                 ->where('is_read', false)
@@ -171,6 +174,8 @@ class ScholarshipController extends Controller
 
     public function createDonation(Scholarship $scholarship): View
     {
+        $this->ensureScholarshipPermission('create');
+
         return view(
             'landing.scholarship.scholarship.donation_create',
             compact('scholarship')
@@ -181,6 +186,8 @@ class ScholarshipController extends Controller
         Request $request,
         Scholarship $scholarship
     ): RedirectResponse {
+        $this->ensureScholarshipPermission('create');
+
         $request->merge([
             'description' => trim((string) $request->input('description')),
         ]);
@@ -219,6 +226,8 @@ class ScholarshipController extends Controller
 
     public function donationIndex($id): View
     {
+        $this->ensureScholarshipPermission('view');
+
         $scholarship = Scholarship::query()->findOrFail($id);
 
         $donations = $scholarship->donations()
@@ -254,5 +263,29 @@ class ScholarshipController extends Controller
             'totalDonationAmount',
             'donationYearSummary'
         ));
+    }
+    /**
+     * ด่านสำหรับหน้าจัดการผู้สนับสนุนทุน
+     * หมายเหตุ: create()/store() สำหรับแบบฟอร์มผู้สนับสนุนสาธารณะไม่ถูกแตะ
+     */
+    private function ensureScholarshipPermission(string $action): void
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            abort(403);
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        if (!$user->isExecutive()) {
+            abort(403, 'บัญชีนี้ไม่มีสิทธิ์จัดการผู้สนับสนุนทุนการศึกษา');
+        }
+
+        if (!$user->hasFormPermission('dashboard_scholarship_sponsors', $action)) {
+            abort(403, 'บัญชีนี้ไม่ได้รับสิทธิ์สำหรับการดำเนินการด้านผู้สนับสนุนทุนการศึกษา');
+        }
     }
 }

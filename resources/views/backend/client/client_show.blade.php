@@ -40,10 +40,7 @@
     .client-table tbody td{font-size:14px;vertical-align:middle}
     .client-table tbody tr:hover{background:#fafcff}
     .client-link-image,.client-link-name{text-decoration:none;color:inherit;display:inline-block}
-    .client-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;transition:transform .18s ease,box-shadow .18s ease}
-    /* CLIENT_IMAGE_BATCH_STYLE_V5 */
-    .client-avatar[data-client-image-id]{opacity:0;background:#f1f5f9;transition:opacity .10s ease,transform .18s ease,box-shadow .18s ease}
-    .client-avatar[data-client-image-id].is-image-ready{opacity:1}
+    .client-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;background:#f1f5f9;transition:transform .18s ease,box-shadow .18s ease}
     .client-link-image:hover .client-avatar{transform:scale(1.04);box-shadow:0 4px 12px rgba(0,0,0,.12)}
     .client-name{font-weight:700;color:#111827;margin-bottom:2px}
     .client-link-name:hover .client-name{color:#0d6efd}
@@ -153,7 +150,7 @@
 
         <div class="card client-list-card mb-3">
             <div class="card-body">
-                <form method="GET" action="{{ route('client.show') }}" id="client-search-form"> 
+                <form method="GET" action="{{ route('client.show') }}" id="client-search-form">
                     <div class="row g-3 align-items-end">
                         <div class="col-12 col-lg-4">
                             <label for="client-search" class="client-filter-label">ค้นหาผู้รับบริการ</label>  <i data-feather="zap" aria-hidden="true"></i> <span>พิมพ์แล้วระบบจะค้นหาให้อัตโนมัติ</span>
@@ -235,9 +232,12 @@
                                                 $isPriorityImage = $key < 8;
                                             @endphp
                                             <a href="{{ route('admin.index', $client->id) }}" title="ดูข้อมูล" class="client-link-image">
-                                                <img src="{{ empty($client->image) ? asset('upload/no_image.jpg') : 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=' }}"
-                                                     @if(!empty($client->image)) data-client-image-id="{{ $client->id }}" @endif
-                                                     data-client-image-batch-v5="1" /* CLIENT_IMAGE_BATCH_UI_V5 */
+                                                {{-- CLIENT_IMAGE_DIRECT_V6: โหลดรูปพร้อม HTML และแยก cache ตาม session --}}
+                                                <img src="{{ !empty($client->image)
+                                                        ? (route('client.image', $client->id)
+                                                            . '?thumb=1&v=' . substr(sha1((string) $client->image), 0, 12)
+                                                            . '-s' . substr(hash('sha256', (string) session()->getId()), 0, 10))
+                                                        : asset('upload/no_image.jpg') }}"
                                                      alt="รูปผู้รับบริการ {{ $client->full_name }}"
                                                      class="client-avatar"
                                                      width="42"
@@ -383,90 +383,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let activeController = null;
     let isComposing = false;
 
-    // CLIENT_IMAGE_BATCH_JS_V5
-    const clientImageBatchBaseUrl = @json(route('client.image', 0));
-    const clientImageFallbackUrl = @json(asset('upload/no_image.jpg'));
-    let clientImageBatchController = null;
-
-    async function hydrateClientImages() {
-        const avatars = Array.from(document.querySelectorAll(
-            '#client-results-card .client-avatar[data-client-image-id]'
-        ));
-
-        if (clientImageBatchController) {
-            clientImageBatchController.abort();
-            clientImageBatchController = null;
-        }
-
-        if (avatars.length === 0) return;
-
-        const ids = Array.from(new Set(
-            avatars.map(function (img) { return img.dataset.clientImageId; }).filter(Boolean)
-        ));
-
-        if (ids.length === 0) return;
-
-        const controller = new AbortController();
-        clientImageBatchController = controller;
-
-        const url = new URL(clientImageBatchBaseUrl, window.location.origin);
-        url.searchParams.set('batch', '1');
-        url.searchParams.set('ids', ids.join(','));
-
-        try {
-            const response = await fetch(url.toString(), {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                credentials: 'same-origin',
-                cache: 'no-store',
-                signal: controller.signal
-            });
-
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
-            }
-
-            const payload = await response.json();
-            const images = payload && payload.images ? payload.images : {};
-
-            const decodeJobs = avatars.map(async function (img) {
-                const id = img.dataset.clientImageId;
-                img.src = images[id] || clientImageFallbackUrl;
-
-                try {
-                    if (typeof img.decode === 'function') {
-                        await img.decode();
-                    }
-                } catch (_) {
-                    // onerror/fallback เดิมของ img ยังทำงานได้
-                }
-            });
-
-            await Promise.allSettled(decodeJobs);
-
-            // เปิดภาพพร้อมกัน ลดอาการไล่ขึ้นทีละคน
-            window.requestAnimationFrame(function () {
-                avatars.forEach(function (img) {
-                    img.classList.add('is-image-ready');
-                });
-            });
-        } catch (error) {
-            if (error.name === 'AbortError') return;
-
-            console.error('Client image batch failed:', error);
-            avatars.forEach(function (img) {
-                img.src = clientImageFallbackUrl;
-                img.classList.add('is-image-ready');
-            });
-        } finally {
-            if (clientImageBatchController === controller) {
-                clientImageBatchController = null;
-            }
-        }
-    }
     function refreshIcons() {
         if (window.feather) {
             window.feather.replace();
@@ -545,7 +461,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             currentResults.replaceWith(nextResults);
-            hydrateClientImages();
 
             if (updateHistory) {
                 window.history.replaceState({}, '', url.toString());
@@ -572,8 +487,6 @@ document.addEventListener('DOMContentLoaded', function () {
             loadResults(buildSearchUrl());
         }, debounceDelay);
     }
-
-    hydrateClientImages();
 
     if (form && searchInput) {
         searchInput.addEventListener('compositionstart', function () {

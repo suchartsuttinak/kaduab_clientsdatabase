@@ -770,6 +770,11 @@
     $today = now('Asia/Bangkok')->toDateString();
     $healthcFormErrors = $errors->getBag('healthcForm');
     $healthcFilterErrors = $errors->getBag('healthcFilter');
+
+    // HEALTHC_FILTER_COLLAPSE_V1
+    // เปิดตัวกรองอัตโนมัติเมื่อมีเงื่อนไขค้นหา หรือ validation ของตัวกรองผิดพลาด
+    $showHealthcFilter = $hasFilter || $healthcFilterErrors->any();
+
     $healthcFormHasErrors = $healthcFormErrors->any();
 
     $healthcOldValues = [
@@ -822,14 +827,30 @@
             @if($hasAnyRows)
                 <div class="healthc-header-right">
                     <button type="button"
+                            class="btn healthc-btn healthc-btn-secondary"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#healthcFilterPanel"
+                            data-healthc-filter-toggle
+                            data-permission-keep
+                            aria-controls="healthcFilterPanel"
+                            aria-expanded="{{ $showHealthcFilter ? 'true' : 'false' }}">
+                        <i class="bi {{ $showHealthcFilter ? 'bi-chevron-up' : 'bi-funnel' }}"
+                           data-filter-toggle-icon
+                           aria-hidden="true"></i>
+                        <span data-filter-toggle-label>
+                            {{ $showHealthcFilter ? 'ซ่อนการค้นหา' : 'ค้นหารายการ' }}
+                        </span>
+                    </button>
+
+                    <button type="button"
                             class="btn healthc-btn healthc-btn-primary"
                             onclick="openCreateModal()">
                         <i class="bi bi-plus-circle"></i>
                         <span>เพิ่มข้อมูล</span>
                     </button>
 
+                    {{-- HEALTHC_REPORT_SAME_TAB_V1: เปิดรายงานในแท็บเดิม ป้องกันแท็บรายงานค้าง --}}
                     <a href="{{ route('healthc_heckups.report', request()->query()) }}"
-                       target="_blank"
                        class="healthc-btn healthc-btn-secondary">
                         <i class="bi bi-printer"></i>
                         <span>รายงาน</span>
@@ -851,9 +872,11 @@
         @endif
 
         @if($showListingSection)
-            <section class="card border-0 healthc-filter-card mb-3">
+            <section id="healthcFilterPanel"
+                     class="collapse {{ $showHealthcFilter ? 'show' : '' }} card border-0 healthc-filter-card mb-3"
+                     aria-labelledby="healthcFilterTitle">
                 <div class="card-body">
-                    <h2 class="healthc-filter-title">ค้นหาและกรองข้อมูล</h2>
+                    <h2 class="healthc-filter-title" id="healthcFilterTitle">ค้นหาและกรองข้อมูล</h2>
 
                     <form method="GET" action="{{ route('healthc_heckups.index') }}">
                         <div class="row g-3">
@@ -1274,6 +1297,50 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        'use strict';
+
+        const filterPanel = document.getElementById('healthcFilterPanel');
+        const filterToggle = document.querySelector('[data-healthc-filter-toggle]');
+
+        function syncHealthcFilterToggle(isOpen) {
+            if (!filterToggle) return;
+
+            filterToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+
+            const icon = filterToggle.querySelector('[data-filter-toggle-icon]');
+            const label = filterToggle.querySelector('[data-filter-toggle-label]');
+
+            if (icon) {
+                icon.className = isOpen ? 'bi bi-chevron-up' : 'bi bi-funnel';
+            }
+
+            if (label) {
+                label.textContent = isOpen ? 'ซ่อนการค้นหา' : 'ค้นหารายการ';
+            }
+        }
+
+        if (filterPanel) {
+            syncHealthcFilterToggle(filterPanel.classList.contains('show'));
+
+            filterPanel.addEventListener('shown.bs.collapse', function () {
+                syncHealthcFilterToggle(true);
+
+                const firstFilter = filterPanel.querySelector('input:not([disabled]), select:not([disabled])');
+                if (firstFilter) {
+                    window.setTimeout(function () {
+                        try {
+                            firstFilter.focus({ preventScroll: true });
+                        } catch (error) {
+                            firstFilter.focus();
+                        }
+                    }, 100);
+                }
+            });
+
+            filterPanel.addEventListener('hidden.bs.collapse', function () {
+                syncHealthcFilterToggle(false);
+            });
+        }
         const modalElement = document.getElementById('healthcHeckupModal');
         const form = document.getElementById('healthcHeckupForm');
 

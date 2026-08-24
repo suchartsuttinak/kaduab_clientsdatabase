@@ -17,8 +17,11 @@ use Illuminate\Validation\ValidationException;
 
 class UserManagementController extends Controller
 {
+    // USER_PERMISSION_GOVERNANCE_V1
     public function index()
     {
+        $this->ensureActorCanManageUsers();
+
         $users = User::query()
             ->with(['houses', 'project', 'formPermissions'])
             ->latest()
@@ -39,6 +42,8 @@ class UserManagementController extends Controller
 
     public function create()
     {
+        $this->ensureActorCanManageUsers();
+
         $roles = $this->availableRolesForActor();
         $projects = Project::orderBy('project_name')->get();
         $houses = House::orderBy('house_name')->get();
@@ -54,6 +59,8 @@ class UserManagementController extends Controller
 
     public function store(Request $request)
     {
+        $this->ensureActorCanManageUsers();
+
         $validated = $this->validateUser($request);
         $this->guardDelegatedRole($validated['role']);
         $formPermissionsEnabled = $request->boolean('form_permissions_enabled');
@@ -307,9 +314,11 @@ class UserManagementController extends Controller
 
     private function validateUser(Request $request, ?User $user = null): array
     {
+        $passwordRule = Password::min(10)->letters()->numbers();
+
         $passwordRules = $user
-            ? ['nullable', 'confirmed', Password::defaults()]
-            : ['required', 'confirmed', Password::defaults()];
+            ? ['nullable', 'string', 'confirmed', $passwordRule]
+            : ['required', 'string', 'confirmed', $passwordRule];
 
         $emailRule = Rule::unique('users', 'email');
 
@@ -326,9 +335,12 @@ class UserManagementController extends Controller
                 $emailRule,
             ],
             'password' => $passwordRules,
+            'password_confirmation' => $user
+                ? ['nullable', 'required_with:password', 'string']
+                : ['required', 'string'],
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:2000'],
-            'role' => ['required', Rule::in(array_keys(User::roleOptions()))],
+            'role' => ['required', Rule::in(array_keys($this->availableRolesForActor()))],
             'status' => ['required', Rule::in(['0', '1'])],
             'project_id' => ['nullable', 'integer', 'exists:projects,id'],
             'house_ids' => ['nullable', 'array'],
@@ -352,6 +364,8 @@ class UserManagementController extends Controller
             'password.letters' => 'รหัสผ่านต้องมีตัวอักษรอย่างน้อย 1 ตัว',
             'password.numbers' => 'รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว',
             'password.confirmed' => 'ยืนยันรหัสผ่านไม่ตรงกัน',
+            'password_confirmation.required' => 'กรุณายืนยันรหัสผ่าน',
+            'password_confirmation.required_with' => 'กรุณายืนยันรหัสผ่านใหม่',
             'role.required' => 'กรุณาเลือกบทบาทผู้ใช้งาน',
             'role.in' => 'บทบาทผู้ใช้งานไม่ถูกต้อง',
             'status.required' => 'กรุณาเลือกสถานะ',
@@ -384,14 +398,9 @@ class UserManagementController extends Controller
                     'print' => in_array('print', $allowedActions, true) && !empty($submitted['print']),
                 ];
 
-                // ผู้ดูแลที่ได้รับมอบหมายแบบจำกัด ไม่สามารถมอบสิทธิ์สูงกว่าสิทธิ์ของตนเอง
-                $actor = auth()->user();
-                if ($actor && !$actor->isAdmin()) {
-                    foreach (array_keys($values) as $action) {
-                        $values[$action] = $values[$action]
-                            && $actor->hasFormPermission($permissionKey, $action);
-                    }
-                }
+                // Admin/ผู้บริหารที่ผ่านด่าน User Management สามารถกำหนดสิทธิ์
+                // จาก matrix กลางได้ครบทุก action โดยไม่ถูกจำกัดด้วยสิทธิ์รายฟอร์มของผู้กำหนดเอง
+                // การเข้าถึงหน้าจัดการผู้ใช้ถูกควบคุมด้วย role + controller guard แยกต่างหาก
 
                 // สิทธิ์ทำรายการทุกชนิดต้องดูฟอร์มได้ด้วย
                 if ($values['create'] || $values['update'] || $values['delete'] || $values['print']) {
@@ -430,8 +439,13 @@ class UserManagementController extends Controller
         $roles = User::roleOptions();
         $actor = auth()->user();
 
-        if ($actor && !$actor->isAdmin()) {
-            unset($roles[User::ROLE_ADMIN]);
+        // บทบาท Admin เป็น protected role: ไม่สร้าง/มอบผ่านหน้า User Management
+        unset($roles[User::ROLE_ADMIN]);
+
+        // ผู้บริหารจัดการบัญชีระดับเจ้าหน้าที่ลงมาเท่านั้น
+        // การแต่งตั้ง/แก้ไขผู้บริหารให้ Admin เป็นผู้ดำเนินการ
+        if ($actor && $actor->isExecutive()) {
+            unset($roles[User::ROLE_EXECUTIVE]);
         }
 
         return $roles;
@@ -439,59 +453,58 @@ class UserManagementController extends Controller
 
     private function permissionGroupsForActor(): array
     {
-        $groups = config('user_permissions.groups', []);
         $actor = auth()->user();
 
-        if (!$actor || $actor->isAdmin()) {
-            return $groups;
+        if (!$actor || (!$actor->isAdmin() && !$actor->isExecutive())) {
+            return [];
         }
 
-        foreach ($groups as $groupKey => &$group) {
-            foreach (($group['items'] ?? []) as $permissionKey => &$item) {
-                $item['actions'] = array_values(array_filter(
-                    $item['actions'] ?? [],
-                    fn (string $action): bool => $actor->hasFormPermission($permissionKey, $action)
-                ));
-
-                if ($item['actions'] === []) {
-                    unset($group['items'][$permissionKey]);
-                }
-            }
-            unset($item);
-
-            if (empty($group['items'])) {
-                unset($groups[$groupKey]);
-            }
-        }
-        unset($group);
-
-        return $groups;
+        // Admin และผู้บริหารเห็น matrix กลางครบทุกหมวด/ทุก action ที่ระบบรองรับ
+        return config('user_permissions.groups', []);
     }
 
     private function guardDelegatedRole(string $role): void
     {
         $actor = auth()->user();
 
-        if ($actor && !$actor->isAdmin() && $role === User::ROLE_ADMIN) {
+        if ($role === User::ROLE_ADMIN) {
             throw ValidationException::withMessages([
-                'role' => 'เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถกำหนดบทบาทผู้ดูแลระบบได้',
+                'role' => 'บทบาทผู้ดูแลระบบ (Admin) เป็นบทบาทคุ้มครอง ไม่สามารถสร้างหรือมอบผ่านหน้าจัดการผู้ใช้งานได้',
             ]);
+        }
+
+        if ($actor && $actor->isExecutive() && $role === User::ROLE_EXECUTIVE) {
+            throw ValidationException::withMessages([
+                'role' => 'การแต่งตั้งผู้บริหารต้องดำเนินการโดยผู้ดูแลระบบ (Admin)',
+            ]);
+        }
+    }
+
+    private function ensureActorCanManageUsers(): void
+    {
+        $actor = auth()->user();
+
+        if (!$actor || (!$actor->isAdmin() && !$actor->isExecutive())) {
+            abort(403, 'เฉพาะผู้ดูแลระบบและผู้บริหารเท่านั้นที่สามารถจัดการผู้ใช้งานและกำหนดสิทธิ์ได้');
         }
     }
 
     private function ensureActorCanManageTarget(User $target): void
     {
+        $this->ensureActorCanManageUsers();
         $actor = auth()->user();
 
-        if (!$actor || $actor->isAdmin()) {
-            return;
-        }
-
+        // Admin ทุกบัญชีเป็น protected account ในโมดูลนี้ แม้ผู้กระทำจะเป็น Admin ด้วยกัน
         if ($target->isAdmin()) {
-            abort(403, 'บัญชีที่ได้รับมอบหมายไม่สามารถจัดการผู้ดูแลระบบได้');
+            abort(403, 'บัญชีผู้ดูแลระบบ (Admin) ได้รับการป้องกัน ไม่สามารถแก้ไขสิทธิ์ สถานะ หรือลบผ่านหน้าจัดการผู้ใช้งานได้');
         }
 
-        if ((int) $actor->id === (int) $target->id) {
+        // ผู้บริหารไม่สามารถแต่งตั้ง/แก้ไขผู้บริหารคนอื่น เพื่อป้องกันการขยายอำนาจต่อกันเอง
+        if ($actor && $actor->isExecutive() && $target->isExecutive()) {
+            abort(403, 'บัญชีผู้บริหารจัดการได้โดยผู้ดูแลระบบ (Admin) เท่านั้น');
+        }
+
+        if ($actor && (int) $actor->id === (int) $target->id) {
             abort(403, 'กรุณาแก้ไขบัญชีของตนเองผ่านหน้าโปรไฟล์');
         }
     }

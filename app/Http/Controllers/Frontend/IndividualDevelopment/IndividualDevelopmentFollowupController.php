@@ -8,18 +8,25 @@ use App\Models\IndividualDevelopment\DevelopmentAssessment;
 use App\Models\IndividualDevelopment\DevelopmentDomain;
 use App\Models\IndividualDevelopment\DevelopmentFollowup;
 use App\Models\IndividualDevelopment\DevelopmentFollowupItem;
+use App\Models\IndividualDevelopment\DevelopmentGoal;
 use App\Models\IndividualDevelopment\DevelopmentPlan;
+use App\Services\IndividualDevelopment\IndividualDevelopmentLifecycleService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class IndividualDevelopmentFollowupController extends Controller
 {
     private const PERMISSION_KEY = 'individual_development';
+
+    public function __construct(private readonly IndividualDevelopmentLifecycleService $lifecycle)
+    {
+    }
 
     private const FOLLOWUP_TYPES = [
         'routine' => 'ติดตามตามแผน',
@@ -54,6 +61,15 @@ class IndividualDevelopmentFollowupController extends Controller
                 ->with('warning', 'กรุณาประเมิน Baseline ก่อนบันทึกการติดตาม');
         }
 
+        $goals = DevelopmentGoal::query()
+            ->where('plan_id', $plan->id)
+            ->with(['domain.indicators', 'indicator', 'activities'])
+            ->orderBy('sort_order')->orderBy('id')->get();
+        if ($goals->isEmpty()) {
+            return redirect()->route('individual-development.goals.create', $clientModel->id)
+                ->with('warning', 'กรุณากำหนดเป้าหมายการพัฒนาก่อนเริ่มบันทึกการติดตาม');
+        }
+
         $domains = $this->domains();
         $previousScores = $this->previousScores($plan->id, $baseline);
         $previousFollowup = $this->latestFollowup($plan->id);
@@ -65,12 +81,15 @@ class IndividualDevelopmentFollowupController extends Controller
             'followup' => null,
             'previousFollowup' => $previousFollowup,
             'followupNo' => $nextNo,
+            'minimumFollowupDate' => $this->minimumFollowupDate($plan),
             'domains' => $domains,
             'previousScores' => $previousScores,
             'currentScores' => $previousScores,
             'ageText' => $this->resolveAgeText($clientModel),
             'followupTypes' => self::FOLLOWUP_TYPES,
             'resultLabels' => self::RESULTS,
+            'goals' => $goals,
+            'goalProgress' => $this->lifecycle->goalProgressMap($plan, $goals),
             'mode' => 'create',
             'readOnly' => false,
         ]);
@@ -92,8 +111,14 @@ class IndividualDevelopmentFollowupController extends Controller
                 ->with('warning', 'กรุณาประเมิน Baseline ก่อนบันทึกการติดตาม');
         }
 
+        if (!DevelopmentGoal::query()->where('plan_id', $plan->id)->exists()) {
+            return redirect()->route('individual-development.goals.create', $clientModel->id)
+                ->with('warning', 'กรุณากำหนดเป้าหมายการพัฒนาก่อนเริ่มบันทึกการติดตาม');
+        }
+
         $domains = $this->domains();
-        $validated = $this->validateFollowup($request, $domains, $plan);
+        $previousScores = $this->previousScores($plan->id, $baseline);
+        $validated = $this->validateFollowup($request, $domains, $plan, null, $previousScores);
 
         $followup = DB::transaction(function () use ($clientModel, $plan, $baseline, $domains, $validated): DevelopmentFollowup {
             $lockedPlan = DevelopmentPlan::query()
@@ -102,6 +127,22 @@ class IndividualDevelopmentFollowupController extends Controller
                 ->where('status', DevelopmentPlan::STATUS_ACTIVE)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            $latestFollowup = DevelopmentFollowup::query()
+                ->where('plan_id', $lockedPlan->id)
+                ->orderByDesc('followup_no')
+                ->lockForUpdate()
+                ->first();
+
+            if ($latestFollowup?->followup_date) {
+                $latestDate = Carbon::parse($latestFollowup->followup_date, 'Asia/Bangkok')->startOfDay();
+                $requestedDate = Carbon::parse($validated['followup_date'], 'Asia/Bangkok')->startOfDay();
+                if ($requestedDate->lessThanOrEqualTo($latestDate)) {
+                    throw ValidationException::withMessages([
+                        'followup_date' => 'มีการติดตามรอบล่าสุดในวันที่ ' . $latestDate->format('d/m/Y') . ' แล้ว วันที่ของรอบใหม่ต้องมากกว่าวันดังกล่าว',
+                    ]);
+                }
+            }
 
             $nextNo = ((int) DevelopmentFollowup::withTrashed()
                 ->where('plan_id', $lockedPlan->id)
@@ -170,6 +211,7 @@ class IndividualDevelopmentFollowupController extends Controller
             && $this->can(self::PERMISSION_KEY, 'update');
         $canDelete = $followupModel->plan?->status === DevelopmentPlan::STATUS_ACTIVE
             && (int) $latestId === (int) $followupModel->id
+            && !$this->lifecycle->hasAchievedGoals($followupModel->plan)
             && $this->can(self::PERMISSION_KEY, 'delete');
 
         return view('frontend.client.individual_development.followups.show', [
@@ -183,7 +225,8 @@ class IndividualDevelopmentFollowupController extends Controller
             'resultLabels' => self::RESULTS,
             'canUpdate' => $canUpdate,
             'canDelete' => $canDelete,
-            'readOnly' => (bool) request()->attributes->get('form_permission_readonly', false),
+            'readOnly' => (bool) request()->attributes->get('form_permission_readonly', false)
+                || !($this->can(self::PERMISSION_KEY, 'create') || $this->can(self::PERMISSION_KEY, 'update') || $this->can(self::PERMISSION_KEY, 'delete')),
         ]);
     }
 
@@ -213,18 +256,26 @@ class IndividualDevelopmentFollowupController extends Controller
             ->orderByDesc('followup_no')
             ->first();
 
+        $goals = DevelopmentGoal::query()
+            ->where('plan_id', $followupModel->plan_id)
+            ->with(['domain.indicators', 'indicator', 'activities'])
+            ->orderBy('sort_order')->orderBy('id')->get();
+
         return view('frontend.client.individual_development.followups.form', [
             'client' => $clientModel,
             'plan' => $followupModel->plan,
             'followup' => $followupModel,
             'previousFollowup' => $previousFollowup,
             'followupNo' => $followupModel->followup_no,
+            'minimumFollowupDate' => $this->minimumFollowupDate($followupModel->plan, $followupModel),
             'domains' => $domains,
             'previousScores' => $previousScores,
             'currentScores' => $currentScores,
             'ageText' => $this->resolveAgeText($clientModel),
             'followupTypes' => self::FOLLOWUP_TYPES,
             'resultLabels' => self::RESULTS,
+            'goals' => $goals,
+            'goalProgress' => $this->lifecycle->goalProgressMap($followupModel->plan, $goals),
             'mode' => 'edit',
             'readOnly' => (bool) $request->attributes->get('form_permission_readonly', false)
                 || !$this->can(self::PERMISSION_KEY, 'update'),
@@ -242,7 +293,11 @@ class IndividualDevelopmentFollowupController extends Controller
         }
 
         $domains = $this->domains();
-        $validated = $this->validateFollowup($request, $domains, $followupModel->plan, $followupModel);
+        $previousScores = $followupModel->items->mapWithKeys(fn ($item) => [
+            (int) $item->indicator_id => $item->previous_score !== null ? (int) $item->previous_score : null,
+        ])->all();
+        $validated = $this->validateFollowup($request, $domains, $followupModel->plan, $followupModel, $previousScores);
+        $this->assertAchievedGoalsRemainSatisfied($followupModel->plan, $validated['items']);
 
         DB::transaction(function () use ($followupModel, $domains, $validated): void {
             $locked = DevelopmentFollowup::query()->whereKey($followupModel->id)->lockForUpdate()->firstOrFail();
@@ -305,6 +360,11 @@ class IndividualDevelopmentFollowupController extends Controller
             abort(422, 'เพื่อรักษาลำดับประวัติ สามารถลบได้เฉพาะการติดตามล่าสุดของแผนที่กำลังดำเนินการ');
         }
 
+        if ($this->lifecycle->hasAchievedGoals($followupModel->plan)) {
+            return redirect()->route('individual-development.followups.show', [$clientModel->id, $followupModel->id])
+                ->with('warning', 'มีเป้าหมายที่ยืนยัน “บรรลุแล้ว” อ้างอิงประวัติการติดตามอยู่ กรุณาเปิดเป้าหมายนั้นอีกครั้งก่อนจึงจะแก้ไขลำดับประวัติได้');
+        }
+
         $followupNo = $followupModel->followup_no;
         $followupModel->delete();
 
@@ -312,12 +372,20 @@ class IndividualDevelopmentFollowupController extends Controller
             ->with('success', 'ลบการติดตามครั้งที่ ' . $followupNo . ' เรียบร้อยแล้ว');
     }
 
-    private function validateFollowup(Request $request, Collection $domains, DevelopmentPlan $plan, ?DevelopmentFollowup $editingFollowup = null): array
+    private function validateFollowup(Request $request, Collection $domains, DevelopmentPlan $plan, ?DevelopmentFollowup $editingFollowup = null, array $previousScores = []): array
     {
         $minimumDate = $this->minimumFollowupDate($plan, $editingFollowup);
 
+        $followupDateRule = Rule::unique('individual_development_followups', 'followup_date')
+            ->where(fn ($query) => $query
+                ->where('plan_id', $plan->id)
+                ->whereNull('deleted_at'));
+        if ($editingFollowup) {
+            $followupDateRule->ignore($editingFollowup->id);
+        }
+
         $rules = [
-            'followup_date' => ['required', 'date', 'before_or_equal:today', 'after_or_equal:' . $minimumDate],
+            'followup_date' => ['required', 'date', 'before_or_equal:today', 'after_or_equal:' . $minimumDate, $followupDateRule],
             'followup_type' => ['nullable', 'string', Rule::in(array_keys(self::FOLLOWUP_TYPES))],
             'follower_name' => ['nullable', 'string', 'max:255'],
             'current_situation' => ['nullable', 'string', 'max:10000'],
@@ -330,7 +398,7 @@ class IndividualDevelopmentFollowupController extends Controller
             'caregiver_feedback' => ['nullable', 'string', 'max:10000'],
             'overall_result' => ['required', Rule::in(array_keys(self::RESULTS))],
             'suggestion' => ['nullable', 'string', 'max:10000'],
-            'next_action' => ['required', 'string', 'max:10000'],
+            'next_action' => ['nullable', 'string', 'max:10000'],
             'next_followup_date' => ['nullable', 'date', 'after_or_equal:followup_date'],
             'items' => ['required', 'array'],
         ];
@@ -352,16 +420,63 @@ class IndividualDevelopmentFollowupController extends Controller
             }
         }
 
-        return $request->validate($rules, [
+        $validated = $request->validate($rules, [
             'followup_date.required' => 'กรุณาระบุวันที่ติดตาม',
             'followup_date.before_or_equal' => 'วันที่ติดตามต้องไม่เกินวันปัจจุบัน',
-            'followup_date.after_or_equal' => 'วันที่ติดตามต้องไม่น้อยกว่าวันเริ่มแผนหรือวันที่ติดตามครั้งก่อน',
+            'followup_date.after_or_equal' => 'วันที่ติดตามต้องไม่น้อยกว่าวันเริ่มแผน และต้องเรียงต่อจากครั้งก่อน',
+            'followup_date.unique' => 'วันที่ติดตามนี้ถูกใช้ในแผนปัจจุบันแล้ว กรุณาเลือกวันอื่นเพื่อรักษาลำดับประวัติ',
             'overall_result.required' => 'กรุณาระบุผลการติดตามโดยรวม',
-            'next_action.required' => 'กรุณาระบุสิ่งที่ต้องดำเนินการต่อ เพื่อให้ผู้รับผิดชอบครั้งถัดไปทำงานต่อได้',
             'next_followup_date.after_or_equal' => 'วันที่ติดตามครั้งถัดไปต้องไม่น้อยกว่าวันที่ติดตามครั้งนี้',
             'items.*.score.required' => 'กรุณาประเมิน :attribute',
             'items.*.score.between' => ':attribute ต้องอยู่ระหว่างระดับ 1 ถึง 5',
         ], $attributes);
+
+        if (($validated['overall_result'] ?? null) !== DevelopmentFollowup::RESULT_ACHIEVED
+            && blank($validated['next_action'] ?? null)) {
+            throw ValidationException::withMessages([
+                'next_action' => 'กรุณาระบุสิ่งที่ต้องดำเนินการต่อ เพื่อให้ผู้รับผิดชอบครั้งถัดไปทำงานต่อได้',
+            ]);
+        }
+
+        foreach ($this->indicatorIds($domains) as $indicatorId) {
+            $previous = $previousScores[$indicatorId] ?? null;
+            $current = (int) ($validated['items'][$indicatorId]['score'] ?? 0);
+            $evidence = trim((string) ($validated['items'][$indicatorId]['evidence'] ?? ''));
+
+            if ($previous !== null && (int) $previous !== $current && $evidence === '') {
+                throw ValidationException::withMessages([
+                    "items.$indicatorId.evidence" => 'คะแนนมีการเปลี่ยนแปลงจากครั้งก่อน กรุณาระบุหลักฐาน/พฤติกรรมที่พบเพื่อรองรับการเปลี่ยนคะแนน',
+                ]);
+            }
+        }
+
+        return $validated;
+    }
+
+    private function assertAchievedGoalsRemainSatisfied(DevelopmentPlan $plan, array $items): void
+    {
+        $achievedGoals = DevelopmentGoal::query()
+            ->where('plan_id', $plan->id)
+            ->where('status', DevelopmentGoal::STATUS_ACHIEVED)
+            ->with(['domain.indicators', 'indicator'])
+            ->get();
+
+        if ($achievedGoals->isEmpty()) {
+            return;
+        }
+
+        $scores = collect($items)->mapWithKeys(fn ($item, $indicatorId) => [
+            (int) $indicatorId => isset($item['score']) ? (int) $item['score'] : null,
+        ])->all();
+
+        foreach ($achievedGoals as $goal) {
+            $current = $this->lifecycle->currentLevelForGoal($goal, $scores);
+            if ($current !== null && $goal->target_level !== null && $current < (int) $goal->target_level) {
+                throw ValidationException::withMessages([
+                    'items' => 'การแก้ไขนี้จะทำให้เป้าหมาย “' . $goal->title . '” ที่ยืนยันบรรลุแล้วต่ำกว่าระดับเป้าหมาย กรุณาเปิดเป้าหมายนั้นอีกครั้งก่อนแก้ไขประวัติการติดตาม',
+                ]);
+            }
+        }
     }
 
     private function minimumFollowupDate(DevelopmentPlan $plan, ?DevelopmentFollowup $editingFollowup = null): string
@@ -376,7 +491,7 @@ class IndividualDevelopmentFollowupController extends Controller
 
         if ($previousDate) {
             try {
-                return Carbon::parse($previousDate, 'Asia/Bangkok')->format('Y-m-d');
+                return Carbon::parse($previousDate, 'Asia/Bangkok')->addDay()->format('Y-m-d');
             } catch (\Throwable $e) {
                 // ใช้วันเริ่มแผนเป็น fallback
             }
@@ -497,9 +612,14 @@ class IndividualDevelopmentFollowupController extends Controller
 
     private function findAuthorizedClient(int $clientId): Client
     {
-        return Client::forUser(auth()->user())
-            ->with(['house', 'project', 'target'])
-            ->findOrFail($clientId);
+        $user = auth()->user();
+        abort_unless($user, 403);
+
+        $canViewAcrossHouses = (method_exists($user, 'isAdmin') && $user->isAdmin())
+            || (method_exists($user, 'hasFormPermission') && $user->hasFormPermission('individual_development_center', 'view'));
+
+        $query = $canViewAcrossHouses ? Client::query() : Client::forUser($user);
+        return $query->with(['house', 'project', 'target'])->findOrFail($clientId);
     }
 
     private function resolveAgeText(Client $client): string

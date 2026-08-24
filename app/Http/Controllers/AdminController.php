@@ -107,18 +107,38 @@ class AdminController extends Controller
 
     public function PasswordUpdate(Request $request)
     {
-        $user = Auth::user();
+            $user = Auth::user();
 
-        $request->validate([
-            'old_password' => ['required'],
-            'new_password' => ['required', 'confirmed', Password::defaults()],
+            $request->validate([
+            'old_password' => [
+                'required',
+                'string',
+            ],
+
+            'new_password' => [
+                'required',
+                'string',
+                'min:10',
+                'confirmed',
+
+                // ต้องมีตัวอักษรอย่างน้อย 1 ตัว
+                // และมีตัวเลขอย่างน้อย 1 ตัว
+                'regex:/^(?=.*\p{L})(?=.*\d).+$/u',
+            ],
+
+            'new_password_confirmation' => [
+                'required',
+                'string',
+            ],
         ], [
             'old_password.required' => 'กรุณากรอกรหัสผ่านปัจจุบัน',
+
             'new_password.required' => 'กรุณากรอกรหัสผ่านใหม่',
-            'new_password.confirmed' => 'การยืนยันรหัสผ่านใหม่ไม่ตรงกัน',
             'new_password.min' => 'รหัสผ่านใหม่ต้องมีอย่างน้อย 10 ตัวอักษร',
-            'new_password.letters' => 'รหัสผ่านใหม่ต้องมีตัวอักษรอย่างน้อย 1 ตัว',
-            'new_password.numbers' => 'รหัสผ่านใหม่ต้องมีตัวเลขอย่างน้อย 1 ตัว',
+            'new_password.regex' => 'รหัสผ่านใหม่ต้องมีทั้งตัวอักษรและตัวเลขอย่างน้อยอย่างละ 1 ตัว',
+            'new_password.confirmed' => 'การยืนยันรหัสผ่านใหม่ไม่ตรงกัน',
+
+            'new_password_confirmation.required' => 'กรุณายืนยันรหัสผ่านใหม่',
         ]);
 
         if (!Hash::check($request->old_password, $user->password)) {

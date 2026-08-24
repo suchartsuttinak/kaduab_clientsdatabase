@@ -2,8 +2,14 @@
 
 
 use App\Http\Controllers\Frontend\CheckBodyController;
+use App\Http\Controllers\SpecialChildReportController; // SPECIAL_CHILDREN_REPORT_V1
 use Illuminate\Support\Facades\Route;
 
+
+// SPECIAL_CHILDREN_REPORT_V1
+Route::get('/special-children', [SpecialChildReportController::class, 'index'])
+    ->middleware('auth')
+    ->name('special_children.index');
 
 // 🏫 ตรวจสุขภาพเบื้องต้น
     Route::prefix('check_body')->name('check_body.')->group(function () {

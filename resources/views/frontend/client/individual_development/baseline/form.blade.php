@@ -101,7 +101,7 @@
         <span>ระบบคำนวณค่าเฉลี่ยรายด้านอัตโนมัติ แต่ผู้ประเมินเป็นผู้ยืนยันระดับของแต่ละตัวชี้วัด</span>
     </div>
 
-    <form method="POST" action="{{ $isEdit ? route('individual-development.baseline.update', $client->id) : route('individual-development.baseline.store', $client->id) }}" id="baselineAssessmentForm">
+    <form data-idp-th-validation="1" method="POST" action="{{ $isEdit ? route('individual-development.baseline.update', $client->id) : route('individual-development.baseline.store', $client->id) }}" id="baselineAssessmentForm">
         @csrf
         @if($isEdit) @method('PUT') @endif
 
@@ -112,7 +112,7 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label">วันที่ประเมิน <span class="text-danger">*</span></label>
-                            <input type="date" name="assessment_date" class="form-control @error('assessment_date') is-invalid @enderror" max="{{ now('Asia/Bangkok')->format('Y-m-d') }}" value="{{ old('assessment_date', $assessment?->assessment_date?->format('Y-m-d') ?? now('Asia/Bangkok')->format('Y-m-d')) }}" required>
+                            <input type="date" name="assessment_date" class="form-control @error('assessment_date') is-invalid @enderror" min="{{ optional($plan->start_date)->format('Y-m-d') }}" max="{{ now('Asia/Bangkok')->format('Y-m-d') }}" value="{{ old('assessment_date', $assessment?->assessment_date?->format('Y-m-d') ?? now('Asia/Bangkok')->format('Y-m-d')) }}" required>
                             @error('assessment_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-8">
@@ -201,9 +201,10 @@
                             <div class="idp-evidence">
                                 <div class="row g-2">
                                     <div class="col-md-7">
-                                        <label class="form-label">หลักฐาน/พฤติกรรมที่สังเกตพบ</label>
-                                        <textarea name="items[{{ $indicator->id }}][evidence]" class="form-control" placeholder="บันทึกพฤติกรรม เหตุการณ์ หรือข้อมูลที่ใช้ประกอบการเลือกระดับ">{{ old('items.'.$indicator->id.'.evidence', $existingItem?->evidence) }}</textarea>
-                                        <div class="idp-help">แนะนำให้บันทึกเมื่อเลือกระดับ 1–2 หรือมีเหตุการณ์สำคัญ เพื่อให้การติดตามครั้งต่อไปเปรียบเทียบได้ชัดเจน</div>
+                                        <label class="form-label">หลักฐาน/พฤติกรรมที่สังเกตพบ <span class="text-danger">*</span></label>
+                                        <textarea name="items[{{ $indicator->id }}][evidence]" class="form-control" required placeholder="บันทึกพฤติกรรม เหตุการณ์ หรือข้อมูลที่ใช้ประกอบการเลือกระดับ">{{ old('items.'.$indicator->id.'.evidence', $existingItem?->evidence) }}</textarea>
+                                        <div class="idp-help">ต้องมีหลักฐาน/พฤติกรรมประกอบคะแนนทุกตัวชี้วัด เพื่อให้การติดตามครั้งต่อไปตรวจสอบและเปรียบเทียบได้</div>
+                                        @error('items.'.$indicator->id.'.evidence')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                                     </div>
                                     <div class="col-md-5">
                                         <label class="form-label">ข้อสังเกต/ประเด็นที่ควรพัฒนา</label>
@@ -275,4 +276,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
+@include('frontend.client.individual_development.partials._thai_validation')
 @endsection

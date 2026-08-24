@@ -170,8 +170,38 @@
             <div class="edurec-body">
                 <form action="{{ route('education_record_update', $record->id) }}" method="POST" id="educationRecordEditForm">
                     @csrf
+                    @method('PUT')
 
                     <input type="hidden" name="client_id" value="{{ $client->id }}">
+
+                    {{-- EDUCATION_RECORD_UNIVERSITY_HISTORY_GUARD_UI_V1 --}}
+                    @if($isUniversityEducationLocked ?? false)
+                        <input type="hidden" name="education_id" value="{{ $record->education_id }}">
+                        <input type="hidden" name="semester_id" value="{{ $record->semester_id }}">
+
+                        <div class="alert alert-warning border-0 shadow-sm mb-3" role="alert">
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                <div>
+                                    <div class="fw-bold mb-1">
+                                        <i class="bi bi-lock-fill me-1"></i>
+                                        ข้อมูลภาคเรียนนี้ถูกใช้ในเด็กมหาวิทยาลัยแล้ว
+                                    </div>
+                                    <div class="small">
+                                        ล็อกระดับการศึกษา ภาคเรียน และสถานศึกษา เพื่อรักษาประวัติ
+                                        {{ data_get($universitySemesterLink,'term') }}/{{ data_get($universitySemesterLink,'academic_year') }}
+                                        ให้ตรงกับ GPA รายวิชา เอกสาร และการติดตามเดิม
+                                        หากขึ้นภาคเรียนใหม่ กรุณาสร้าง Education Record รายการใหม่
+                                    </div>
+                                </div>
+
+                                <a href="{{ route('education_record_add', ['client_id' => $client->id]) }}"
+                                   class="btn btn-sm btn-outline-dark">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    เพิ่มข้อมูลผลการเรียนใหม่
+                                </a>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- ข้อมูลพื้นฐาน --}}
                     <div class="edurec-section">

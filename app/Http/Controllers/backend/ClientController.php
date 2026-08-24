@@ -305,25 +305,38 @@ class ClientController extends Controller
         if ($request->boolean('batch')) {
             return $this->clientImageBatch($request);
         }
-// CLIENT_IMAGE_CACHE_V3
-        // Route รูปยังตรวจสิทธิ์ด้วย forUser() เหมือนเดิม แต่เลือกเฉพาะคอลัมน์ที่จำเป็น
-        // เพื่อลด payload/หน่วยความจำของทุก image request
+
+        // Route รูปยังตรวจสิทธิ์ด้วย forUser() เหมือนเดิม และเลือกเฉพาะคอลัมน์ที่จำเป็น
         $client = Client::forUser(auth()->user())
             ->select(['clients.id', 'clients.image'])
             ->findOrFail($id);
+
         $safeFilename = !empty($client->image)
             ? basename((string) $client->image)
             : '';
 
-        $candidates = [];
+        $path = null;
 
-        if ($safeFilename !== '') {
-            $candidates[] = storage_path('app/private/client_images/' . $safeFilename);
-            // Legacy fallback: อ่านไฟล์เดิมได้ แต่ public/.htaccess ของโฟลเดอร์จะกัน direct access
-            $candidates[] = public_path('upload/client_images/' . $safeFilename);
+        // CLIENT_IMAGE_THUMB_V7
+        // หน้า list ขอ ?thumb=1 เพื่อใช้รูปย่อ 96px แทนการส่งไฟล์ต้นฉบับขนาดใหญ่ทุกแถว
+        if ($safeFilename !== '' && $request->boolean('thumb')) {
+            $thumbnailPath = $this->ensureClientListThumbnail($safeFilename);
+
+            if ($thumbnailPath && File::isFile($thumbnailPath)) {
+                $path = $thumbnailPath;
+            }
         }
 
-        $path = collect($candidates)->first(static fn ($candidate) => File::isFile($candidate));
+        // หน้า profile/edit และ fallback ของ thumbnail ใช้ไฟล์ต้นฉบับ
+        if (!$path && $safeFilename !== '') {
+            $candidates = [
+                storage_path('app/private/client_images/' . $safeFilename),
+                // Legacy fallback: อ่านไฟล์เดิมได้ แต่ public/.htaccess ของโฟลเดอร์จะกัน direct access
+                public_path('upload/client_images/' . $safeFilename),
+            ];
+
+            $path = collect($candidates)->first(static fn ($candidate) => File::isFile($candidate));
+        }
 
         if (!$path) {
             $fallback = public_path('upload/no_image.jpg');
@@ -343,21 +356,25 @@ class ClientController extends Controller
             'X-Content-Type-Options' => 'nosniff',
         ]);
 
-        // รูปยังเป็น private และผ่าน authorization เช่นเดิม
-        // อนุญาต Browser cache ระยะสั้นเพื่อลดการโหลดรูปซ้ำทุกครั้งที่ refresh / live search
-        // CLIENT_IMAGE_CACHE_V4
-        // URL รูปถูก version ด้วยชื่อไฟล์ + session อยู่แล้ว จึงไม่ใช้ Vary: Cookie
-        // เพื่อป้องกัน cache miss เมื่อ Cookie อื่นเปลี่ยนระหว่างการใช้งาน
-        // private = ไม่ให้ shared/proxy cache เก็บรูปส่วนบุคคล
-        // 6 ชั่วโมงครอบคลุมการใช้งานต่อเนื่องในหนึ่งช่วงงาน โดยไม่ต้อง revalidate รูปซ้ำ
         $response->setPrivate();
-        $response->setMaxAge(21600);
-        $response->headers->addCacheControlDirective('immutable');
         $response->setEtag($etag);
         $response->setLastModified(new \DateTimeImmutable('@' . $lastModified));
 
-        // หลัง cache หมดอายุ Browser ส่ง ETag/Last-Modified กลับมา
-        // Laravel จะตอบ 304 เมื่อรูปยังไม่เปลี่ยน ลดทั้ง bandwidth และเวลาถอดรหัสรูป
+        // CLIENT_IMAGE_CACHE_V7
+        // URL ที่มี ?v= ผูกกับชื่อไฟล์รูปแล้ว: cache ได้นานและ immutable เพื่อความลื่น
+        // URL เก่าที่ไม่มี ?v=: บังคับ revalidate เพื่อไม่ให้หน้าใดค้างรูปเดิมหลังแก้ไขรูป
+        $hasVersion = trim((string) $request->query('v', '')) !== '';
+
+        if ($hasVersion) {
+            $response->setMaxAge(21600);
+            $response->headers->addCacheControlDirective('immutable');
+        } else {
+            $response->setMaxAge(0);
+            $response->headers->addCacheControlDirective('no-cache');
+            $response->headers->addCacheControlDirective('must-revalidate');
+        }
+
+        // ถ้า Browser revalidate และไฟล์ไม่เปลี่ยน Laravel ตอบ 304 ลด bandwidth
         $response->isNotModified($request);
 
         return $response;

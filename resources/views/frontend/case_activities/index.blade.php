@@ -471,7 +471,7 @@
                                     request()->except('page')
                                 )
                             ) }}"
-                           target="_blank"
+
                            rel="noopener"
                            class="ca-btn ca-btn-light">
                             <i class="bi bi-printer"></i>

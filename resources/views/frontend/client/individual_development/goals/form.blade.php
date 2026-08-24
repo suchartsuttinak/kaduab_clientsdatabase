@@ -8,7 +8,10 @@
     $selectedIndicator = old('indicator_id', $goal?->indicator_id);
     $selectedPriority = old('priority', $goal?->priority ?? 'medium');
     $selectedStatus = old('status', $goal?->status ?? 'not_started');
-    $selectedTarget = old('target_level', $goal?->target_level ?? 3);
+    $selectedTarget = old('target_level', $goal?->target_level);
+    $todayDate = now('Asia/Bangkok')->format('Y-m-d');
+    $planStartDate = optional($plan->start_date)->format('Y-m-d') ?: $todayDate;
+    $targetDateMin = $planStartDate > $todayDate ? $planStartDate : $todayDate;
 @endphp
 
 <style>
@@ -20,7 +23,7 @@
 .idp-goal-form .gf-meta{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.65rem}.idp-goal-form .gf-pill{border:1px solid #dce6ef;border-radius:999px;background:#f8fbff;padding:.3rem .65rem;font-size:.78rem;color:#455a73}
 .idp-goal-form .gf-card{overflow:hidden}.idp-goal-form .gf-card-head{padding:.85rem 1rem;background:#fbfcfe;border-bottom:1px solid var(--border);font-weight:800;color:var(--text)}.idp-goal-form .gf-card-body{padding:1rem}
 .idp-goal-form .form-label{font-size:.82rem;font-weight:700;color:#42556c}.idp-goal-form .form-control,.idp-goal-form .form-select{border-radius:10px;border-color:#d9e2ec;min-height:42px}.idp-goal-form textarea.form-control{min-height:96px}
-.idp-goal-form .gf-help{font-size:.74rem;color:#7a899b;margin-top:.25rem}.idp-goal-form .gf-baseline{height:100%;padding:.9rem;border-radius:12px;border:1px solid #d7e7f8;background:#f7fbff}.idp-goal-form .gf-baseline-label{font-size:.76rem;color:#66809a}.idp-goal-form .gf-baseline-value{font-size:1.35rem;font-weight:800;color:#245f9f;margin-top:.15rem}
+.idp-goal-form .gf-help{font-size:.74rem;color:#7a899b;margin-top:.25rem}.idp-goal-form .gf-baseline{height:100%;padding:.9rem;border-radius:12px;border:1px solid #d7e7f8;background:#f7fbff}.idp-goal-form .gf-baseline-label{font-size:.76rem;color:#66809a}.idp-goal-form .gf-baseline-value{font-size:1.18rem;font-weight:800;color:#245f9f;margin-top:.15rem;white-space:nowrap}.idp-goal-form .gf-baseline-text{font-size:.72rem;color:#60758d;margin-top:.2rem;line-height:1.25}
 .idp-goal-form .gf-actions{display:flex;justify-content:flex-end;gap:.55rem;flex-wrap:wrap;margin-top:1rem}.idp-goal-form .btn{border-radius:10px;min-height:42px;font-weight:700;padding:.58rem .95rem}.idp-goal-form .btn-save{background:linear-gradient(135deg,#3577bd,#245f9f);border:0;color:#fff}.idp-goal-form .btn-save:hover{color:#fff}
 @media(max-width:575.98px){.idp-goal-form .gf-actions{display:grid;grid-template-columns:1fr}.idp-goal-form .gf-actions .btn{width:100%}}
 
@@ -32,7 +35,7 @@
 
 </style>
 
-<div class="container-fluid px-2 px-lg-3 idp-goal-form">
+<div class="container-fluid px-2 px-lg-3 idp-goal-form" data-idp-goal-guard="v1">
     <div class="gf-head">
         <div>
             <h4 class="gf-title"><i class="bi bi-bullseye me-2 text-primary"></i>{{ $isEdit ? 'แก้ไขเป้าหมายการพัฒนา' : 'กำหนดเป้าหมายการพัฒนา' }}</h4>
@@ -53,7 +56,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ $isEdit ? route('individual-development.goals.update', [$client->id, $goal->id]) : route('individual-development.goals.store', $client->id) }}" id="goalForm">
+    <form data-idp-th-validation="1" method="POST" action="{{ $isEdit ? route('individual-development.goals.update', [$client->id, $goal->id]) : route('individual-development.goals.store', $client->id) }}" id="goalForm">
         @csrf
         @if($isEdit) @method('PATCH') @endif
 
@@ -86,13 +89,16 @@
                         <div class="gf-baseline">
                             <div class="gf-baseline-label">Baseline</div>
                             <div class="gf-baseline-value" id="baselineLevel">-</div>
+                            <div class="gf-baseline-text" id="baselineText">เลือกด้าน/ตัวชี้วัด</div>
                         </div>
                     </div>
                     <div class="col-6 col-lg-2">
                         <label class="form-label">ระดับเป้าหมาย <span class="text-danger">*</span></label>
-                        <select name="target_level" class="form-select" required>
-                            @for($level=1;$level<=5;$level++)<option value="{{ $level }}" @selected((int)$selectedTarget === $level)>ระดับ {{ $level }}</option>@endfor
+                        <select name="target_level" id="target_level" class="form-select" required>
+                            <option value="">-- เลือกระดับเป้าหมาย --</option>
+                            @for($level=1;$level<=5;$level++)<option value="{{ $level }}" @selected((string)$selectedTarget === (string)$level)>ระดับ {{ $level }}</option>@endfor
                         </select>
+                        <div class="gf-help" id="targetLevelHelp">เลือกระดับให้สูงกว่า Baseline</div>
                     </div>
                 </div>
             </div>
@@ -104,11 +110,11 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label">ชื่อเป้าหมาย <span class="text-danger">*</span></label>
-                        <input type="text" name="title" class="form-control" maxlength="500" value="{{ old('title', $goal?->title) }}" placeholder="เช่น สามารถควบคุมอารมณ์เมื่อเกิดความขัดแย้งได้อย่างเหมาะสม" required>
+                        <input type="text" name="title" class="form-control" maxlength="500" value="{{ old('title', $goal?->title ?? ($prefillNeed ?? '')) }}" placeholder="เช่น สามารถควบคุมอารมณ์เมื่อเกิดความขัดแย้งได้อย่างเหมาะสม" required>
                     </div>
                     <div class="col-12">
                         <label class="form-label">รายละเอียด/ผลลัพธ์ที่คาดหวัง</label>
-                        <textarea name="description" class="form-control" maxlength="10000" placeholder="อธิบายพฤติกรรมหรือผลลัพธ์ที่ต้องการให้เกิดขึ้น">{{ old('description', $goal?->description) }}</textarea>
+                        <textarea name="description" class="form-control" maxlength="10000" placeholder="อธิบายพฤติกรรมหรือผลลัพธ์ที่ต้องการให้เกิดขึ้น">{{ old('description', $goal?->description ?? ($prefillNeed ?? '')) }}</textarea>
                     </div>
                     <div class="col-12">
                         <label class="form-label">ตัวชี้วัดความสำเร็จ <span class="text-danger">*</span></label>
@@ -136,7 +142,7 @@
                 <div class="row g-3">
                     <div class="col-12 col-md-4">
                         <label class="form-label">กำหนดสำเร็จ</label>
-                        <input type="date" name="target_date" class="form-control" value="{{ old('target_date', optional($goal?->target_date)->format('Y-m-d')) }}">
+                        <input type="date" name="target_date" class="form-control" min="{{ $targetDateMin }}" value="{{ old('target_date', optional($goal?->target_date)->format('Y-m-d')) }}">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label">ระดับความสำคัญ <span class="text-danger">*</span></label>
@@ -172,8 +178,46 @@ document.addEventListener('DOMContentLoaded', function () {
     const domain = document.getElementById('domain_id');
     const indicator = document.getElementById('indicator_id');
     const baselineOutput = document.getElementById('baselineLevel');
+    const baselineText = document.getElementById('baselineText');
+    const target = document.getElementById('target_level');
+    const targetHelp = document.getElementById('targetLevelHelp');
     const baselineLevels = @json($baselineLevels);
     const selectedIndicator = @json((string)$selectedIndicator);
+    const selectedTarget = @json((string)$selectedTarget);
+    const rubricLabels = {
+        1: 'ต้องส่งเสริมเร่งด่วน',
+        2: 'ควรส่งเสริม',
+        3: 'ตามเกณฑ์',
+        4: 'ดี',
+        5: 'ดีมาก'
+    };
+
+    function targetAllowed(level, baseline) {
+        if (!baseline) return true;
+        if (baseline >= 5) return level === 5;
+        return level > baseline;
+    }
+
+    function refreshTargetOptions(baseline) {
+        Array.from(target.options).forEach(function (option) {
+            if (!option.value) { option.disabled = false; return; }
+            option.disabled = !targetAllowed(Number(option.value), baseline);
+        });
+
+        const current = Number(target.value || 0);
+        if (baseline) {
+            const recommended = baseline >= 5 ? 5 : Math.min(5, baseline + 1);
+            if (!current || !targetAllowed(current, baseline)) {
+                target.value = String(recommended);
+            }
+            targetHelp.textContent = baseline >= 5
+                ? 'Baseline อยู่ระดับ 5 แล้ว ระบบคงระดับเป้าหมายไว้ที่ระดับ 5'
+                : 'ระดับเป้าหมายต้องสูงกว่า Baseline ระดับ ' + baseline + ' (แนะนำเริ่มที่ระดับ ' + recommended + ')';
+        } else {
+            if (!selectedTarget) target.value = '';
+            targetHelp.textContent = 'เลือกระดับให้สูงกว่า Baseline';
+        }
+    }
 
     function refreshIndicators() {
         const domainId = String(domain.value || '');
@@ -185,17 +229,33 @@ document.addEventListener('DOMContentLoaded', function () {
         if (selected && selected.hidden) indicator.value = '';
         refreshBaseline();
     }
+
     function refreshBaseline() {
         const indicatorId = String(indicator.value || '');
         const domainId = String(domain.value || '');
         const key = indicatorId ? 'indicator:' + indicatorId : 'domain:' + domainId;
-        const value = baselineLevels[key];
-        baselineOutput.textContent = value ? ('ระดับ ' + value) : '-';
+        const rawValue = baselineLevels[key];
+        const value = rawValue === null || rawValue === undefined || rawValue === '' ? null : Number(rawValue);
+
+        if (value) {
+            baselineOutput.textContent = 'ระดับ ' + value + ' / 5';
+            baselineText.textContent = rubricLabels[value] || '';
+        } else {
+            baselineOutput.textContent = '-';
+            baselineText.textContent = domainId ? 'ไม่พบคะแนน Baseline' : 'เลือกด้าน/ตัวชี้วัด';
+        }
+
+        refreshTargetOptions(value);
     }
+
     domain.addEventListener('change', refreshIndicators);
     indicator.addEventListener('change', refreshBaseline);
     refreshIndicators();
-    if (selectedIndicator) { indicator.value = selectedIndicator; refreshBaseline(); }
+    if (selectedIndicator) {
+        indicator.value = selectedIndicator;
+        refreshBaseline();
+    }
 });
 </script>
+@include('frontend.client.individual_development.partials._thai_validation')
 @endsection

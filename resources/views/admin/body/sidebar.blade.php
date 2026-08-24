@@ -9,12 +9,13 @@
 
     $canForm = static fn (string $key): bool => (bool) ($formAccess[$key] ?? false);
     $canCreate = static fn (string $key): bool => (bool) ($currentUser?->canCreateForm($key) ?? false);
+    $canManageSystemUsers = (bool) ($currentUser && ($currentUser->isAdmin() || $currentUser->isExecutive()));
 
     $showRegistrationMenu = (bool) ($permissionMenu['has_any_client_form'] ?? false)
         || ($groupAccess['registration_central'] ?? false);
     $showDashboardMenu = (bool) ($groupAccess['dashboard'] ?? false);
     $showMasterMenu = (bool) ($groupAccess['master_data'] ?? false);
-    $showSystemMenu = $canForm('system_users')
+    $showSystemMenu = $canManageSystemUsers
     || $canForm('system_audit_logs');
 
     $isProfileOpen = Request::routeIs('client.show')
@@ -37,6 +38,7 @@
         || Request::routeIs('house.*')
         || Request::routeIs('education.*')
         || Request::routeIs('semester.*')
+         || Request::routeIs('project.*')
         || Request::routeIs('psycho.*')
         || Request::routeIs('misbehavior.*')
         || Request::routeIs('outside.*')
@@ -50,6 +52,7 @@
    $isUserMenu = Request::routeIs('users.*')
     || Request::routeIs('audit_logs.*');
     $isIdstationCentralMenu = Request::routeIs('idstation.central.*');
+    $isIndividualDevelopmentCentral = Request::routeIs('individual-development.center');
 @endphp
 
 {{-- FORM_PERMISSION_MENU_V6: MAIN_SIDEBAR --}}
@@ -143,6 +146,11 @@
                     </li>
                 @endif
 
+                @if($canForm('individual_development_center') && Route::has('individual-development.center'))
+                    <li class="menu-title mt-2">แผนพัฒนาเด็ก</li>
+                    <li><a href="{{ route('individual-development.center') }}" class="{{ $isIndividualDevelopmentCentral ? 'active' : '' }}"><i class="bi bi-diagram-3 sidebar-fa-icon"></i><span>ศูนย์กลางการพัฒนาเด็ก</span></a></li>
+                @endif
+
                 @if($canForm('welfare_stateless_person'))
                     <li class="menu-title">ศูนย์กลางทะเบียน</li>
                     <li>
@@ -173,6 +181,7 @@
                                 @if($canForm('master_houses'))<li><a href="{{ route('house.show') }}" class="tp-link">รายการบ้านพัก</a></li>@endif
                                 @if($canForm('master_education_levels'))<li><a href="{{ route('education.show') }}" class="tp-link">รายการระดับการศึกษา</a></li>@endif
                                 @if($canForm('master_semesters'))<li><a href="{{ route('semester.show') }}" class="tp-link">รายการปีการศึกษา</a></li>@endif
+                                @if($canForm('master_projects'))<li><a href="{{ route('project.show') }}" class="tp-link">รายการโครงการ</a></li>@endif
                                 @if($canForm('master_psychiatric_diseases'))<li><a href="{{ route('psycho.show') }}" class="tp-link">รายการโรคทางจิตเวช</a></li>@endif
                                 @if($canForm('master_behaviors'))<li><a href="{{ route('misbehavior.show') }}" class="tp-link">รายการพฤติกรรม</a></li>@endif
                                 @if($canForm('master_outside_types'))<li><a href="{{ route('outside.show') }}" class="tp-link">รายการเด็กที่อยู่ภายนอก</a></li>@endif
@@ -187,6 +196,16 @@
                     </li>
                 @endif
 
+                {{-- SPECIAL_CHILDREN_REPORT_V1 --}}
+                @if($canForm('health_body_check') && Route::has('special_children.index'))
+                    <li>
+                        <a href="{{ route('special_children.index') }}"
+                           class="{{ Request::routeIs('special_children.*') ? 'active' : '' }}">
+                            <i class="bi bi-person-hearts"></i>
+                            <span>เด็กกลุ่มพิเศษ</span>
+                        </a>
+                    </li>
+                @endif
                 <li class="menu-title mt-2">ประชาสัมพันธ์</li>
                 <li><a href="{{ route('publicizes.index') }}" class="tp-link {{ Request::routeIs('publicizes.*') ? 'active' : '' }}"><i class="bi bi-megaphone me-1"></i>ข่าวสาร/กิจกรรม</a></li>
                 <li><a href="{{ route('operations.index') }}" class="nav-link {{ Request::routeIs('operations.index') ? 'active' : '' }}"><i class="bi bi-journal-text me-2"></i><span>บันทึกการปฏิบัติงาน</span></a></li>
@@ -216,7 +235,7 @@
             <ul class="nav-second-level">
 
                 {{-- รายชื่อผู้ใช้งาน --}}
-                @if($canForm('system_users'))
+                @if($canManageSystemUsers)
                     <li>
                         <a href="{{ route('users.index') }}"
                            class="tp-link {{ Request::routeIs('users.index') || Request::routeIs('users.edit') ? 'active' : '' }}">
@@ -226,7 +245,7 @@
                 @endif
 
                 {{-- เพิ่มผู้ใช้งาน --}}
-                @if($canForm('system_users') && $canCreate('system_users'))
+                @if($canManageSystemUsers)
                     <li>
                         <a href="{{ route('users.create') }}"
                            class="tp-link {{ Request::routeIs('users.create') ? 'active' : '' }}">
@@ -252,7 +271,11 @@
 
                 <li class="menu-title mt-2">ระบบ</li>
                 <li>
-                    <form method="POST" action="{{ route('admin.logout') }}" class="m-0">
+                    {{-- DASHBOARD_USER_MENU_LOGOUT_HOTFIX_V1: session action, not a form write permission --}}
+                    <form method="POST"
+                          action="{{ route('admin.logout') }}"
+                          class="m-0"
+                          data-permission-action="navigation">
                         @csrf
                         <button type="submit" class="sidebar-logout-btn">
                             <i data-feather="log-out"></i><span>ออกจากระบบ</span>

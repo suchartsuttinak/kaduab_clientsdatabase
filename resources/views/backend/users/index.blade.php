@@ -3,9 +3,10 @@
 @section('admin')
 @php
     $currentUser = auth()->user();
-    $canCreateUsers = $currentUser?->canCreateForm('system_users') ?? false;
-    $canUpdateUsers = $currentUser?->canUpdateForm('system_users') ?? false;
-    $canDeleteUsers = $currentUser?->canDeleteForm('system_users') ?? false;
+    $canManageUsers = (bool) ($currentUser && ($currentUser->isAdmin() || $currentUser->isExecutive()));
+    $canCreateUsers = $canManageUsers;
+    $canUpdateUsers = $canManageUsers;
+    $canDeleteUsers = $canManageUsers;
 @endphp
 <div class="container-fluid py-4 user-manage-page">
     <div class="ump-header-card">
@@ -13,7 +14,7 @@
             <div class="ump-title-icon"><i class="bi bi-people-fill"></i></div>
             <div>
                 <h4 class="ump-page-title mb-1">จัดการผู้ใช้งานและสิทธิ์</h4>
-                <div class="ump-page-subtitle">กำหนดโครงการ บ้าน บทบาท และสิทธิ์รายฟอร์มอย่างเป็นลำดับ</div>
+                <div class="ump-page-subtitle">Admin และผู้บริหารกำหนดบัญชี ขอบเขตข้อมูล และสิทธิ์รายฟอร์ม โดยบัญชี Admin ถูกป้องกันจากการแก้ไข</div>
             </div>
         </div>
 
@@ -76,7 +77,7 @@
             </div>
             <div class="ump-safe-note">
                 <i class="bi bi-shield-lock-fill"></i>
-                ผู้ใช้เดิมที่ยังไม่เปิดสิทธิ์รายฟอร์มจะทำงานตามระบบเดิม
+                บัญชี Admin เป็นบัญชีคุ้มครอง: ไม่มีการแก้ไข เปลี่ยนสถานะ หรือลบจากหน้านี้
             </div>
         </div>
 
@@ -101,6 +102,13 @@
                             @php
                                 $permissionCount = $user->formPermissions->count();
                                 $projectName = $user->project?->project_name ?? $user->project?->name;
+                                $isProtectedAdmin = $user->isAdmin();
+                                $isExecutiveProtectedForActor = (bool) ($currentUser?->isExecutive() && $user->isExecutive());
+                                $isSelfProtected = (int) ($currentUser?->id ?? 0) === (int) $user->id;
+                                $canManageThisUser = $canManageUsers
+                                    && !$isProtectedAdmin
+                                    && !$isExecutiveProtectedForActor
+                                    && !$isSelfProtected;
                             @endphp
                             <tr>
                                 <td class="text-center fw-semibold">{{ $key + 1 }}</td>
@@ -155,31 +163,43 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="ump-action-group">
-                                        @if($canUpdateUsers)
-                                            <a href="{{ route('users.edit', $user->id) }}" class="btn ump-btn-action ump-btn-edit">
-                                                <i class="bi bi-pencil-square"></i><span>แก้ไข</span>
-                                            </a>
+                                        @if($isProtectedAdmin)
+                                            <span class="ump-protected-note" title="บัญชี Admin ไม่สามารถแก้ไขจากโมดูลนี้">
+                                                <i class="bi bi-shield-lock-fill"></i>บัญชี Admin
+                                            </span>
+                                        @elseif($isExecutiveProtectedForActor)
+                                            <span class="ump-protected-note" title="ผู้บริหารจัดการได้โดย Admin เท่านั้น">
+                                                <i class="bi bi-shield-lock-fill"></i>Admin เท่านั้น
+                                            </span>
+                                        @elseif($isSelfProtected)
+                                            <span class="ump-protected-note" title="แก้ไขบัญชีของตนเองผ่านหน้าโปรไฟล์">
+                                                <i class="bi bi-person-lock"></i>โปรไฟล์ของฉัน
+                                            </span>
+                                        @elseif($canManageThisUser)
+                                            @if($canUpdateUsers)
+                                                <a href="{{ route('users.edit', $user->id) }}" class="btn ump-btn-action ump-btn-edit">
+                                                    <i class="bi bi-pencil-square"></i><span>แก้ไข</span>
+                                                </a>
 
-                                            <form action="{{ route('users.toggle-status', $user->id) }}" method="POST" class="d-inline js-confirm-status" data-user-name="{{ $user->name }}">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="btn ump-btn-action ump-btn-status">
-                                                    <i class="bi bi-arrow-repeat"></i><span>สถานะ</span>
-                                                </button>
-                                            </form>
-                                        @endif
+                                                <form action="{{ route('users.toggle-status', $user->id) }}" method="POST" class="d-inline js-confirm-status" data-user-name="{{ $user->name }}">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="btn ump-btn-action ump-btn-status">
+                                                        <i class="bi bi-arrow-repeat"></i><span>สถานะ</span>
+                                                    </button>
+                                                </form>
+                                            @endif
 
-                                        @if($canDeleteUsers)
-                                            <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline js-confirm-delete" data-user-name="{{ $user->name }}">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn ump-btn-action ump-btn-delete">
-                                                    <i class="bi bi-trash3-fill"></i><span>ลบ</span>
-                                                </button>
-                                            </form>
-                                        @endif
-
-                                        @if(!$canUpdateUsers && !$canDeleteUsers)
+                                            @if($canDeleteUsers)
+                                                <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline js-confirm-delete" data-user-name="{{ $user->name }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn ump-btn-action ump-btn-delete">
+                                                        <i class="bi bi-trash3-fill"></i><span>ลบ</span>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        @else
                                             <span class="ump-empty-text"><i class="bi bi-eye me-1"></i>ดูข้อมูล</span>
                                         @endif
                                     </div>
@@ -301,6 +321,7 @@
 .user-manage-page .ump-status-active{color:#15803d;background:#ecfdf3;border:1px solid #bbf7d0}
 .user-manage-page .ump-status-inactive{color:#dc2626;background:#fef2f2;border:1px solid #fecaca}
 .user-manage-page .ump-empty-text{color:#94a3b8;font-size:.84rem}
+.user-manage-page .ump-protected-note{display:inline-flex;align-items:center;justify-content:center;gap:.38rem;min-height:34px;padding:.48rem .72rem;border-radius:999px;color:#475569;background:#f8fafc;border:1px solid #cbd5e1;font-size:.82rem;font-weight:800;white-space:nowrap}
 .user-manage-page .ump-action-group{display:flex;align-items:center;justify-content:center;gap:.38rem;flex-wrap:wrap;min-width:260px}
 .user-manage-page .ump-btn-action{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;min-width:80px;padding:.54rem .72rem;border-radius:999px;font-size:.82rem;font-weight:800;border:1px solid transparent;white-space:nowrap}
 .user-manage-page .ump-btn-edit{color:#c2410c;background:#fff7ed;border-color:#fed7aa}
@@ -321,6 +342,43 @@
     .user-manage-page div.dataTables_wrapper div.dataTables_filter,
     .user-manage-page div.dataTables_wrapper div.dataTables_length{text-align:left!important}
     .user-manage-page div.dataTables_wrapper div.dataTables_filter input{width:100%!important;margin:.4rem 0 0!important}
+}
+
+/* ADMIN_USERS_SCROLL_HOTFIX_V1
+   Keep exactly one horizontal scrollbar on /admin/users.
+   DataTables owns horizontal scrolling; the outer .ump-table-wrap must not scroll. */
+.user-manage-page .ump-table-wrap {
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+}
+
+.user-manage-page div.dataTables_wrapper,
+.user-manage-page div.dt-container {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.user-manage-page .dataTables_scroll,
+.user-manage-page .dt-scroll {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.user-manage-page .dataTables_scrollBody,
+.user-manage-page .dt-scroll-body {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Keep summary and pagination clear of the remaining scrollbar. */
+.user-manage-page div.dataTables_wrapper div.dataTables_info,
+.user-manage-page div.dataTables_wrapper div.dataTables_paginate,
+.user-manage-page div.dt-container div.dt-info,
+.user-manage-page div.dt-container div.dt-paging {
+    position: relative;
+    z-index: 1;
 }
 </style>
 

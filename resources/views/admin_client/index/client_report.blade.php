@@ -1481,85 +1481,6 @@
             <div class="line">
                 <div class="field">
                     <span class="label">ผู้ปกครองชื่อ</span>
-                    <span class="value left w-110">{{ optional($client->relative)->fname ?? '-' }}</span>
-                </div>
-
-                <div class="field">
-                    <span class="label">นามสกุล</span>
-                    <span class="value left w-110">{{ optional($client->relative)->lname ?? '-' }}</span>
-                </div>
-
-                <div class="field">
-                    <span class="label">อายุ</span>
-                    <span class="value w-40">{{ optional($client->relative)->age ?? '-' }}</span>
-                </div>
-
-                <div class="field">
-                    <span class="label">ปี</span>
-                </div>
-
-                <div class="field">
-                    <span class="label">เกี่ยวข้องเป็น</span>
-                    <span class="value left w-100">{{ optional($client->relative)->relation ?? '-' }}</span>
-                </div>
-            </div>
-
-            <div class="sub-line">
-                <div class="line">
-                    <div class="field">
-                        <span class="label">ที่อยู่ปัจจุบัน เลขที่</span>
-                        <span class="value left w-50">{{ optional($client->relative)->address_no ?? '-' }}</span>
-                    </div>
-
-                    <div class="field">
-                        <span class="label">ตรอก/ซอย</span>
-                        <span class="value left w-90">{{ optional($client->relative)->soi ?? '-' }}</span>
-                    </div>
-
-                    <div class="field">
-                        <span class="label">ถนน</span>
-                        <span class="value left w-90">{{ optional($client->relative)->road ?? '-' }}</span>
-                    </div>
-
-                    <div class="field">
-                        <span class="label">หมู่ที่</span>
-                        <span class="value w-40">{{ optional($client->relative)->moo ?? '-' }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sub-line">
-                <div class="line">
-                    <div class="field">
-                        <span class="label">ตำบล/แขวง</span>
-                        <span class="value left w-120">{{ $personSubDistrict($client->relative) }}</span>
-                    </div>
-
-                    <div class="field">
-                        <span class="label">อำเภอ/เขต</span>
-                        <span class="value left w-120">{{ $personDistrict($client->relative) }}</span>
-                    </div>
-
-                    <div class="field">
-                        <span class="label">จังหวัด</span>
-                        <span class="value left w-110">{{ $personProvince($client->relative) }}</span>
-                    </div>
-
-                    <div class="field">
-                        <span class="label">โทร.</span>
-                        <span class="value left w-100">{{ optional($client->relative)->phone ?? '-' }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="form-row">
-        <div class="row-no">10.</div>
-        <div class="row-body">
-            <div class="line">
-                <div class="field">
-                    <span class="label">ญาติผู้ที่อุปการะชื่อ</span>
                     <span class="value left w-110">{{ optional($client->spouse)->fname ?? '-' }}</span>
                 </div>
 
@@ -1627,6 +1548,85 @@
                     <div class="field">
                         <span class="label">โทร.</span>
                         <span class="value left w-100">{{ optional($client->spouse)->phone ?? '-' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="row-no">10.</div>
+        <div class="row-body">
+            <div class="line">
+                <div class="field">
+                    <span class="label">ญาติที่อยู่ที่อื่นชื่อ</span>
+                    <span class="value left w-110">{{ optional($client->relative)->fname ?? '-' }}</span>
+                </div>
+
+                <div class="field">
+                    <span class="label">นามสกุล</span>
+                    <span class="value left w-110">{{ optional($client->relative)->lname ?? '-' }}</span>
+                </div>
+
+                <div class="field">
+                    <span class="label">อายุ</span>
+                    <span class="value w-40">{{ optional($client->relative)->age ?? '-' }}</span>
+                </div>
+
+                <div class="field">
+                    <span class="label">ปี</span>
+                </div>
+
+                <div class="field">
+                    <span class="label">เกี่ยวข้องเป็น</span>
+                    <span class="value left w-100">{{ optional($client->relative)->relation ?? '-' }}</span>
+                </div>
+            </div>
+
+            <div class="sub-line">
+                <div class="line">
+                    <div class="field">
+                        <span class="label">ที่อยู่ปัจจุบัน เลขที่</span>
+                        <span class="value left w-50">{{ optional($client->relative)->address_no ?? '-' }}</span>
+                    </div>
+
+                    <div class="field">
+                        <span class="label">ตรอก/ซอย</span>
+                        <span class="value left w-90">{{ optional($client->relative)->soi ?? '-' }}</span>
+                    </div>
+
+                    <div class="field">
+                        <span class="label">ถนน</span>
+                        <span class="value left w-90">{{ optional($client->relative)->road ?? '-' }}</span>
+                    </div>
+
+                    <div class="field">
+                        <span class="label">หมู่ที่</span>
+                        <span class="value w-40">{{ optional($client->relative)->moo ?? '-' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sub-line">
+                <div class="line">
+                    <div class="field">
+                        <span class="label">ตำบล/แขวง</span>
+                        <span class="value left w-120">{{ $personSubDistrict($client->relative) }}</span>
+                    </div>
+
+                    <div class="field">
+                        <span class="label">อำเภอ/เขต</span>
+                        <span class="value left w-120">{{ $personDistrict($client->relative) }}</span>
+                    </div>
+
+                    <div class="field">
+                        <span class="label">จังหวัด</span>
+                        <span class="value left w-110">{{ $personProvince($client->relative) }}</span>
+                    </div>
+
+                    <div class="field">
+                        <span class="label">โทร.</span>
+                        <span class="value left w-100">{{ optional($client->relative)->phone ?? '-' }}</span>
                     </div>
                 </div>
             </div>

@@ -12,19 +12,25 @@
         display: none !important;
     }
 
-    /*
-     * PERMISSION_READONLY_COMPACT_RIGHT_V74
-     * แสดงสถานะอ่านอย่างเดียวเป็นข้อความขนาดเล็กที่มุมขวา
-     * ไม่ใช้การ์ด พื้นหลัง กรอบ หรือเงา เพื่อลดพื้นที่แนวตั้งของทุกหน้า
+    /**
+     * PERMISSION_READONLY_STABILITY_V75
+     *
+     * สถานะอ่านอย่างเดียววางแบบ fixed เพื่อไม่กินพื้นที่ใน document flow
+     * จึงไม่ดันหัวฟอร์ม/การ์ดลงหลัง JavaScript เริ่มทำงาน และลดอาการหน้าเด้ง
      */
     .permission-readonly-banner {
-        display: flex;
+        position: fixed;
+        top: 76px;
+        right: 18px;
+        z-index: 1035;
+        display: inline-flex;
         align-items: center;
         justify-content: flex-end;
         gap: .38rem;
-        width: 100%;
+        width: auto;
+        max-width: calc(100vw - 36px);
         min-height: 20px;
-        margin: 0 0 .35rem;
+        margin: 0;
         padding: 0 .2rem;
         color: #64748b;
         background: transparent;
@@ -35,6 +41,8 @@
         font-weight: 700;
         line-height: 1.25;
         text-align: right;
+        white-space: nowrap;
+        pointer-events: none;
     }
 
     .permission-readonly-banner .permission-banner-icon {
@@ -49,6 +57,16 @@
         border-radius: 0;
         font-size: .82rem;
         line-height: 1;
+    }
+
+    /* ปิด animation/transition เพียงช่วง initial permission pass เท่านั้น */
+    html.permission-ui-initializing .permission-readonly-form,
+    html.permission-ui-initializing .permission-readonly-form *,
+    html.permission-ui-initializing .permission-ui-hidden,
+    html.permission-ui-initializing .permission-view-action {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto !important;
     }
 
     .permission-readonly-form {
@@ -143,7 +161,7 @@
         border-color: #93c5fd !important;
     }
 
-    /*
+    /**
      * เติมคำว่า “อ่านอย่างเดียว” เฉพาะ Modal ที่ยังไม่มีข้อความนี้ในหัวข้อ
      * ป้องกันการแสดงซ้ำกับ Modal ที่กำหนดข้อความอ่านอย่างเดียวเอง
      */
@@ -156,8 +174,10 @@
 
     @media (max-width: 575.98px) {
         .permission-readonly-banner {
+            top: 66px;
+            right: 10px;
+            max-width: calc(100vw - 20px);
             min-height: 18px;
-            margin-bottom: .25rem;
             padding-right: .1rem;
             font-size: .74rem;
         }
@@ -168,7 +188,7 @@
 (function () {
     'use strict';
 
-    // Permission Read-only V7.4 — Compact Right Status + Checkbox/Radio Visual Integrity
+    // Permission Read-only V7.5 — Stable Initial Pass + Lightweight Dynamic Guard
     const state = @json($permissionUi, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     window.__FORM_PERMISSION_UI__ = state;
 
@@ -179,12 +199,8 @@
     const permissions = state.current;
     const deniedRoutes = Array.isArray(state.denied_routes) ? state.denied_routes : [];
     const currentRouteAction = String(state.route_action || 'view').toLowerCase();
-    const readonlyMode = permissions.readonly === true || (
-        permissions.view === true &&
-        permissions.create === false &&
-        permissions.update === false &&
-        permissions.delete === false
-    );
+    // EPC_CAPABILITY_AWARE_READONLY_V1: server knows whether this module actually has write actions
+    const readonlyMode = permissions.readonly === true;
 
     const WRITE_WORDS = {
         create: /(เพิ่ม(?:ข้อมูล|รายการ|ผล|วิชา|สมาชิก|การติดตาม|ข่าว|ผู้|คำขอ)?|สร้าง(?:รายการ|คำขอ)?|รายการใหม่|บันทึกใหม่|ติดตามผล|add|create|new)/i,
@@ -199,14 +215,6 @@
     const UPDATE_PATH = /(?:^|\/)(?:edit|update|modify)(?:\/|$)/i;
     const DELETE_PATH = /(?:^|\/)(?:delete|destroy|remove)(?:\/|$)/i;
     const PRINT_PATH = /(?:^|\/)(?:print|report|pdf)(?:\/|$)/i;
-
-    function onReady(callback) {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', callback, { once: true });
-        } else {
-            callback();
-        }
-    }
 
     function normalizeMethod(method) {
         return String(method || 'GET').toUpperCase();
@@ -433,7 +441,7 @@
         element.dataset.permissionUiHidden = '1';
     }
 
-    /*
+    /**
      * ตรวจว่าหัวข้อ Modal มีคำว่า “อ่านอย่างเดียว” จากหน้าเดิมอยู่แล้วหรือไม่
      * หากมี จะไม่ให้ CSS ของระบบกลางเติมข้อความซ้ำอีกครั้ง
      */
@@ -547,15 +555,30 @@
         form.dataset.permissionReadonly = '1';
         form.setAttribute('aria-readonly', 'true');
 
-        if (form.dataset.permissionReadonlyListener !== '1') {
-            form.dataset.permissionReadonlyListener = '1';
-            form.addEventListener('submit', function (event) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                showReadOnlyNotice();
-            }, true);
+        /*
+         * STABILITY_V75: งานระดับฟอร์มทำเพียงครั้งเดียว
+         * เดิม processSubtree() อาจเรียก lockForm ซ้ำจาก MutationObserver/DataTables
+         * ทำให้มี setTimeout สำหรับ editor ซ้ำจำนวนมากและเกิด layout recalculation
+         */
+        const firstPass = form.dataset.permissionReadonlyProcessed !== '1';
+
+        if (firstPass) {
+            form.dataset.permissionReadonlyProcessed = '1';
+
+            if (form.dataset.permissionReadonlyListener !== '1') {
+                form.dataset.permissionReadonlyListener = '1';
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    showReadOnlyNotice();
+                }, true);
+            }
         }
 
+        /*
+         * lockField มีความปลอดภัยเมื่อเรียกซ้ำ และจำเป็นต่อ field ที่ plugin
+         * เพิ่งสร้างเพิ่มภายหลัง จึงคงการตรวจ field ปัจจุบันไว้
+         */
         form.querySelectorAll('input, textarea, select').forEach(lockField);
 
         form.querySelectorAll('button, input[type="submit"], input[type="button"], input[type="reset"], a').forEach(function (control) {
@@ -574,8 +597,19 @@
         }
 
         lockRichTextEditors(form);
-        window.setTimeout(function () { lockRichTextEditors(form); }, 200);
-        window.setTimeout(function () { lockRichTextEditors(form); }, 900);
+
+        /* retry เฉพาะครั้งแรกของฟอร์ม ป้องกัน timer ซ้ำจาก DataTables/MutationObserver */
+        if (firstPass && form.dataset.permissionReadonlyEditorRetry !== '1') {
+            form.dataset.permissionReadonlyEditorRetry = '1';
+
+            window.setTimeout(function () {
+                if (form.isConnected) lockRichTextEditors(form);
+            }, 250);
+
+            window.setTimeout(function () {
+                if (form.isConnected) lockRichTextEditors(form);
+            }, 850);
+        }
     }
 
     function transformEditToView(control) {
@@ -684,7 +718,7 @@
             const corpus = attributeCorpus(control);
 
             if (WRITE_WORDS.delete.test(corpus) || WRITE_WORDS.create.test(corpus) || WRITE_WORDS.save.test(corpus)) {
-                hideElement(control.closest('form[method="POST"]') || control.closest('li') || control);
+                hideElement(control.closest('li') || control);
                 return;
             }
 
@@ -748,27 +782,34 @@
     }
 
     function insertBanner() {
+        /*
+         * DASHBOARD_READONLY_BADGE_HOTFIX_V1
+         *
+         * Dashboard เป็นหน้าภาพรวม/รายงานโดยธรรมชาติ การไม่มีสิทธิ์ create/update/delete
+         * จึงไม่ควรถูกสื่อกับผู้ใช้ว่าเป็น "โหมดอ่านอย่างเดียว" ที่มุมขวาบน
+         *
+         * สำคัญ: ซ่อนเฉพาะป้ายบน route dashboard เท่านั้น
+         * กลไก permission/read-only ของฟอร์มอื่นและการป้องกัน action ยังคงทำงานเดิมทั้งหมด
+         */
+        if (String(state.route_name || '') === 'dashboard') return;
+
         if (!readonlyMode || document.getElementById('permissionReadonlyBanner')) return;
+        if (!document.body) return;
 
-        const container = document.querySelector(
-            '.content-page .content-scroll-x > .container-fluid, ' +
-            '.content-page .content-scroll-x > .container, ' +
-            '.content-page .container-fluid, .content-page .container, ' +
-            '.page-content .container-fluid, .page-content .container, ' +
-            'main .container-fluid, main .container, main, .content-page'
-        );
-
-        if (!container) return;
-
+        /*
+         * V7.5: append เข้า body และใช้ position:fixed
+         * ไม่ prepend เข้า content container จึงไม่ดัน layout หลังหน้า render
+         */
         const banner = document.createElement('div');
         banner.id = 'permissionReadonlyBanner';
         banner.className = 'permission-readonly-banner';
         banner.setAttribute('role', 'status');
+        banner.setAttribute('aria-live', 'polite');
         banner.innerHTML =
             '<span class="permission-banner-icon"><i class="bi bi-eye-fill" aria-hidden="true"></i></span>' +
             '<span>โหมดอ่านอย่างเดียว</span>';
 
-        container.prepend(banner);
+        document.body.appendChild(banner);
     }
 
     function actionDenied(action) {
@@ -779,9 +820,9 @@
             (action === 'save' && permissions.create === false && permissions.update === false);
     }
 
-    onReady(function () {
-        processSubtree(document);
-        insertBanner();
+    function bindGuardsOnce() {
+        if (document.documentElement.dataset.permissionUiGuardsBound === '1') return;
+        document.documentElement.dataset.permissionUiGuardsBound = '1';
 
         document.addEventListener('click', function (event) {
             const control = event.target.closest(
@@ -817,24 +858,50 @@
                 showReadOnlyNotice();
             }
         }, true);
+    }
 
-        let observerScheduled = false;
-        const pendingRoots = new Set();
+    let observer = null;
+    let observerScheduled = false;
+    const pendingRoots = new Set();
 
-        const observer = new MutationObserver(function (mutations) {
+    function queueProcess(root) {
+        if (!root || root.nodeType !== Node.ELEMENT_NODE) return;
+
+        /*
+         * ถ้ามี ancestor อยู่ในคิวแล้ว ไม่ต้องเพิ่มลูกซ้ำ
+         * ถ้า root ใหม่ครอบ root เดิม ให้เก็บเฉพาะ root ใหม่
+         */
+        for (const pending of pendingRoots) {
+            if (pending === root || pending.contains?.(root)) return;
+            if (root.contains?.(pending)) pendingRoots.delete(pending);
+        }
+
+        pendingRoots.add(root);
+
+        if (observerScheduled) return;
+        observerScheduled = true;
+
+        window.requestAnimationFrame(function () {
+            const roots = Array.from(pendingRoots);
+            pendingRoots.clear();
+            observerScheduled = false;
+
+            roots.forEach(function (item) {
+                if (item.isConnected) processSubtree(item);
+            });
+        });
+    }
+
+    function startObserver() {
+        if (!document.body || observer) return;
+
+        observer = new MutationObserver(function (mutations) {
             mutations.forEach(function (mutation) {
                 mutation.addedNodes.forEach(function (node) {
-                    if (node.nodeType === Node.ELEMENT_NODE) pendingRoots.add(node);
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        queueProcess(node);
+                    }
                 });
-            });
-
-            if (observerScheduled || pendingRoots.size === 0) return;
-            observerScheduled = true;
-
-            window.requestAnimationFrame(function () {
-                pendingRoots.forEach(processSubtree);
-                pendingRoots.clear();
-                observerScheduled = false;
             });
         });
 
@@ -843,16 +910,59 @@
             subtree: true
         });
 
-        /* รองรับ DataTables/Modal ที่วาดปุ่มใหม่หลังโหลดหน้า */
-        if (window.jQuery) {
+        /*
+         * DataTables/Modal ยังรองรับเหมือนเดิม แต่เข้าคิวเดียวกับ Observer
+         * เพื่อไม่ processSubtree ซ้อนกันใน frame เดียว
+         */
+        if (window.jQuery && document.documentElement.dataset.permissionUiJqueryBound !== '1') {
+            document.documentElement.dataset.permissionUiJqueryBound = '1';
+
             window.jQuery(document).on(
                 'draw.dt shown.bs.modal loaded.bs.modal',
                 function (event) {
-                    processSubtree(event.target || document);
+                    const target = event.target;
+                    if (target && target.nodeType === Node.ELEMENT_NODE) {
+                        queueProcess(target);
+                    }
                 }
             );
         }
-    });
+    }
+
+    function finishInitialPass() {
+        window.requestAnimationFrame(function () {
+            document.documentElement.classList.remove('permission-ui-initializing');
+        });
+    }
+
+    function initializePermissionUi() {
+        if (!document.body) return false;
+        if (document.documentElement.dataset.permissionUiInitialized === '1') return true;
+
+        document.documentElement.dataset.permissionUiInitialized = '1';
+
+        if (readonlyMode) {
+            document.documentElement.classList.add('permission-ui-initializing');
+        }
+
+        /*
+         * สำคัญ: ถ้า script อยู่ช่วงท้าย body ให้ประมวลผลทันทีขณะ parser ยังทำงาน
+         * ไม่รอ DOMContentLoaded เหมือนรุ่นก่อน จึงลด flash ของปุ่ม/ฟอร์มก่อนถูกล็อก
+         */
+        processSubtree(document);
+        insertBanner();
+        bindGuardsOnce();
+        startObserver();
+        finishInitialPass();
+
+        return true;
+    }
+
+    if (!initializePermissionUi()) {
+        document.addEventListener('DOMContentLoaded', function () {
+            initializePermissionUi();
+        }, { once: true });
+    }
 })();
 </script>
 @endif

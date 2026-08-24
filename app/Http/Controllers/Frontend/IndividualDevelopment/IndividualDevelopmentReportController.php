@@ -10,6 +10,7 @@ use App\Models\IndividualDevelopment\DevelopmentFollowup;
 use App\Models\IndividualDevelopment\DevelopmentGoal;
 use App\Models\IndividualDevelopment\DevelopmentPlan;
 use App\Services\IndividualDevelopment\IndividualDevelopmentLifecycleService;
+use App\Services\IndividualDevelopment\IndividualDevelopmentSummaryService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,8 +19,10 @@ use Illuminate\View\View;
 
 class IndividualDevelopmentReportController extends Controller
 {
-    public function __construct(private readonly IndividualDevelopmentLifecycleService $lifecycle)
-    {
+    public function __construct(
+        private readonly IndividualDevelopmentLifecycleService $lifecycle,
+        private readonly IndividualDevelopmentSummaryService $summaryService
+    ) {
     }
 
     public function show(Request $request, int $client): View|RedirectResponse
@@ -52,7 +55,36 @@ class IndividualDevelopmentReportController extends Controller
 
         return redirect()
             ->route('individual-development.report.show', $params)
-            ->with('info', 'รายงานใช้การพิมพ์ผ่าน Browser กรุณาเลือก “พิมพ์ / บันทึก PDF” จากหน้ารายงาน');
+            ->with('info', 'รายงานใช้การพิมพ์ผ่าน Browser กรุณากด “พิมพ์ A4” จากหน้ารายงาน');
+    }
+
+    public function hub(Request $request, int $client): View|RedirectResponse
+    {
+        $this->authorizePrint();
+        $clientModel = $this->findAuthorizedClient($client);
+        $data = $this->reportData($clientModel, $request->integer('plan'));
+        if (!$data) return redirect()->route('individual-development.index',$clientModel->id)->with('warning','ยังไม่มีแผนพัฒนารายบุคคลสำหรับจัดทำรายงาน');
+        return view('frontend.client.individual_development.report.hub', $data);
+    }
+
+    public function progress(Request $request, int $client): View|RedirectResponse
+    {
+        $this->authorizePrint();
+        $clientModel = $this->findAuthorizedClient($client);
+        $data = $this->reportData($clientModel, $request->integer('plan'));
+        if (!$data) return redirect()->route('individual-development.index',$clientModel->id)->with('warning','ยังไม่มีข้อมูลรายงานความก้าวหน้า');
+        $data['caseSummary'] = $this->summaryService->build($data['plan']);
+        return view('frontend.client.individual_development.report.progress', $data);
+    }
+
+    public function summary(Request $request, int $client): View|RedirectResponse
+    {
+        $this->authorizePrint();
+        $clientModel = $this->findAuthorizedClient($client);
+        $data = $this->reportData($clientModel, $request->integer('plan'));
+        if (!$data) return redirect()->route('individual-development.index',$clientModel->id)->with('warning','ยังไม่มีข้อมูลรายงานสรุปผลรายบุคคล');
+        $data['caseSummary'] = $this->summaryService->build($data['plan']);
+        return view('frontend.client.individual_development.report.summary', $data);
     }
 
     private function reportData(Client $client, int $planId = 0): ?array
@@ -208,7 +240,14 @@ class IndividualDevelopmentReportController extends Controller
 
     private function findAuthorizedClient(int $clientId): Client
     {
-        return Client::forUser(auth()->user())->with(['house','project','target'])->findOrFail($clientId);
+        $user = auth()->user();
+        abort_unless($user, 403);
+
+        $canViewAcrossHouses = (method_exists($user, 'isAdmin') && $user->isAdmin())
+            || (method_exists($user, 'hasFormPermission') && $user->hasFormPermission('individual_development_center', 'view'));
+
+        $query = $canViewAcrossHouses ? Client::query() : Client::forUser($user);
+        return $query->with(['house','project','target'])->findOrFail($clientId);
     }
 
     private function resolveAgeText(Client $client): string

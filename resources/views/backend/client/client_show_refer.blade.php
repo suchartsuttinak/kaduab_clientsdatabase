@@ -97,7 +97,11 @@
                                 @foreach ($clients as $key => $client)
                                     <tr>
                                         <td>{{ ($clients->firstItem() ?? 1) + $key }}</td>
-                                        <td><img src="{{ !empty($client->image) ? route('client.image', $client->id) : asset('upload/no_image.jpg') }}" alt="รูปผู้รับบริการ {{ $client->full_name }}" class="refer-avatar" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='{{ asset('upload/no_image.jpg') }}';"></td>
+                                        <td><img src="{{ !empty($client->image)
+                                                ? (route('client.image', $client->id)
+                                                    . '?thumb=1&v=' . substr(sha1((string) $client->image), 0, 12)
+                                                    . '-s' . substr(hash('sha256', (string) session()->getId()), 0, 10))
+                                                : asset('upload/no_image.jpg') }}" alt="รูปผู้รับบริการ {{ $client->full_name }}" class="refer-avatar" width="42" height="42" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='{{ asset('upload/no_image.jpg') }}';"></td>
                                         <td><div class="fw-semibold">{{ $client->full_name }}</div><div class="text-muted small">เลขทะเบียน {{ $client->register_number ?? '-' }}</div></td>
                                         <td>{{ $client->arrival_date }}</td><td>{{ $client->birth_date }}</td><td>{{ $client->age }}</td>
                                         <td>

@@ -1,6 +1,7 @@
 @php
     use Illuminate\Support\Facades\Auth;
     use Illuminate\Support\Facades\Request;
+    use Illuminate\Support\Facades\Route;
     use App\Support\FormPermissionMenu;
 
     $profileData = Auth::user();
@@ -45,7 +46,8 @@
     $isEducationActive =
         Request::routeIs('education_record*') ||
         Request::routeIs('school_followup*') ||
-        Request::routeIs('absent.*');
+        Request::routeIs('absent.*') ||
+            Request::routeIs('university.*');
 
     $isHealthActive =
         Request::routeIs('accident.*') ||
@@ -62,6 +64,16 @@
         Request::routeIs('snap-iv.*') ||
         Request::routeIs('depression-screenings.*') ||
         Request::routeIs('nutrition_assessments.*');
+
+    $isIndividualDevelopmentActive = Request::routeIs('individual-development.*');
+
+    $menuUser = auth()->user();
+    $isAdminMenuUser = $menuUser && method_exists($menuUser, 'isAdmin') && $menuUser->isAdmin();
+    $canIndividualDevelopmentMenu = (bool) (
+        $clientId
+        && Route::has('individual-development.index')
+        && ($isAdminMenuUser || $canForm('individual_development'))
+    );
 
     $isSocialActive =
         Request::routeIs('observe.*') ||
@@ -234,6 +246,10 @@
                                     <li><a class="dropdown-item {{ Request::routeIs('absent.*') ? 'active' : '' }}"
                                            href="{{ route('absent.add', $clientId) }}">บันทึกการขาดเรียน</a></li>
                                 @endif
+                                @if ($clientId && $canForm('education_university'))
+                                    <li><a class="dropdown-item {{ Request::routeIs('university.*') ? 'active' : '' }}" href="{{ route('university.client', ['clientId' => $clientId]) }}"><i class="bi bi-mortarboard-fill me-1"></i> เด็กมหาวิทยาลัย</a></li>
+                                @endif
+
                             </ul>
                         </li>
                     @endif
@@ -296,6 +312,16 @@
                         </li>
                     @endif
 
+                    {{-- IDP_MENU_SAFE_V1: ไม่แก้ config/permission กลาง --}}
+                    @if ($canIndividualDevelopmentMenu)
+                        <li class="nav-item">
+                            <a class="nav-link topbar-link {{ $isIndividualDevelopmentActive ? 'active' : '' }}"
+                               href="{{ route('individual-development.index', $clientId) }}">
+                                <i class="bi bi-person-up"></i><span>แผนพัฒนาเด็ก</span>
+                            </a>
+                        </li>
+                    @endif
+
                     @if ($groupAccess['social_welfare'] ?? false)
                         <li class="nav-item dropdown">
                             <a class="nav-link topbar-link dropdown-toggle {{ $isSocialActive ? 'active' : '' }}"
@@ -346,7 +372,10 @@
                 </ul>
 
                 <ul class="navbar-nav ms-xl-auto align-items-xl-center topbar-profile-nav">
-                    <li class="nav-item dropdown">
+                    {{-- ADMIN_CLIENT_ACCOUNT_MENU_FINAL_V3: profile/password/logout stay available on read-only forms --}}
+                    <li class="nav-item dropdown"
+                        data-account-navigation="1"
+                        data-permission-action="navigation">
                         <a class="nav-link topbar-user dropdown-toggle" href="#" id="profileDropdown"
                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <img src="{{ !empty($profileData?->photo) ? url('upload/user_images/' . $profileData->photo) : url('upload/no_image.jpg') }}"
@@ -359,7 +388,8 @@
                         <ul class="dropdown-menu dropdown-menu-end topbar-dropdown topbar-user-dropdown" aria-labelledby="profileDropdown">
                             <li><h6 class="dropdown-header">บัญชีผู้ใช้งาน</h6></li>
                             <li><a href="{{ route('admin.profile') }}" class="dropdown-item"><i class="fas fa-user-circle me-2"></i>ข้อมูลส่วนตัว</a></li>
-                            <li><a href="auth-lock-screen.html" class="dropdown-item"><i class="fas fa-lock me-2"></i>ล็อกหน้าจอ</a></li>
+                            {{-- ADMIN_CLIENT_ACCOUNT_MENU_FINAL_V3: account action, not form-write action --}}
+                            <li><a href="{{ route('admin.profile') }}#change-password" class="dropdown-item" data-permission-action="navigation"><i class="fas fa-key me-2"></i>เปลี่ยนรหัสผ่าน</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ route('admin.logout') }}" class="m-0" data-permission-action="navigation">

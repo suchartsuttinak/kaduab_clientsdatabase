@@ -185,7 +185,10 @@
                     </div>
                 </li>
 
-                <li class="dropdown notification-list topbar-dropdown">
+                {{-- DASHBOARD_USER_MENU_LOGOUT_HOTFIX_V1: account navigation must remain usable in read-only pages --}}
+                <li class="dropdown notification-list topbar-dropdown"
+                    data-account-navigation="1"
+                    data-permission-action="navigation">
                     <a class="nav-link dropdown-toggle nav-user me-0"
                        data-bs-toggle="dropdown"
                        href="#"
@@ -203,7 +206,7 @@
 
                     <div class="dropdown-menu dropdown-menu-end profile-dropdown">
                         <div class="dropdown-header noti-title">
-                            <h6 class="text-overflow m-0">Welcome !</h6>
+                            <h6 class="text-overflow m-0">บัญชีผู่้ใช้งาน</h6>
                         </div>
 
                         <a href="{{ route('admin.profile') }}" class="dropdown-item notify-item">
@@ -211,14 +214,19 @@
                             <span>ข้อมูลส่วนตัว</span>
                         </a>
 
-                        <a href="javascript:void(0);" class="dropdown-item notify-item">
-                            <i class="mdi mdi-lock-outline fs-16 align-middle"></i>
-                            <span>Lock Screen</span>
+                        <a href="{{ route('admin.profile') }}#change-password"
+                           class="dropdown-item notify-item"
+                           data-permission-action="navigation">
+                            <i class="mdi mdi-lock-reset fs-16 align-middle"></i>
+                            <span>เปลี่ยนรหัสผ่าน</span>
                         </a>
 
                         <div class="dropdown-divider"></div>
 
-                        <form method="POST" action="{{ route('admin.logout') }}" class="m-0">
+                        <form method="POST"
+                              action="{{ route('admin.logout') }}"
+                              class="m-0"
+                              data-permission-action="navigation">
                             @csrf
                             <button type="submit" class="dropdown-item notify-item border-0 bg-transparent w-100 text-start">
                                 <i class="mdi mdi-location-exit fs-16 align-middle"></i>

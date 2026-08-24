@@ -33,8 +33,6 @@
         </a>
 
         <a href="{{ route('case_outside.report', $client->id) }}"
-           target="_blank"
-           rel="noopener"
            class="btn btn-success co-btn">
             <i class="bi bi-printer"></i>
             <span>รายงานทั้งหมด</span>

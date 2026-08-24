@@ -643,6 +643,20 @@
 </style>
 
 @php
+    /* EDUCATION_RESULTS_PERMISSION_ACTIONS_V1
+     * หน้าแสดงผลการเรียนเป็นหน้ารวม จึงต้องแยกสิทธิ์ของปุ่มตามงานจริง:
+     * - view/print ของหน้านี้ = education_results
+     * - create/update/delete = education_grade_entry
+     * ไม่ผูกกับ education_university เพื่อไม่กระทบระบบเด็กมหาวิทยาลัย
+     */
+    $educationPermissionUser = auth()->user();
+    $educationGradeCanView = $educationPermissionUser?->canViewForm('education_grade_entry') ?? false;
+    $educationGradeCanCreate = $educationPermissionUser?->canCreateForm('education_grade_entry') ?? false;
+    $educationGradeCanUpdate = $educationPermissionUser?->canUpdateForm('education_grade_entry') ?? false;
+    $educationGradeCanDelete = $educationPermissionUser?->canDeleteForm('education_grade_entry') ?? false;
+    $educationResultsCanPrint = $educationPermissionUser?->canPrintForm('education_results') ?? false;
+    $educationShowHasWriteAccess = $educationGradeCanCreate || $educationGradeCanUpdate || $educationGradeCanDelete;
+
     $hasGpa = static function ($record): bool {
         return $record->grade_average !== null && $record->grade_average !== '';
     };
@@ -653,6 +667,13 @@
         ? round((float) $recordsWithGpa->avg('grade_average'), 2)
         : null;
 @endphp
+
+@if($educationShowHasWriteAccess)
+    {{-- หน้านี้มี action เขียนจาก education_grade_entry จึงไม่ควรติดป้ายอ่านอย่างเดียว --}}
+    <style id="educationResultsPermissionBannerOverride">
+        #permissionReadonlyBanner { display: none !important; }
+    </style>
+@endif
 
 <div class="container-fluid education-page py-3 py-md-4">
     <div class="education-shell">
@@ -665,10 +686,14 @@
                 </div>
 
                 <div class="page-actions d-flex flex-wrap gap-2">
-                    <a href="{{ route('education_record_add', $client->id) }}" class="btn btn-add-modern">
-                        <i data-feather="plus-circle"></i>
-                        <span>เพิ่มผลการเรียนใหม่</span>
-                    </a>
+                    @if($educationGradeCanCreate)
+                        <a href="{{ route('education_record_add', $client->id) }}"
+                           class="btn btn-add-modern"
+                           data-permission-action="navigation">
+                            <i data-feather="plus-circle"></i>
+                            <span>เพิ่มผลการเรียนใหม่</span>
+                        </a>
+                    @endif
                 </div>
             </div>
 
@@ -747,30 +772,46 @@
 
                                             <td class="text-center col-actions">
                                                 <div class="table-actions">
-                                                    <a href="{{ route('education_record_edit', $record->id) }}"
-                                                       class="btn btn-modern btn-table btn-edit-soft">
-                                                        <i class="bi bi-pencil-square"></i>
-                                                        แก้ไข
-                                                    </a>
+                                                    @if($educationGradeCanUpdate)
+                                                        <a href="{{ route('education_record_edit', $record->id) }}"
+                                                           class="btn btn-modern btn-table btn-edit-soft"
+                                                           data-permission-action="navigation">
+                                                            <i class="bi bi-pencil-square"></i>
+                                                            แก้ไข
+                                                        </a>
+                                                    @elseif($educationGradeCanView)
+                                                        <a href="{{ route('education_record_edit', $record->id) }}"
+                                                           class="btn btn-modern btn-table btn-info-soft"
+                                                           data-permission-action="navigation">
+                                                            <i class="bi bi-eye"></i>
+                                                            ดูข้อมูล
+                                                        </a>
+                                                    @endif
 
-                                                    <form id="delete-form-{{ $record->id }}"
-                                                          action="{{ route('education_record_delete', $record->id) }}"
-                                                          method="POST">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="button"
-                                                                class="btn btn-modern btn-table btn-delete-soft"
-                                                                onclick="confirmDelete('delete-form-{{ $record->id }}', 'คุณแน่ใจหรือไม่ที่จะลบข้อมูลผลการเรียนนี้?')">
-                                                            <i class="bi bi-trash"></i>
-                                                            ลบ
-                                                        </button>
-                                                    </form>
+                                                    @if($educationGradeCanDelete)
+                                                        <form id="delete-form-{{ $record->id }}"
+                                                              action="{{ route('education_record_delete', $record->id) }}"
+                                                              method="POST"
+                                                              data-permission-action="navigation">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="button"
+                                                                    class="btn btn-modern btn-table btn-delete-soft"
+                                                                    onclick="confirmDelete('delete-form-{{ $record->id }}', 'คุณแน่ใจหรือไม่ที่จะลบข้อมูลผลการเรียนนี้?')">
+                                                                <i class="bi bi-trash"></i>
+                                                                ลบ
+                                                            </button>
+                                                        </form>
+                                                    @endif
 
-                                                   <a href="{{ route('education_record.report_by_id', $record->id) }}"
-                                                        class="btn btn-modern btn-table btn-report-soft">
+                                                    @if($educationResultsCanPrint)
+                                                        <a href="{{ route('education_record.report_by_id', $record->id) }}"
+                                                           class="btn btn-modern btn-table btn-report-soft"
+                                                           data-permission-action="navigation">
                                                             <i class="bi bi-printer"></i>
                                                             รายงาน
                                                         </a>
+                                                    @endif
 
                                                     <button class="btn btn-modern btn-table btn-info-soft toggle-subject-btn"
                                                             type="button"
@@ -869,32 +910,48 @@
 
                             <div class="mobile-actions">
                                 <div class="mobile-actions-row">
-                                    <a href="{{ route('education_record_edit', $record->id) }}"
-                                       class="btn btn-modern btn-table btn-edit-soft">
-                                        <i class="bi bi-pencil-square"></i>
-                                        แก้ไข
-                                    </a>
+                                    @if($educationGradeCanUpdate)
+                                        <a href="{{ route('education_record_edit', $record->id) }}"
+                                           class="btn btn-modern btn-table btn-edit-soft"
+                                           data-permission-action="navigation">
+                                            <i class="bi bi-pencil-square"></i>
+                                            แก้ไข
+                                        </a>
+                                    @elseif($educationGradeCanView)
+                                        <a href="{{ route('education_record_edit', $record->id) }}"
+                                           class="btn btn-modern btn-table btn-info-soft"
+                                           data-permission-action="navigation">
+                                            <i class="bi bi-eye"></i>
+                                            ดูข้อมูล
+                                        </a>
+                                    @endif
 
-                                    <form id="mobile-delete-form-{{ $record->id }}"
-                                          action="{{ route('education_record_delete', $record->id) }}"
-                                          method="POST">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button"
-                                                class="btn btn-modern btn-table btn-delete-soft"
-                                                onclick="confirmDelete('mobile-delete-form-{{ $record->id }}', 'คุณแน่ใจหรือไม่ที่จะลบข้อมูลผลการเรียนนี้?')">
-                                            <i class="bi bi-trash"></i>
-                                            ลบ
-                                        </button>
-                                    </form>
+                                    @if($educationGradeCanDelete)
+                                        <form id="mobile-delete-form-{{ $record->id }}"
+                                              action="{{ route('education_record_delete', $record->id) }}"
+                                              method="POST"
+                                              data-permission-action="navigation">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button"
+                                                    class="btn btn-modern btn-table btn-delete-soft"
+                                                    onclick="confirmDelete('mobile-delete-form-{{ $record->id }}', 'คุณแน่ใจหรือไม่ที่จะลบข้อมูลผลการเรียนนี้?')">
+                                                <i class="bi bi-trash"></i>
+                                                ลบ
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
 
                                 <div class="mobile-actions-row">
-                                    <a href="{{ route('education_record.report_by_id', $record->id) }}"
-                                       class="btn btn-modern btn-table btn-report-soft">
-                                        <i class="bi bi-printer"></i>
-                                        รายงาน
-                                    </a>
+                                    @if($educationResultsCanPrint)
+                                        <a href="{{ route('education_record.report_by_id', $record->id) }}"
+                                           class="btn btn-modern btn-table btn-report-soft"
+                                           data-permission-action="navigation">
+                                            <i class="bi bi-printer"></i>
+                                            รายงาน
+                                        </a>
+                                    @endif
 
                                     <button class="btn btn-modern btn-table btn-info-soft btn-show toggle-subject-btn"
                                             type="button"
@@ -947,10 +1004,14 @@
                     <i class="bi bi-journal-x"></i>
                     <div class="fw-bold mb-1">ยังไม่มีข้อมูลผลการเรียน</div>
                     <div class="small mb-3">เริ่มต้นเพิ่มข้อมูลผลการเรียนเพื่อให้ระบบพร้อมใช้งาน</div>
-                    <a href="{{ route('education_record_add', $client->id) }}" class="btn btn-modern btn-add">
-                        <i class="bi bi-plus-circle"></i>
-                        เพิ่มผลการเรียนใหม่
-                    </a>
+                    @if($educationGradeCanCreate)
+                        <a href="{{ route('education_record_add', $client->id) }}"
+                           class="btn btn-modern btn-add"
+                           data-permission-action="navigation">
+                            <i class="bi bi-plus-circle"></i>
+                            เพิ่มผลการเรียนใหม่
+                        </a>
+                    @endif
                 </div>
             @endif
         </div>

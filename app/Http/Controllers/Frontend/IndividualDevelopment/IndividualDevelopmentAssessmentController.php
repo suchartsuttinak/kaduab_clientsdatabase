@@ -8,6 +8,7 @@ use App\Models\IndividualDevelopment\DevelopmentAssessment;
 use App\Models\IndividualDevelopment\DevelopmentAssessmentItem;
 use App\Models\IndividualDevelopment\DevelopmentDomain;
 use App\Models\IndividualDevelopment\DevelopmentPlan;
+use App\Services\IndividualDevelopment\IndividualDevelopmentLifecycleService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,10 @@ use Illuminate\View\View;
 class IndividualDevelopmentAssessmentController extends Controller
 {
     private const PERMISSION_KEY = 'individual_development';
+
+    public function __construct(private readonly IndividualDevelopmentLifecycleService $lifecycle)
+    {
+    }
 
     private const INFORMATION_SOURCES = [
         'client' => 'ผู้รับบริการ',
@@ -77,7 +82,7 @@ class IndividualDevelopmentAssessmentController extends Controller
         }
 
         $domains = $this->domains();
-        $validated = $this->validateAssessment($request, $domains);
+        $validated = $this->validateAssessment($request, $domains, $plan);
 
         DB::transaction(function () use ($clientModel, $plan, $validated, $domains): void {
             $lockedPlan = DevelopmentPlan::query()
@@ -160,6 +165,7 @@ class IndividualDevelopmentAssessmentController extends Controller
             'ageText' => $this->resolveAgeText($clientModel),
             'informationSourceOptions' => self::INFORMATION_SOURCES,
             'canUpdateBaseline' => $plan->status === DevelopmentPlan::STATUS_ACTIVE
+                && !$this->lifecycle->baselineLocked($plan)
                 && $this->can(self::PERMISSION_KEY, 'update'),
         ]);
     }
@@ -181,6 +187,12 @@ class IndividualDevelopmentAssessmentController extends Controller
             return redirect()
                 ->route('individual-development.baseline.create', $clientModel->id)
                 ->with('warning', 'ยังไม่มีผลประเมิน Baseline');
+        }
+
+        if ($this->lifecycle->baselineLocked($plan)) {
+            return redirect()
+                ->route('individual-development.baseline.show', $clientModel->id)
+                ->with('warning', 'Baseline ถูกล็อกแล้ว เพราะมีการสร้างเป้าหมายหรือบันทึกติดตามแล้ว เพื่อรักษาประวัติการประเมินเริ่มต้น');
         }
 
         return view('frontend.client.individual_development.baseline.form', [
@@ -216,8 +228,14 @@ class IndividualDevelopmentAssessmentController extends Controller
             abort(422, 'ไม่สามารถแก้ไข Baseline ของแผนที่ปิดหรือยุติแล้ว');
         }
 
+        if ($this->lifecycle->baselineLocked($plan)) {
+            return redirect()
+                ->route('individual-development.baseline.show', $clientModel->id)
+                ->with('warning', 'Baseline ถูกล็อกแล้ว เพราะมีข้อมูลเป้าหมายหรือการติดตามที่อ้างอิงคะแนนชุดนี้');
+        }
+
         $domains = $this->domains();
-        $validated = $this->validateAssessment($request, $domains);
+        $validated = $this->validateAssessment($request, $domains, $plan);
 
         DB::transaction(function () use ($plan, $assessment, $validated, $domains): void {
             $lockedAssessment = DevelopmentAssessment::query()
@@ -258,10 +276,16 @@ class IndividualDevelopmentAssessmentController extends Controller
             ->with('success', 'ปรับปรุงผลประเมิน Baseline เรียบร้อยแล้ว');
     }
 
-    private function validateAssessment(Request $request, Collection $domains): array
+    private function validateAssessment(Request $request, Collection $domains, DevelopmentPlan $plan): array
     {
+        $assessmentDateRules = ['required', 'date', 'before_or_equal:today'];
+        $planStartDate = optional($plan->start_date)->format('Y-m-d');
+        if ($planStartDate) {
+            $assessmentDateRules[] = 'after_or_equal:' . $planStartDate;
+        }
+
         $rules = [
-            'assessment_date' => ['required', 'date', 'before_or_equal:today'],
+            'assessment_date' => $assessmentDateRules,
             'information_sources' => ['required', 'array', 'min:1'],
             'information_sources.*' => ['required', 'string', Rule::in(array_keys(self::INFORMATION_SOURCES))],
             'participant_note' => ['nullable', 'string', 'max:10000'],
@@ -287,7 +311,7 @@ class IndividualDevelopmentAssessmentController extends Controller
             foreach ($domain->indicators as $indicator) {
                 $id = (int) $indicator->id;
                 $rules["items.$id.score"] = ['required', 'integer', 'between:1,5'];
-                $rules["items.$id.evidence"] = ['nullable', 'string', 'max:5000'];
+                $rules["items.$id.evidence"] = ['required', 'string', 'max:5000'];
                 $rules["items.$id.development_note"] = ['nullable', 'string', 'max:5000'];
                 $attributes["items.$id.score"] = 'ระดับของตัวชี้วัด “' . $indicator->name . '”';
                 $attributes["items.$id.evidence"] = 'หลักฐาน/พฤติกรรมของ “' . $indicator->name . '”';
@@ -299,10 +323,12 @@ class IndividualDevelopmentAssessmentController extends Controller
             'assessment_date.required' => 'กรุณาระบุวันที่ประเมิน',
             'assessment_date.date' => 'วันที่ประเมินไม่ถูกต้อง',
             'assessment_date.before_or_equal' => 'วันที่ประเมินต้องไม่เกินวันปัจจุบัน',
+            'assessment_date.after_or_equal' => 'วันที่ประเมินต้องไม่น้อยกว่าวันที่เริ่มแผน',
             'information_sources.required' => 'กรุณาเลือกแหล่งข้อมูลหรือผู้ร่วมให้ข้อมูลอย่างน้อย 1 รายการ',
             'information_sources.min' => 'กรุณาเลือกแหล่งข้อมูลหรือผู้ร่วมให้ข้อมูลอย่างน้อย 1 รายการ',
             'items.*.score.required' => 'กรุณาประเมิน :attribute',
             'items.*.score.between' => ':attribute ต้องอยู่ระหว่างระดับ 1 ถึง 5',
+            'items.*.evidence.required' => 'กรุณาระบุหลักฐาน/พฤติกรรมประกอบคะแนนทุกตัวชี้วัด',
         ], $attributes);
     }
 
@@ -420,9 +446,14 @@ class IndividualDevelopmentAssessmentController extends Controller
 
     private function findAuthorizedClient(int $clientId): Client
     {
-        return Client::forUser(auth()->user())
-            ->with(['house', 'project', 'target'])
-            ->findOrFail($clientId);
+        $user = auth()->user();
+        abort_unless($user, 403);
+
+        $canViewAcrossHouses = (method_exists($user, 'isAdmin') && $user->isAdmin())
+            || (method_exists($user, 'hasFormPermission') && $user->hasFormPermission('individual_development_center', 'view'));
+
+        $query = $canViewAcrossHouses ? Client::query() : Client::forUser($user);
+        return $query->with(['house', 'project', 'target'])->findOrFail($clientId);
     }
 
     private function resolveAgeText(Client $client): string

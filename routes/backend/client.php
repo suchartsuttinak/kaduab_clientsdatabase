@@ -63,7 +63,8 @@ Route::middleware('auth')->group(function () {
    
         // TRANSFER CASE
         // =====================================================
-        Route::middleware('role:admin')->group(function () {
+        // EPC_PROJECT_TRANSFER_EXECUTIVE_V1: Admin/Executive + form permission
+        Route::middleware('role:admin,executive')->group(function () {
 
             Route::get('/client/transfers', [ClientTransferController::class, 'index'])
                 ->name('client.transfers');

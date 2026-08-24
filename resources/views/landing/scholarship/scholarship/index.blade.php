@@ -588,9 +588,12 @@
                         ← กลับหน้า Dashboard
                     </a>
 
-                    <a href="{{ route('scholarship.create') }}" class="scholarship-btn scholarship-btn-primary">
-                        + เพิ่มข้อมูลผู้สนับสนุน
-                    </a>
+                    {{-- EPC_SCHOLARSHIP_VIEW_ACTIONS_V1 --}}
+                    @if(auth()->user()?->canCreateForm('dashboard_scholarship_sponsors'))
+                        <a href="{{ route('scholarship.create') }}" class="scholarship-btn scholarship-btn-primary">
+                            + เพิ่มข้อมูลผู้สนับสนุน
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -805,10 +808,12 @@
 
                                     <td>
                                         <div class="table-actions">
-                                            <a href="{{ route('scholarship.donation.create', $item->id) }}"
-                                               class="scholarship-btn scholarship-btn-primary">
-                                                บันทึกการบริจาค
-                                            </a>
+                                            @if(auth()->user()?->canCreateForm('dashboard_scholarship_sponsors'))
+                                                <a href="{{ route('scholarship.donation.create', $item->id) }}"
+                                                   class="scholarship-btn scholarship-btn-primary">
+                                                    บันทึกการบริจาค
+                                                </a>
+                                            @endif
 
                                             <a href="{{ route('scholarship.donation.index', $item->id) }}"
                                                class="scholarship-btn scholarship-btn-soft">

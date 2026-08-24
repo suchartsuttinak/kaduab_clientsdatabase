@@ -165,7 +165,8 @@ use Illuminate\Support\Facades\Route;
         |--------------------------------------------------------------------------
         */
 
-        Route::middleware(['auth', 'role:admin'])->group(function () {
+        // EPC_SCHOLARSHIP_EXECUTIVE_V1: role opens the module; form-permission decides view/create
+        Route::middleware(['auth', 'role:admin,executive'])->group(function () {
             Route::get('/scholarship', [ScholarshipController::class, 'index'])
                 ->name('scholarship.index');
 
@@ -254,7 +255,7 @@ use Illuminate\Support\Facades\Route;
         */
 
        Route::prefix('admin/users')
-    ->middleware(['auth', 'prevent-back', 'form-permissions-explicit'])
+    ->middleware(['auth', 'prevent-back', 'role:admin,executive'])
     ->group(function () {
 
         Route::get('/', [UserManagementController::class, 'index'])
@@ -610,6 +611,7 @@ use Illuminate\Support\Facades\Route;
         require __DIR__.'/backend/citizen.php';
         require __DIR__.'/backend/citizenship.php';
         require __DIR__.'/backend/house.php';
+        require __DIR__.'/backend/project.php';
         
 
 
@@ -646,3 +648,6 @@ use Illuminate\Support\Facades\Route;
         require __DIR__.'/frontend/individual_development.php';
         require __DIR__.'/frontend/followup.php';
         require __DIR__.'/frontend/healthcCheckup.php';
+
+/* University Tracking Module V1 */
+require __DIR__ . '/university.php';

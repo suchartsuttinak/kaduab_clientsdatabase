@@ -666,6 +666,8 @@ return [
         ['routes' => ['check_body.edit', 'check_body.update'], 'permissions' => ['health_body_check'], 'action' => 'update'],
         ['routes' => ['check_body.delete'], 'permissions' => ['health_body_check'], 'action' => 'delete'],
         ['routes' => ['check_body.report'], 'permissions' => ['health_body_check'], 'action' => 'print'],
+        // SPECIAL_CHILDREN_REPORT_V1 : รายงานกลางเด็กกลุ่มพิเศษ ใช้สิทธิ์ดูข้อมูลตรวจร่างกายเดิม
+        ['routes' => ['special_children.index'], 'permissions' => ['health_body_check'], 'action' => 'view'],
 
         // 3.3 สิทธิรักษาพยาบาล
         ['routes' => ['healthcare_rights.index'], 'permissions' => ['health_treatment_rights'], 'action' => 'view'],

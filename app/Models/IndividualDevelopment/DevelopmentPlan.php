@@ -23,9 +23,9 @@ class DevelopmentPlan extends Model
 
     protected $fillable = [
         'client_id', 'plan_no', 'start_date', 'end_date', 'overall_goal',
-        'strength_summary', 'development_need_summary', 'client_need_summary',
+        'strength_summary', 'strength_profile', 'development_need_summary', 'needs_profile', 'client_need_summary',
         'caregiver_need_summary', 'risk_factor_summary', 'protective_factor_summary',
-        'support_network_summary', 'status', 'created_by', 'updated_by',
+        'support_network_summary', 'support_network_profile', 'discharge_plan_profile', 'status', 'created_by', 'updated_by',
         'reviewed_by', 'reviewed_at', 'closed_by', 'closed_at', 'close_reason',
         'final_outcome', 'final_recommendation',
     ];
@@ -38,6 +38,10 @@ class DevelopmentPlan extends Model
             'end_date' => 'date',
             'reviewed_at' => 'datetime',
             'closed_at' => 'datetime',
+            'strength_profile' => 'array',
+            'needs_profile' => 'array',
+            'support_network_profile' => 'array',
+            'discharge_plan_profile' => 'array',
         ];
     }
 

@@ -13,6 +13,8 @@ class ClientTransferController extends Controller
 {
     public function index(Request $request)
     {
+        // EPC_PROJECT_TRANSFER_CONTROLLER_V1
+        $this->ensureTransferPermission('view');
         $user = auth()->user();
 
         $query = ClientTransfer::with([
@@ -23,8 +25,16 @@ class ClientTransferController extends Controller
             'approvedBy',
         ])->latest();
 
-        if ($user->role !== 'admin') {
-            $projectIds = $user->projects()->pluck('projects.id');
+        // Admin/Executive เป็นบทบาทส่วนกลางและเห็นประวัติการย้ายทุกโครงการ
+        // สำหรับบทบาทอื่นในอนาคต รองรับทั้ง relation projects() และ project_id เดี่ยว
+        if (!$user->isAdmin() && !$user->isExecutive()) {
+            $projectIds = collect();
+
+            if (method_exists($user, 'projects')) {
+                $projectIds = $user->projects()->pluck('projects.id');
+            } elseif (!empty($user->project_id)) {
+                $projectIds = collect([(int) $user->project_id]);
+            }
 
             $query->where(function ($q) use ($projectIds) {
                 $q->whereIn('from_project_id', $projectIds)
@@ -39,9 +49,7 @@ class ClientTransferController extends Controller
 
     public function create(Client $client)
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403);
-        }
+        $this->ensureTransferPermission('create');
 
         $projects = Project::where('id', '!=', $client->project_id)
             ->orderBy('project_name')
@@ -52,9 +60,7 @@ class ClientTransferController extends Controller
 
    public function store(Request $request)
 {
-    if (auth()->user()->role !== 'admin') {
-        abort(403);
-    }
+    $this->ensureTransferPermission('create');
 
     $validated = $request->validate([
         'client_id'     => 'required|exists:clients,id',
@@ -96,9 +102,7 @@ class ClientTransferController extends Controller
 
     public function approve($id)
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403);
-        }
+        $this->ensureTransferPermission('update');
 
         DB::transaction(function () use ($id) {
             $transfer = ClientTransfer::lockForUpdate()->findOrFail($id);
@@ -129,9 +133,7 @@ class ClientTransferController extends Controller
 
     public function reject(Request $request, $id)
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403);
-        }
+        $this->ensureTransferPermission('update');
 
         $request->validate([
             'remark' => 'nullable|string|max:1000',
@@ -156,4 +158,30 @@ class ClientTransferController extends Controller
             ->route('client.transfers')
             ->with('success', 'ไม่อนุมัติการย้ายเคสเรียบร้อยแล้ว');
         }
+    /**
+     * ด่านใน Controller สำหรับย้ายโครงการ
+     * - Admin ผ่านเสมอ
+     * - Executive ต้องผ่าน permission key/action ที่ Admin กำหนด
+     * - บทบาทอื่นยังไม่เปิดผ่าน Controller นี้
+     */
+    private function ensureTransferPermission(string $action): void
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            abort(403);
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        if (!$user->isExecutive()) {
+            abort(403, 'บัญชีนี้ไม่มีสิทธิ์จัดการการย้ายโครงการ');
+        }
+
+        if (!$user->hasFormPermission('registration_project_transfer', $action)) {
+            abort(403, 'บัญชีนี้ไม่ได้รับสิทธิ์สำหรับการดำเนินการย้ายโครงการ');
+        }
+    }
 }

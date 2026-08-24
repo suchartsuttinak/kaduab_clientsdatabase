@@ -117,8 +117,7 @@
             @endif
 
             <form action="{{ route('case_outside.report', $client->id) }}"
-                  method="GET"
-                  target="_blank">
+                  method="GET">
                 <div class="row g-3">
                     <div class="col-12 col-md-6">
                         <label for="case_outside_date_start" class="co-filter-label">

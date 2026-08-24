@@ -1,5 +1,6 @@
 @php
     use Illuminate\Support\Facades\Request;
+    use Illuminate\Support\Facades\Route;
     use Illuminate\Support\Str;
     use App\Support\FormPermissionMenu;
 
@@ -75,7 +76,9 @@
         if (Str::startsWith($value, ['http://', 'https://'])) {
             $sidebarClientImage = $value;
         } elseif ($clientId) {
-            $sidebarClientImage = route('client.image', $clientId);
+            // CLIENT_IMAGE_VERSION_V8: ผูก URL กับชื่อไฟล์จริงเพื่อเปลี่ยนภาพทันทีหลังอัปเดต
+            $sidebarClientImage = route('client.image', $clientId)
+                . '?v=' . substr(sha1($value), 0, 12);
         }
     }
 
@@ -88,7 +91,8 @@
 
     $isEducationOpen = Request::routeIs('education_record*')
         || Request::routeIs('school_followup*')
-        || Request::routeIs('absent.*');
+        || Request::routeIs('absent.*')
+        || Request::routeIs('university.*');
 
     $isHealthOpen = Request::routeIs('accident.*')
         || Request::routeIs('check_body.*')
@@ -103,6 +107,16 @@
         || Request::routeIs('snap-iv.*')
         || Request::routeIs('depression-screenings.*')
         || Request::routeIs('nutrition_assessments.*');
+
+    $isIndividualDevelopmentOpen = Request::routeIs('individual-development.*');
+
+    $menuUser = auth()->user();
+    $isAdminMenuUser = $menuUser && method_exists($menuUser, 'isAdmin') && $menuUser->isAdmin();
+    $canIndividualDevelopmentMenu = (bool) (
+        $clientId
+        && Route::has('individual-development.index')
+        && ($isAdminMenuUser || $canForm('individual_development'))
+    );
 
     $isSocialOpen = Request::routeIs('observe.*')
         || Request::routeIs('escape.*')
@@ -330,7 +344,8 @@
                             </span>
 
                             <span class="sidebar-client-avatar" aria-hidden="true">
-                                <img src="{{ $sidebarClientImage }}"
+                                <img id="sidebarClientAvatarImage"
+                                     src="{{ $sidebarClientImage }}"
                                      alt="รูปผู้รับบริการ {{ $sidebarClientName }}"
                                      onerror="this.onerror=null;this.src='{{ asset('upload/no_image.jpg') }}';">
                             </span>
@@ -425,6 +440,10 @@
                                 @if ($clientId && $canForm('education_absence'))
                                     <li><a href="{{ route('absent.add', $clientId) }}" class="tp-link {{ Request::routeIs('absent.*') ? 'active' : '' }}">บันทึกการขาดเรียน</a></li>
                                 @endif
+                                @if ($clientId && $canForm('education_university'))
+                                    <li><a href="{{ route('university.client', ['clientId' => $clientId]) }}" class="tp-link {{ Request::routeIs('university.*') ? 'active' : '' }}"><i class="bi bi-mortarboard-fill me-1"></i> เด็กมหาวิทยาลัย</a></li>
+                                @endif
+
                             </ul>
                         </div>
                     </li>
@@ -511,6 +530,18 @@
                                 @endif
                             </ul>
                         </div>
+                    </li>
+                @endif
+
+                {{-- IDP_MENU_SAFE_V1: ไม่แก้ config/permission กลาง --}}
+                @if ($canIndividualDevelopmentMenu)
+                    <li class="menu-title mt-2">แผนพัฒนาเด็กรายบุคคล</li>
+                    <li>
+                        <a href="{{ route('individual-development.index', $clientId) }}"
+                           class="{{ $isIndividualDevelopmentOpen ? 'active' : '' }}">
+                            <i class="bi bi-person-up sidebar-fa-icon"></i>
+                            <span>แผนพัฒนาเด็ก</span>
+                        </a>
                     </li>
                 @endif
 

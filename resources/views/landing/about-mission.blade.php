@@ -11,8 +11,8 @@
                     <h3 class="text-xl font-semibold text-primary ml-3">ประวัติความเป็นมา</h3>
                 </div>
 
-               <p class="text-gray-600 leading-relaxed text-left break-words"
-   style="text-indent: 2em;">
+               <p class="text-gray-600 leading-relaxed break-words"
+   style="text-indent: 2em; text-align: justify; text-justify: inter-character; text-align-last: left;">
     {{ isset($history) && $history ? $history->content : 'ยังไม่มีข้อมูล' }}
 </p>
             </div>
@@ -24,8 +24,8 @@
                     <h3 class="text-xl font-semibold text-primary ml-3">วัตถุประสงค์</h3>
                 </div>
 
-               <p class="text-gray-600 leading-relaxed text-left break-words"
-   style="text-indent: 2em;">
+               <p class="text-gray-600 leading-relaxed break-words"
+   style="text-indent: 2em; text-align: justify; text-justify: inter-character; text-align-last: left;">
     {{ isset($objective) && $objective ? $objective->content : 'ยังไม่มีข้อมูล' }}
 </p>
             </div>
@@ -37,8 +37,8 @@
                     <h3 class="text-xl font-semibold text-primary ml-3">พันธกิจของเรา</h3>
                 </div>
 
-               <p class="text-gray-600 leading-relaxed text-left break-words"
-   style="text-indent: 2em;">
+               <p class="text-gray-600 leading-relaxed break-words"
+   style="text-indent: 2em; text-align: justify; text-justify: inter-character; text-align-last: left;">
     {{ isset($mission) && $mission ? $mission->content : 'ยังไม่มีข้อมูล' }}
 </p>
             </div>
