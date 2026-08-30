@@ -1,5 +1,10 @@
 @php
     $isObserveEdit = isset($observe) && $observe;
+    $latestRegularRound = $isObserveEdit ? $observe->followups->last() : null;
+    $currentRegularStatus = $isObserveEdit
+        ? ($latestRegularRound->status ?? $observe->status ?? 'ongoing')
+        : 'ongoing';
+    $observeTransferred = $isObserveEdit && $currentRegularStatus === 'referred';
 @endphp
 
 <div class="modal fade observe-modal observe-main-modal" id="observeModal" tabindex="-1"
@@ -25,7 +30,17 @@
 
                 <input type="hidden" name="client_id" value="{{ $client->id }}">
 
+                <fieldset @disabled($observeTransferred)>
                 <div class="modal-body">
+                    @if($observeTransferred)
+                        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
+                            <i class="bi bi-lock-fill mt-1"></i>
+                            <div>
+                                <strong>ส่งต่อข้อมูลแล้ว</strong>
+                                <div class="small">ข้อมูลส่วนของครู/ผู้บันทึกเดิมถูกล็อกเพื่อรักษาประวัติการส่งต่อ การดำเนินการต่ออยู่ในส่วนการช่วยเหลือหลังส่งต่อ</div>
+                            </div>
+                        </div>
+                    @endif
                     <div class="form-section">
                         <h6 class="form-section-title">
                             <i class="bi bi-info-circle"></i>
@@ -179,16 +194,35 @@
                             </div>
                         </div>
                     </div>
+
+                    @php
+                        $observeWorkflowCanEdit = !$isObserveEdit
+                            || (
+                                $observe->followups->isEmpty()
+                                && !$observeTransferred
+                            );
+                    @endphp
+
+                    @include('frontend.client.observe.partials._workflow_fields', [
+                        'workflowItem' => $observe,
+                        'workflowBag' => 'observeForm',
+                        'workflowUseOld' => $errors->getBag('observeForm')->any(),
+                        'workflowCanEdit' => $observeWorkflowCanEdit,
+                        'workflowCanClose' => true,
+                    ])
                 </div>
+                </fieldset>
 
                 <div class="modal-footer-modern observe-modal-fixed-footer">
-                    <button type="submit"
-                            class="btn-form-primary"
-                            data-submit-button
-                            data-loading-text="{{ $isObserveEdit ? 'กำลังอัปเดต...' : 'กำลังบันทึก...' }}">
-                        <i class="bi bi-save" aria-hidden="true"></i>
-                        <span data-submit-label>{{ $isObserveEdit ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล' }}</span>
-                    </button>
+                    @if(!$observeTransferred)
+                        <button type="submit"
+                                class="btn-form-primary"
+                                data-submit-button
+                                data-loading-text="{{ $isObserveEdit ? 'กำลังอัปเดต...' : 'กำลังบันทึก...' }}">
+                            <i class="bi bi-save" aria-hidden="true"></i>
+                            <span data-submit-label>{{ $isObserveEdit ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล' }}</span>
+                        </button>
+                    @endif
 
                     <button type="button" class="btn-form-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> ปิด

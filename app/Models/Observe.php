@@ -9,10 +9,8 @@ class Observe extends Model
 {
     use HasFactory;
 
-    // กำหนดชื่อตารางให้ตรงกับฐานข้อมูล
     protected $table = 'observes';
 
-    // ฟิลด์ที่สามารถ mass assignment ได้
     protected $fillable = [
         'date',
         'behavior',
@@ -25,32 +23,33 @@ class Observe extends Model
         'recorder',
         'misbehavior_id',
         'client_id',
+        'risk_level',
+        'risk_detail',
+        'status',
+        'next_appointment_date',
+        'followup_focus',
     ];
 
-    /**
-     * ความสัมพันธ์: Observe เป็นของ Client
-     * หลาย Observe → 1 Client
-     */
     public function client()
     {
         return $this->belongsTo(Client::class, 'client_id');
     }
 
-    /**
-     * ความสัมพันธ์: Observe เป็นของ Misbehavior
-     * หลาย Observe → 1 Misbehavior
-     */
     public function misbehavior()
     {
         return $this->belongsTo(Misbehavior::class, 'misbehavior_id');
     }
 
-    /**
-     * ความสัมพันธ์: Observe มีหลาย Followups
-     * 1 Observe → หลาย Followup
-     */
     public function followups()
     {
         return $this->hasMany(ObserveFollowup::class, 'observe_id');
+    }
+
+    public function referralRounds()
+    {
+        return $this->hasMany(ObserveReferralRound::class, 'observe_id')
+            ->orderBy('round_no')
+            ->orderBy('action_date')
+            ->orderBy('id');
     }
 }

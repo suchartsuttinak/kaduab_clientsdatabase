@@ -3,6 +3,10 @@
         @php
             $followupUpdateBag = 'followupUpdate' . $f->id;
             $hasFollowupUpdateErrors = $errors->getBag($followupUpdateBag)->any();
+            $hasLaterFollowup = $observe->followups->contains(
+                fn ($item) => (int) $item->followup_count > (int) $f->followup_count
+            );
+            $followupWorkflowCanEdit = (($f->status ?? 'ongoing') !== 'referred');
         @endphp
 
         <div class="modal fade observe-modal"
@@ -10,7 +14,7 @@
              tabindex="-1"
              aria-labelledby="editFollowupModalLabel{{ $f->id }}"
              aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="editFollowupModalLabel{{ $f->id }}">
@@ -83,6 +87,14 @@
                                 </div>
                             </div>
 
+                            @include('frontend.client.observe.partials._workflow_fields', [
+                                'workflowItem' => $f,
+                                'workflowBag' => $followupUpdateBag,
+                                'workflowUseOld' => $hasFollowupUpdateErrors,
+                                'workflowCanEdit' => $followupWorkflowCanEdit,
+                                'workflowCanClose' => !$hasLaterFollowup,
+                            ])
+
                             <div class="modal-footer-modern">
                                 <button type="submit"
                                         class="btn-form-warning"
@@ -98,20 +110,22 @@
                             </div>
                         </form>
 
-                        <div class="modal-footer-modern pt-0 border-0">
-                            <form id="delete-form-followup-{{ $f->id }}"
-                                  action="{{ route('observe.followup.delete', $f->id) }}"
-                                  method="POST"
-                                  class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="button"
-                                        class="btn-form-danger"
-                                        onclick="confirmDelete('delete-form-followup-{{ $f->id }}', 'คุณต้องการลบการติดตามผลนี้ใช่หรือไม่')">
-                                    <i class="bi bi-trash"></i> ลบการติดตามผล
-                                </button>
-                            </form>
-                        </div>
+                        @if (($f->status ?? 'ongoing') !== 'referred')
+                            <div class="modal-footer-modern pt-0 border-0">
+                                <form id="delete-form-followup-{{ $f->id }}"
+                                      action="{{ route('observe.followup.delete', $f->id) }}"
+                                      method="POST"
+                                      class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button"
+                                            class="btn-form-danger"
+                                            onclick="confirmDelete('delete-form-followup-{{ $f->id }}', 'คุณต้องการลบการติดตามผลนี้ใช่หรือไม่')">
+                                        <i class="bi bi-trash"></i> ลบการติดตามผล
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

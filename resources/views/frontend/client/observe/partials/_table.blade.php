@@ -14,6 +14,19 @@
             return '-';
         }
     };
+
+    $observeStatusLabels = [
+        'ongoing' => 'อยู่ระหว่างการดำเนินงาน',
+        'goal_met' => 'บรรลุเป้าหมาย',
+        'referred' => 'ส่งต่อข้อมูล',
+    ];
+
+    $observeRiskLabels = [
+        'none' => 'ไม่พบความเสี่ยง',
+        'low' => 'ความเสี่ยงต่ำ',
+        'moderate' => 'ความเสี่ยงปานกลาง',
+        'high' => 'ความเสี่ยงสูง',
+    ];
 @endphp
 
 <div class="observe-body observe-modern-page">
@@ -42,6 +55,7 @@
                             <th style="min-width: 140px;">วันที่</th>
                             <th style="min-width: 240px;">พฤติกรรมที่พบเห็น</th>
                             <th style="min-width: 220px;">ผลลัพธ์</th>
+                            <th style="min-width: 190px;">สถานะ / ความเสี่ยง</th>
                             <th style="min-width: 160px;">ผู้บันทึก</th>
                             <th style="min-width: 320px;">การติดตามผล</th>
                             <th class="text-center" style="min-width: 250px;">จัดการ</th>
@@ -52,6 +66,11 @@
                         @foreach ($observes as $obs)
                             @php
                                 $latestFollowup = $obs->followups->last();
+                                $currentStatus = $latestFollowup->status ?? $obs->status ?? 'ongoing';
+                                $currentRisk = $latestFollowup->risk_level ?? $obs->risk_level ?? 'none';
+                                $currentStatusLabel = $observeStatusLabels[$currentStatus] ?? '-';
+                                $currentRiskLabel = $observeRiskLabels[$currentRisk] ?? '-';
+                                $hasRestrictedReferral = !$canManageObserveReferral && $currentStatus === 'referred';
                             @endphp
 
                             <tr>
@@ -89,6 +108,17 @@
                                             แนวทาง: {{ $obs->solution }}
                                         </div>
                                     @endif
+                                </td>
+
+                                <td>
+                                    <div class="observe-workflow-chip-stack">
+                                        <span class="observe-status-chip observe-status-{{ $currentStatus }}">
+                                            {{ $currentStatusLabel }}
+                                        </span>
+                                        <span class="observe-risk-chip observe-risk-{{ $currentRisk }}">
+                                            {{ $currentRiskLabel }}
+                                        </span>
+                                    </div>
                                 </td>
 
                                 <td>
@@ -137,28 +167,41 @@
 
                                         <a href="{{ route('observe.edit', $obs->id) }}"
                                            class="btn-action btn-action-warning text-decoration-none observe-btn-warning">
-                                            <i class="bi bi-pencil-square"></i> แก้ไข
+                                            <i class="bi {{ $currentStatus === 'referred' ? 'bi-eye' : 'bi-pencil-square' }}"></i>
+                                            {{ $currentStatus === 'referred' ? ($canManageObserveReferral ? 'ดำเนินการต่อ' : 'ดูข้อมูล') : 'แก้ไข' }}
                                         </a>
 
-                                        <form id="delete-form-observe-{{ $obs->id }}"
-                                              action="{{ route('observe.delete', $obs->id) }}"
-                                              method="POST"
-                                              class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="button"
-                                                    class="btn-action btn-action-danger observe-btn-danger"
-                                                    onclick="confirmDelete('delete-form-observe-{{ $obs->id }}')">
-                                                <i class="bi bi-trash"></i> ลบ
-                                            </button>
-                                        </form>
+                                        @if (!$hasRestrictedReferral)
+                                            <form id="delete-form-observe-{{ $obs->id }}"
+                                                  action="{{ route('observe.delete', $obs->id) }}"
+                                                  method="POST"
+                                                  class="d-inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button"
+                                                        class="btn-action btn-action-danger observe-btn-danger"
+                                                        onclick="confirmDelete('delete-form-observe-{{ $obs->id }}')">
+                                                    <i class="bi bi-trash"></i> ลบ
+                                                </button>
+                                            </form>
+                                        @endif
 
-                                        <button type="button"
-                                                class="btn-action btn-action-info observe-btn-info"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#addFollowupModal{{ $obs->id }}">
-                                            <i class="bi bi-arrow-repeat"></i> ติดตามผล
-                                        </button>
+                                        @if ($currentStatus === 'ongoing')
+                                            <button type="button"
+                                                    class="btn-action btn-action-info observe-btn-info"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#addFollowupModal{{ $obs->id }}">
+                                                <i class="bi bi-arrow-repeat"></i> ติดตามผล
+                                            </button>
+                                        @elseif ($currentStatus === 'referred')
+                                            <span class="observe-case-closed-note">
+                                                <i class="bi bi-send-check-fill"></i> ส่งต่อข้อมูลแล้ว
+                                            </span>
+                                        @else
+                                            <span class="observe-case-closed-note">
+                                                <i class="bi bi-check-circle-fill"></i> บรรลุเป้าหมายแล้ว
+                                            </span>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -176,6 +219,11 @@
     @endif
 
     @if (isset($observe) && $observe)
+        @php
+            $selectedLatestFollowup = $observe->followups->last();
+            $selectedCurrentStatus = $selectedLatestFollowup->status ?? $observe->status ?? 'ongoing';
+        @endphp
+
         <div class="section-card mt-4 observe-modern-card">
             <div class="section-header observe-modern-header">
                 <div class="observe-modern-title-wrap">
@@ -188,13 +236,24 @@
                     </div>
                 </div>
 
-                <button type="button"
-                        class="btn-modern btn-modern-primary"
-                        data-bs-toggle="modal"
-                        data-bs-target="#addFollowupModal{{ $observe->id }}">
-                    <i class="bi bi-plus-circle"></i>
-                    เพิ่มการติดตามผล
-                </button>
+                @if ($selectedCurrentStatus === 'ongoing')
+                    <button type="button"
+                            class="btn-modern btn-modern-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addFollowupModal{{ $observe->id }}">
+                        <i class="bi bi-plus-circle"></i>
+                        เพิ่มการติดตามผล
+                    </button>
+                @else
+                    <span class="observe-case-closed-banner">
+                        <i class="bi {{ $selectedCurrentStatus === 'referred' ? 'bi-send-check-fill' : 'bi-check-circle-fill' }}"></i>
+                        @if($selectedCurrentStatus === 'referred')
+                            ส่งต่อข้อมูล — ปิดการติดตามในส่วนเดิม
+                        @else
+                            {{ $observeStatusLabels[$selectedCurrentStatus] ?? 'สิ้นสุดรอบนี้' }} — ไม่สามารถเพิ่มรอบใหม่
+                        @endif
+                    </span>
+                @endif
             </div>
 
             <div class="table-wrap">
@@ -205,6 +264,7 @@
                             <th>ครั้งที่</th>
                             <th>การดำเนินการ</th>
                             <th>ผลลัพธ์</th>
+                            <th>สถานะ / ความเสี่ยง</th>
                             <th class="text-center">จัดการ</th>
                         </tr>
                     </thead>
@@ -224,18 +284,32 @@
                                 </td>
                                 <td>{{ $f->followup_action ?: '-' }}</td>
                                 <td>{{ $f->followup_result ?: '-' }}</td>
+                                <td>
+                                    <div class="observe-workflow-chip-stack">
+                                        <span class="observe-status-chip observe-status-{{ $f->status ?? 'ongoing' }}">
+                                            {{ $observeStatusLabels[$f->status ?? 'ongoing'] ?? '-' }}
+                                        </span>
+                                        <span class="observe-risk-chip observe-risk-{{ $f->risk_level ?? 'none' }}">
+                                            {{ $observeRiskLabels[$f->risk_level ?? 'none'] ?? '-' }}
+                                        </span>
+                                    </div>
+                                </td>
                                 <td class="text-center">
-                                    <button type="button"
-                                            class="btn-action btn-action-warning observe-btn-warning"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#editFollowupModal{{ $f->id }}">
-                                        <i class="bi bi-pencil-square"></i> แก้ไข
-                                    </button>
+                                    @if($selectedCurrentStatus === 'referred')
+                                        <span class="observe-case-closed-note"><i class="bi bi-lock-fill"></i> ล็อกประวัติ</span>
+                                    @else
+                                        <button type="button"
+                                                class="btn-action btn-action-warning observe-btn-warning"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editFollowupModal{{ $f->id }}">
+                                            <i class="bi bi-pencil-square"></i> แก้ไข
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
+                                <td colspan="6" class="text-center text-muted py-4">
                                     ยังไม่มีการติดตามผล
                                 </td>
                             </tr>
@@ -244,6 +318,12 @@
                 </table>
             </div>
         </div>
+
+        @include('frontend.client.observe.partials._referral_section', [
+            'observe' => $observe,
+            'canManageObserveReferral' => $canManageObserveReferral,
+            'thaiDate' => $thaiDate,
+        ])
     @endif
 </div>
 
@@ -252,14 +332,17 @@
     @php
         $followupBag = 'followupStore' . $obs->id;
         $hasFollowupErrors = $errors->getBag($followupBag)->any();
+        $obsLatestFollowup = $obs->followups->last();
+        $obsCurrentStatus = $obsLatestFollowup->status ?? $obs->status ?? 'ongoing';
     @endphp
 
+    @if ($obsCurrentStatus === 'ongoing')
     <div class="modal fade observe-modal"
          id="addFollowupModal{{ $obs->id }}"
          tabindex="-1"
          aria-labelledby="addFollowupModalLabel{{ $obs->id }}"
          aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content observe-modern-modal">
                 <div class="modal-header observe-modern-modal-header">
                     <h5 class="modal-title" id="addFollowupModalLabel{{ $obs->id }}">
@@ -330,6 +413,14 @@
                             </div>
                         </div>
 
+                        @include('frontend.client.observe.partials._workflow_fields', [
+                            'workflowItem' => null,
+                            'workflowBag' => $followupBag,
+                            'workflowUseOld' => $hasFollowupErrors,
+                            'workflowCanEdit' => true,
+                            'workflowCanClose' => true,
+                        ])
+
                         <div class="modal-footer-modern">
                             <button type="submit"
                                     class="btn-form-primary"
@@ -347,6 +438,7 @@
             </div>
         </div>
     </div>
+    @endif
 @endforeach
 
 <style>
@@ -590,6 +682,86 @@
         background: #fff;
         text-align: center;
         box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+    }
+
+
+    .observe-modern-page .observe-workflow-chip-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .observe-modern-page .observe-status-chip,
+    .observe-modern-page .observe-risk-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: .78rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .observe-modern-page .observe-status-ongoing {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    .observe-modern-page .observe-status-goal_met {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+
+    .observe-modern-page .observe-status-referred {
+        background: #fff7ed;
+        color: #c2410c;
+        border: 1px solid #fed7aa;
+    }
+
+    .observe-modern-page .observe-risk-none {
+        background: #f8fafc;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+    }
+
+    .observe-modern-page .observe-risk-low {
+        background: #f0fdf4;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+    }
+
+    .observe-modern-page .observe-risk-moderate {
+        background: #fffbeb;
+        color: #a16207;
+        border: 1px solid #fde68a;
+    }
+
+    .observe-modern-page .observe-risk-high {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    .observe-modern-page .observe-case-closed-note,
+    .observe-modern-page .observe-case-closed-banner {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: .8rem;
+        font-weight: 800;
+        padding: 7px 10px;
+    }
+
+    .observe-modern-page .observe-case-closed-banner {
+        padding: 9px 12px;
     }
 
     @media (max-width: 767.98px) {
