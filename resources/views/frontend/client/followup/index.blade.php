@@ -754,8 +754,11 @@
         $hasFilterErrors = $errors->has('date_from') || $errors->has('date_to');
         $showSearchPanel = $hasDateFilter || $hasFilterErrors;
 
-        $canManageFollowup = auth()->check()
-            && in_array(auth()->user()->role, ['admin', 'executive', 'social_worker']);
+        $followupPermissionUser = auth()->user();
+        $canCreateFollowup = (bool) ($followupPermissionUser?->canCreateForm('welfare_followup') ?? false);
+        $canUpdateFollowup = (bool) ($followupPermissionUser?->canUpdateForm('welfare_followup') ?? false);
+        $canDeleteFollowup = (bool) ($followupPermissionUser?->canDeleteForm('welfare_followup') ?? false);
+        $canPrintFollowup = (bool) ($followupPermissionUser?->canPrintForm('welfare_followup') ?? false);
 
         // มีข้อมูล หรือกำลังค้นหาตามช่วงวันที่ จึงแสดงส่วนค้นหา/ตาราง
         $showDataSection = $hasFollowupRows || $hasDateFilter || $hasFilterErrors;
@@ -835,7 +838,7 @@
                     </button>
                 @endif
 
-                @if($canManageFollowup && $showDataSection)
+                @if($canCreateFollowup && $showDataSection)
                     <button type="button"
                             class="btn followup-btn followup-btn-primary"
                             data-bs-toggle="modal"
@@ -918,14 +921,16 @@
                                     <td class="note-column text-preline">{{ $item->note ?: '-' }}</td>
                                     <td class="action-column action-cell text-center">
                                         <div class="action-group justify-content-center">
-                                            <a href="{{ route('followup.report_item', $item->id) }}"
-                                               class="btn btn-sm btn-action btn-action-report"
-                                               title="เปิดรายงาน"
-                                               aria-label="เปิดรายงาน">
-                                                <i class="bi bi-file-earmark-text"></i>
-                                            </a>
+                                            @if($canPrintFollowup)
+                                                <a href="{{ route('followup.report_item', $item->id) }}"
+                                                   class="btn btn-sm btn-action btn-action-report"
+                                                   title="เปิดรายงาน"
+                                                   aria-label="เปิดรายงาน">
+                                                    <i class="bi bi-file-earmark-text"></i>
+                                                </a>
+                                            @endif
 
-                                            @if($canManageFollowup)
+                                            @if($canUpdateFollowup)
                                                 <button
                                                     type="button"
                                                     class="btn btn-sm btn-action btn-action-edit edit-followup-btn"
@@ -941,7 +946,7 @@
                                                 </button>
                                             @endif
 
-                                            @if(auth()->check() && auth()->user()->role === 'admin')
+                                            @if($canDeleteFollowup)
                                                 <form action="{{ route('followup.delete', $item->id) }}" method="POST" class="d-inline delete-followup-form">
                                                     @csrf
                                                     <button type="submit" class="btn btn-sm btn-action btn-action-delete" title="ลบ" aria-label="ลบ">
@@ -986,7 +991,7 @@
                     เพื่อให้หน้าจอดูสะอาดและใช้งานง่ายขึ้น
                 </p>
 
-                @if($canManageFollowup)
+                @if($canCreateFollowup)
                     <button type="button"
                             class="btn followup-btn followup-btn-primary"
                             data-bs-toggle="modal"

@@ -918,19 +918,10 @@
         ?? 'ไม่พบข้อมูล';
 
     $permissionUser = auth()->user();
-    $fallbackWriteRoles = ['admin', 'executive', 'social_worker'];
-    $canSchoolCreate = $permissionUser && method_exists($permissionUser, 'canCreateForm')
-        ? $permissionUser->canCreateForm('education_followup')
-        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
-    $canSchoolUpdate = $permissionUser && method_exists($permissionUser, 'canUpdateForm')
-        ? $permissionUser->canUpdateForm('education_followup')
-        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
-    $canSchoolDelete = $permissionUser && method_exists($permissionUser, 'canDeleteForm')
-        ? $permissionUser->canDeleteForm('education_followup')
-        : $permissionUser?->role === 'admin';
-    $canSchoolPrint = $permissionUser && method_exists($permissionUser, 'canPrintForm')
-        ? $permissionUser->canPrintForm('education_followup')
-        : true;
+    $canSchoolCreate = (bool) ($permissionUser?->canCreateForm('education_followup') ?? false);
+    $canSchoolUpdate = (bool) ($permissionUser?->canUpdateForm('education_followup') ?? false);
+    $canSchoolDelete = (bool) ($permissionUser?->canDeleteForm('education_followup') ?? false);
+    $canSchoolPrint = (bool) ($permissionUser?->canPrintForm('education_followup') ?? false);
 
     /*
      * ตัวกรองวันที่แบบซ่อน/แสดง

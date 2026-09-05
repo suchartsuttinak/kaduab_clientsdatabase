@@ -64,7 +64,7 @@
         <div class="col-6 col-xl-3">
             <div class="ump-stat-card">
                 <span class="ump-stat-icon ump-stat-icon-orange"><i class="bi bi-ui-checks-grid"></i></span>
-                <div><div class="ump-stat-label">เปิดสิทธิ์รายฟอร์ม</div><div class="ump-stat-value">{{ $users->where('form_permissions_enabled', true)->count() }}</div></div>
+                <div><div class="ump-stat-label">มีการกำหนดสิทธิ์รายฟอร์ม</div><div class="ump-stat-value">{{ $users->filter(fn ($item) => $item->isAdmin() || $item->formPermissions->isNotEmpty())->count() }}</div></div>
             </div>
         </div>
     </div>
@@ -101,7 +101,13 @@
                         @forelse($users as $key => $user)
                             @php
                                 $permissionCount = $user->formPermissions->count();
-                                $projectName = $user->project?->project_name ?? $user->project?->name;
+                                $projectNames = $user->projects
+                                    ->map(fn ($project) => $project->project_name ?? $project->name)
+                                    ->filter()
+                                    ->values();
+                                if ($projectNames->isEmpty() && $user->project) {
+                                    $projectNames = collect([$user->project->project_name ?? $user->project->name])->filter()->values();
+                                }
                                 $isProtectedAdmin = $user->isAdmin();
                                 $isExecutiveProtectedForActor = (bool) ($currentUser?->isExecutive() && $user->isExecutive());
                                 $isSelfProtected = (int) ($currentUser?->id ?? 0) === (int) $user->id;
@@ -124,10 +130,16 @@
                                 <td><div class="ump-email">{{ $user->email }}</div></td>
                                 <td><span class="ump-role-badge">{{ $user->role_label }}</span></td>
                                 <td>
-                                    @if($projectName)
-                                        <span class="ump-project-badge"><i class="bi bi-diagram-3-fill"></i>{{ $projectName }}</span>
+                                    @if($user->isAdmin())
+                                        <span class="ump-project-badge"><i class="bi bi-shield-check"></i>ทุกหน่วยงาน</span>
+                                    @elseif($projectNames->isNotEmpty())
+                                        <div class="ump-house-list">
+                                            @foreach($projectNames as $projectName)
+                                                <span class="ump-project-badge"><i class="bi bi-diagram-3-fill"></i>{{ $projectName }}</span>
+                                            @endforeach
+                                        </div>
                                     @else
-                                        <span class="ump-empty-text">ไม่กำหนด</span>
+                                        <span class="ump-project-badge"><i class="bi bi-globe2"></i>ทุกหน่วยงาน</span>
                                     @endif
                                 </td>
                                 <td>
@@ -138,7 +150,7 @@
                                             @endforeach
                                         </div>
                                     @else
-                                        <span class="ump-empty-text">ไม่กำหนดบ้าน</span>
+                                        <span class="ump-project-badge"><i class="bi bi-houses"></i>ทุกบ้าน</span>
                                     @endif
                                 </td>
                                 <td>
@@ -146,13 +158,13 @@
                                         <span class="ump-permission-badge ump-permission-full">
                                             <i class="bi bi-shield-check"></i>เต็มระบบ
                                         </span>
-                                    @elseif(!$user->form_permissions_enabled)
-                                        <span class="ump-permission-badge ump-permission-legacy">
-                                            <i class="bi bi-arrow-repeat"></i>ตามบทบาทเดิม
-                                        </span>
-                                    @else
+                                    @elseif($permissionCount > 0)
                                         <span class="ump-permission-badge ump-permission-custom">
                                             <i class="bi bi-ui-checks-grid"></i>{{ $permissionCount }} ฟอร์ม
+                                        </span>
+                                    @else
+                                        <span class="ump-permission-badge ump-permission-legacy">
+                                            <i class="bi bi-shield-x"></i>ยังไม่ได้กำหนดสิทธิ์
                                         </span>
                                     @endif
                                 </td>

@@ -285,7 +285,7 @@ class IndividualDevelopmentOutcomeController extends Controller
         abort_unless($user, 403);
         $canViewAcrossHouses = (method_exists($user, 'isAdmin') && $user->isAdmin())
             || (method_exists($user, 'hasFormPermission') && $user->hasFormPermission('individual_development_center', 'view'));
-        $query = $canViewAcrossHouses ? Client::query() : Client::forUser($user);
+        $query = Client::forUser($user);
         return $query->with(['house','project','target'])->findOrFail($id);
     }
     private function authorizeAction(string $action): void { abort_unless($this->can($action),403); }

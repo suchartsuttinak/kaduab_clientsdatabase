@@ -2,6 +2,7 @@
     use Illuminate\Support\Facades\Auth;
     use Illuminate\Support\Facades\Request;
     use Illuminate\Support\Facades\Route;
+    use App\Support\BehaviorReferralCenter;
     use App\Support\FormPermissionMenu;
 
     $profileData = Auth::user();
@@ -10,6 +11,9 @@
     $groupAccess = $permissionMenu['groups'];
 
     $canForm = static fn (string $key): bool => (bool) ($formAccess[$key] ?? false);
+    // USER_PERMISSION_VISIBILITY_FIX_V2: fallback ของ topbar ต้องเป็นหน้าที่ผู้ใช้ได้รับสิทธิ์จริง
+    $firstAccessibleRouteName = FormPermissionMenu::firstAccessibleRouteName($profileData);
+    $permissionHomeUrl = Route::has($firstAccessibleRouteName) ? route($firstAccessibleRouteName) : route('access.no_permissions');
 
     $routeClient = request()->route('client')
         ?? request()->route('client_id')
@@ -86,6 +90,12 @@
         Request::routeIs('case-activities.*') ||
         Request::routeIs('idstation.*')
         || Request::routeIs('counseling.*');
+
+    $canViewBehaviorReferralCenter = Route::has('observe.referrals.index')
+        && BehaviorReferralCenter::canAccess($profileData);
+    $behaviorReferralSummary = $canViewBehaviorReferralCenter
+        ? BehaviorReferralCenter::summary()
+        : ['actionable' => 0];
 
     $isStatelessClient = isset($client)
         && is_object($client)
@@ -164,7 +174,7 @@
                     <i data-feather="menu" class="topbar-icon"></i>
                 </button>
 
-                <a href="{{ (auth()->user()?->canViewForm('dashboard_overview') ? route('dashboard') : route('client.show')) }}" class="topbar-brand d-none d-md-flex">
+                <a href="{{ $permissionHomeUrl }}" class="topbar-brand d-none d-md-flex">
                     <span class="topbar-brand-badge"><i class="fas fa-people-group"></i></span>
                     <span class="topbar-brand-text">หน้าระบบผู้รับบริการ</span>
                 </a>
@@ -174,7 +184,7 @@
                 <ul class="navbar-nav topbar-menu mb-2 mb-xl-0">
                     <li class="nav-item">
                         <a class="nav-link topbar-link {{ $isDashboardActive ? 'active' : '' }}"
-                           href="{{ $clientId ? route('admin.index', $clientId) : (auth()->user()?->canViewForm('dashboard_overview') ? route('dashboard') : route('client.show')) }}">
+                           href="{{ $clientId ? route('admin.index', $clientId) : $permissionHomeUrl }}">
                             <i class="fas fa-home"></i><span>หน้าหลัก</span>
                         </a>
                     </li>
@@ -343,7 +353,15 @@
                                 @endif
 
                                 @if ($clientId && $canForm('welfare_behavior_problem'))
-                                    <li><a class="dropdown-item {{ Request::routeIs('observe.*') ? 'active' : '' }}" href="{{ route('observe.create', $clientId) }}">บันทึกปัญหาพฤติกรรม</a></li>
+                                    <li><a class="dropdown-item {{ Request::routeIs('observe.*') && !Request::routeIs('observe.referrals.*') ? 'active' : '' }}" href="{{ route('observe.create', $clientId) }}">บันทึกปัญหาพฤติกรรม</a></li>
+                                @endif
+                                @if ($canViewBehaviorReferralCenter)
+                                    <li>
+                                        <a class="dropdown-item d-flex justify-content-between align-items-center {{ Request::routeIs('observe.referrals.*') ? 'active' : '' }}" href="{{ route('observe.referrals.index') }}">
+                                            <span>เคสพฤติกรรมที่ส่งต่อ</span>
+                                            @if(($behaviorReferralSummary['actionable'] ?? 0) > 0)<span class="badge rounded-pill bg-danger ms-2">{{ $behaviorReferralSummary['actionable'] > 99 ? '99+' : $behaviorReferralSummary['actionable'] }}</span>@endif
+                                        </a>
+                                    </li>
                                 @endif
                                 @if ($clientId && $canForm('welfare_escape'))
                                     <li><a class="dropdown-item {{ Request::routeIs('escape.*') ? 'active' : '' }}" href="{{ route('escape.index', $clientId) }}">การหลบหนีจากที่พักพิง</a></li>
@@ -392,7 +410,7 @@
                             <li><a href="{{ route('admin.profile') }}#change-password" class="dropdown-item" data-permission-action="navigation"><i class="fas fa-key me-2"></i>เปลี่ยนรหัสผ่าน</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <form method="POST" action="{{ route('admin.logout') }}" class="m-0" data-permission-action="navigation">
+                                <form method="POST" action="{{ route('logout') }}" class="m-0" data-permission-action="navigation">
                                     @csrf
                                     <button type="submit" class="dropdown-item text-danger border-0 bg-transparent w-100 text-start">
                                         <i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ
@@ -406,5 +424,4 @@
         </nav>
     </div>
 </div>
-
 

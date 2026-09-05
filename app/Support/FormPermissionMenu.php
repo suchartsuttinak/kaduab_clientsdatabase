@@ -6,58 +6,58 @@ use App\Models\User;
 
 final class FormPermissionMenu
 {
-    private const CLIENT_GROUPS = [
-        'registration',
-        'education',
-        'health',
-        'screening',
-        'social_welfare',
+    /**
+     * สิทธิ์ที่ต้องมีผู้รับบริการรายบุคคลเป็นจุดเริ่มต้นจริง
+     * ไม่รวมเมนูส่วนกลาง เช่น ศูนย์รับเคส/ศูนย์พัฒนาเด็ก เพื่อไม่ให้ Login
+     * ส่งไป client.show ทั้งที่ route นั้นไม่ได้รับอนุญาต
+     */
+    private const CLIENT_FORM_PERMISSIONS = [
+        'registration_client_profile',
+        'registration_factfinding',
+        'registration_family',
+        'registration_family_assessment',
+        'registration_family_visit',
+        'registration_family_members',
+        'registration_client_files',
+        'registration_client_reports',
+        'education_grade_entry',
+        'education_results',
+        'education_followup',
+        'education_absence',
+        'education_university',
+        'health_accident',
+        'health_body_check',
+        'health_treatment_rights',
+        'health_medical',
+        'health_vaccination',
+        'health_psychiatric',
+        'health_addictive',
+        'health_annual_checkup',
+        'screening_behavior_four_diseases',
+        'screening_snap_iv',
+        'screening_depression',
+        'screening_nutrition',
+        'individual_development',
+        'welfare_counseling',
+        'welfare_behavior_problem',
+        'welfare_escape',
+        'welfare_outside_followup',
+        'welfare_discharge',
+        'welfare_job_agency',
+        'welfare_help_items',
+        'welfare_followup',
+        'welfare_client_activity',
+        'welfare_stateless_person',
     ];
 
-    /**
-     * Permission ของ Project
-     */
-    private const PROJECT_PERMISSION = 'master_projects';
-
-    /**
-     * สิทธิ์สำรองชั่วคราว
-     * ใช้จนกว่าจะเพิ่ม master_projects ลงใน config/user_permissions.php
-     */
-    private const PROJECT_FALLBACK_PERMISSION = 'master_semesters';
+    private const MASTER_DATA_MENU_PERMISSION = 'master_data_menu';
 
 
     public static function forUser(?User $user): array
     {
         $groups = config('user_permissions.groups', []);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Compatibility: Project
-        |--------------------------------------------------------------------------
-        |
-        | ถ้า config/user_permissions.php ยังไม่มี master_projects
-        | ให้เพิ่มเข้า master_data ชั่วคราว เพื่อให้ FormPermissionMenu
-        | รู้จัก permission key นี้
-        |
-        */
-        if (!isset($groups['master_data'])) {
-            $groups['master_data'] = [
-                'label' => 'ข้อมูลอ้างอิง',
-                'items' => [],
-            ];
-        }
-
-        if (!isset($groups['master_data']['items'])) {
-            $groups['master_data']['items'] = [];
-        }
-
-        if (!array_key_exists(
-            self::PROJECT_PERMISSION,
-            $groups['master_data']['items']
-        )) {
-            $groups['master_data']['items'][self::PROJECT_PERMISSION]
-                = 'รายการโครงการ';
-        }
+        // USER_PERMISSION_VISIBILITY_FIX_V2: ใช้เฉพาะ permission ที่ประกาศจริงใน config
 
 
         $forms = [];
@@ -108,33 +108,7 @@ final class FormPermissionMenu
 
             foreach (array_keys($group['items'] ?? []) as $permissionKey) {
 
-                /*
-                |--------------------------------------------------------------------------
-                | Project Permission
-                |--------------------------------------------------------------------------
-                |
-                | ตรวจ master_projects ก่อน
-                |
-                | ถ้ายังไม่มี record สิทธิ์ master_projects
-                | ให้ใช้ master_semesters เป็น fallback ชั่วคราว
-                |
-                */
-                if ($permissionKey === self::PROJECT_PERMISSION) {
-
-                    $allowed = $user->canViewForm(
-                        self::PROJECT_PERMISSION
-                    );
-
-                    if (!$allowed) {
-                        $allowed = $user->canViewForm(
-                            self::PROJECT_FALLBACK_PERMISSION
-                        );
-                    }
-
-                } else {
-
-                    $allowed = $user->canViewForm($permissionKey);
-                }
+                $allowed = $user->canViewForm($permissionKey);
 
 
                 $forms[$permissionKey] = (bool) $allowed;
@@ -153,12 +127,9 @@ final class FormPermissionMenu
         */
         $hasAnyClientForm = false;
 
-        foreach (self::CLIENT_GROUPS as $groupKey) {
-
-            if (($visibleGroups[$groupKey] ?? false) === true) {
-
+        foreach (self::CLIENT_FORM_PERMISSIONS as $permissionKey) {
+            if (($forms[$permissionKey] ?? false) === true) {
                 $hasAnyClientForm = true;
-
                 break;
             }
         }
@@ -172,6 +143,17 @@ final class FormPermissionMenu
         ];
     }
 
+
+    /**
+     * USER_MULTI_PROJECT_SCOPE_V5
+     * Compatibility helper: การมีขอบเขต Project/House ไม่ใช่เงื่อนไขเปิดเมนูอีกต่อไป
+     * เพราะ "ไม่เลือก" หมายถึง "ทุกหน่วยงาน/ทุกบ้าน" ตามนโยบายใหม่
+     * การเข้าหน้า /client จึงตัดสินจากสิทธิ์รายฟอร์มแทน
+     */
+    public static function hasClientDataScope(?User $user): bool
+    {
+        return (bool) $user;
+    }
 
     /**
      * Route แรกที่ User สามารถเข้าได้
@@ -202,8 +184,11 @@ final class FormPermissionMenu
 
         /*
         |--------------------------------------------------------------------------
-        | Client
+        | USER_MULTI_PROJECT_SCOPE_V5 : ทางเข้าแฟ้มผู้รับบริการ
         |--------------------------------------------------------------------------
+        | Project / House จำกัด "ข้อมูลที่เห็น" แต่ไม่ใช่สิทธิ์เปิดเมนู
+        | หากมีสิทธิ์รายฟอร์มที่ทำงานกับผู้รับบริการอย่างน้อยหนึ่งรายการ
+        | จึงให้เข้า client.show เพื่อเลือกผู้รับบริการในขอบเขตของตน
         */
         if ($menu['has_any_client_form']) {
             return 'client.show';
@@ -246,6 +231,13 @@ final class FormPermissionMenu
 
             'dashboard_child_analytics'
                 => 'child.analytics.report.index',
+
+            // Communications / Operations
+            'communications_publicizes'
+                => 'publicizes.index',
+
+            'communications_operations'
+                => 'operations.index',
 
 
             // Master Data
@@ -301,6 +293,9 @@ final class FormPermissionMenu
 
 
             // Reports
+            'report_special_children'
+                => 'special_children.index',
+
             'report_discharge_all'
                 => 'refers.all',
 
@@ -312,13 +307,32 @@ final class FormPermissionMenu
 
 
         foreach ($orderedRoutes as $permissionKey => $routeName) {
+            if (str_starts_with($permissionKey, 'master_')
+                && $permissionKey !== self::MASTER_DATA_MENU_PERMISSION
+                && !$can(self::MASTER_DATA_MENU_PERMISSION)) {
+                continue;
+            }
 
             if ($can($permissionKey)) {
                 return $routeName;
             }
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Executive governance exception
+        |--------------------------------------------------------------------------
+        | ผู้บริหารยังคงมีหน้าที่จัดการบัญชีและมอบสิทธิ์ให้เจ้าหน้าที่ระดับล่าง
+        | แม้ไม่ได้รับสิทธิ์เมนูงานอื่น จึงให้ User Management เป็น fallback
+        | เฉพาะผู้บริหารเท่านั้น (Admin มีสิทธิ์ทุกเมนูอยู่แล้ว)
+        */
+        if (method_exists($user, 'isExecutive') && $user->isExecutive()) {
+            return 'users.index';
+        }
 
-        return 'client.show';
+        // PERMISSION_LANDING_LOGOUT_FIX_V3:
+        // ไม่มีหน้าใช้งานที่ได้รับสิทธิ์ -> ไปหน้าสถานะสิทธิ์เฉพาะ
+        // ห้ามใช้ profile.edit เป็น fallback เพราะไม่ใช่หน้าทำงานของระบบ
+        return 'access.no_permissions';
     }
 }

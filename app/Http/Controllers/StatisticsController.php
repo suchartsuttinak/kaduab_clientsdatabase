@@ -24,6 +24,8 @@ class StatisticsController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+
         $yearMin        = $request->input('year_min');
         $yearMax        = $request->input('year_max');
         $month          = $request->input('month');
@@ -43,6 +45,14 @@ class StatisticsController extends Controller
         $startYear  = $request->input('start_year');
         $endMonth   = $request->input('end_month');
         $endYear    = $request->input('end_year');
+
+        if (!empty($projectId) && $projectId !== 'all') {
+            abort_unless($user->canAccessProject((int) $projectId), 403, 'คุณไม่มีสิทธิ์ดูหน่วยงาน/โครงการนี้');
+        }
+
+        if (!empty($houseId) && $houseId !== 'all') {
+            abort_unless($user->canAccessHouse((int) $houseId), 403, 'คุณไม่มีสิทธิ์ดูบ้านนี้');
+        }
 
                 $query = Client::forUser(auth()->user())
                 ->with([
@@ -266,7 +276,7 @@ class StatisticsController extends Controller
 
         $pendingReferApprovals = collect();
 
-        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'executive'], true)) {
+        if ($user->canUpdateForm('welfare_discharge')) {
             $pendingReferApprovals = Refer::with(['client', 'translate'])
                 ->where('approve_status', 'pending')
                 ->whereIn('client_id', Client::forUser(auth()->user())->select('id'))
@@ -292,7 +302,7 @@ class StatisticsController extends Controller
           // ตรวจสอบสิทธิ์ผู้ใช้และดึงรายการแจ้งปัญหาที่ยังไม่ได้อ่าน (is_read = false) สำหรับผู้ใช้ที่มีบทบาทเป็น admin หรือ executive
             $pendingIssues = collect();
 
-            if (auth()->check() && in_array(auth()->user()->role, ['admin', 'executive'], true)) {
+            if ($user->canViewForm('dashboard_issues')) {
                 $pendingIssues = Issue::where('is_read', false)
                     ->latest()
                     ->limit(5)
@@ -302,7 +312,7 @@ class StatisticsController extends Controller
             // ตรวจสอบสิทธิ์ผู้ใช้และดึงรายการผู้สนับสนุนทุนที่ยังไม่ได้อ่าน (is_read = false) สำหรับผู้ใช้ที่มีบทบาทเป็น admin
                 $pendingScholarships = collect();
 
-            if (auth()->check() && auth()->user()->role === 'admin') {
+            if ($user->canViewForm('dashboard_scholarship_sponsors')) {
                 $pendingScholarships = Scholarship::where('is_read', false)
                     ->latest()
                     ->limit(5)
@@ -313,8 +323,14 @@ class StatisticsController extends Controller
 
         $educations = Education::orderBy('id')->get();
         $problems   = Problem::orderBy('problem_name')->get();
-        $projects   = Project::orderBy('project_name')->get();
-        $houses = House::orderBy('id', 'asc')->get();
+        $projects = Project::query()
+            ->whereIn('id', $user->accessibleProjectIds())
+            ->orderBy('project_name')
+            ->get();
+        $houses = House::query()
+            ->whereIn('id', $user->accessibleHouseIds())
+            ->orderBy('id', 'asc')
+            ->get();
 
         return view('admin.statistics.index', [
             'clients'               => $clients,

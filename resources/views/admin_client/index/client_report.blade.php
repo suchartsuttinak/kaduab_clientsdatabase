@@ -957,6 +957,24 @@
     $factFinding = $factFinding ?? null;
     $followups = $followups ?? collect();
 
+    /*
+     * ข้อมูล “สภาพปัญหา” เป็นข้อมูลอ่อนไหว
+     * แสดงเฉพาะ admin / executive / social_worker
+     */
+    $sensitiveProblemUser = auth()->user();
+    $canViewSensitiveProblems = $sensitiveProblemUser
+        && (
+            (
+                method_exists($sensitiveProblemUser, 'hasRole')
+                && $sensitiveProblemUser->hasRole(['admin', 'executive', 'social_worker'])
+            )
+            || in_array(
+                $sensitiveProblemUser->role ?? null,
+                ['admin', 'executive', 'social_worker'],
+                true
+            )
+        );
+
     $thaiMonths = [
         1 => 'มกราคม',
         2 => 'กุมภาพันธ์',
@@ -1633,7 +1651,8 @@
         </div>
     </div>
 
-    <div class="problem-title">สภาพปัญหา</div>
+    @if($canViewSensitiveProblems)
+        <div class="problem-title">สภาพปัญหา</div>
         <div class="problem-list">
             @if(!empty($clientProblems) && $clientProblems->count() > 0)
 
@@ -1648,6 +1667,7 @@
                 <div class="problem-item">- ไม่มีข้อมูลปัญหา -</div>
             @endif
         </div>
+    @endif
 
     <div class="member-table-wrap">
         <div class="member-table-title">รายละเอียดสมาชิกครอบครัว</div>

@@ -83,7 +83,7 @@ use Illuminate\Support\Facades\Route;
         | Dashboard & Statistics
         |--------------------------------------------------------------------------
         */
-        Route::middleware(['auth', 'role:admin,executive,social_worker'])
+        Route::middleware(['auth'])
         ->controller(StatisticsController::class)
             ->group(function () {
                 Route::get('/dashboard', 'index')->name('dashboard');
@@ -102,7 +102,7 @@ use Illuminate\Support\Facades\Route;
         |--------------------------------------------------------------------------
         */
 
-        Route::middleware(['auth', 'role:admin,executive'])->group(function () {
+        Route::middleware(['auth'])->group(function () {
             Route::get('/issues', [IssueController::class, 'index'])
                 ->name('issues.index');
 
@@ -129,10 +129,7 @@ use Illuminate\Support\Facades\Route;
         |--------------------------------------------------------------------------
         */
 
-            Route::middleware([
-            'auth',
-            'role:admin,executive,social_worker,teacher_caregiver'
-        ])
+            Route::middleware(['auth'])
             ->prefix('publicizes')
             ->group(function () {
 
@@ -165,8 +162,8 @@ use Illuminate\Support\Facades\Route;
         |--------------------------------------------------------------------------
         */
 
-        // EPC_SCHOLARSHIP_EXECUTIVE_V1: role opens the module; form-permission decides view/create
-        Route::middleware(['auth', 'role:admin,executive'])->group(function () {
+        // UNIFIED_ACCESS_SCOPE_V5: form permission เป็นด่านหลักของหน้าจัดการทุน
+        Route::middleware(['auth'])->group(function () {
             Route::get('/scholarship', [ScholarshipController::class, 'index'])
                 ->name('scholarship.index');
 
@@ -182,6 +179,37 @@ use Illuminate\Support\Facades\Route;
                 ->whereNumber('scholarship')
                 ->name('scholarship.donation.index');
         });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Permission Landing
+        |--------------------------------------------------------------------------
+        |
+        | PERMISSION_LANDING_LOGOUT_FIX_V3
+        | หน้าเริ่มต้นสำหรับบัญชีที่ Login สำเร็จ แต่ยังไม่มีเมนูหลักที่ได้รับสิทธิ์
+        | Route นี้ไม่มี form-permission rule เพื่อให้ผู้ใช้สามารถเห็นคำอธิบายและ Logout ได้เสมอ
+        |
+        */
+        Route::get('/access/no-permissions', function () {
+            $user = auth()->user();
+
+            if (!$user) {
+                return redirect()->route('login');
+            }
+
+            // ถ้า Admin เพิ่งเพิ่มสิทธิ์ให้ระหว่างที่ผู้ใช้ยัง Login อยู่
+            // การ Refresh หน้านี้จะพาไปหน้าแรกที่ได้รับสิทธิ์โดยอัตโนมัติ
+            $routeName = \App\Support\FormPermissionMenu::firstAccessibleRouteName($user);
+
+            if ($routeName !== 'access.no_permissions') {
+                return redirect()->route($routeName);
+            }
+
+            $user->loadMissing(['projects', 'project', 'houses']);
+
+            return view('auth.no_permissions', compact('user'));
+        })->middleware('auth')->name('access.no_permissions');
 
 
         /*
@@ -378,7 +406,7 @@ use Illuminate\Support\Facades\Route;
         |--------------------------------------------------------------------------
         */
         Route::prefix('snap-iv')
-            ->middleware(['auth', 'role:admin,executive,social_worker'])
+            ->middleware(['auth'])
             ->name('snap-iv.')
             ->controller(SnapIvScreeningController::class)
             ->group(function () {
@@ -484,10 +512,7 @@ use Illuminate\Support\Facades\Route;
         | แบบคัดกรองโภชนาการ
         |--------------------------------------------------------------------------
         */
-           Route::middleware([
-            'auth',
-            'role:admin,executive,social_worker,teacher_caregiver'
-        ])
+           Route::middleware(['auth'])
         ->prefix('clients/{client}/nutrition-assessments')
         ->name('nutrition_assessments.')
         ->controller(NutritionAssessmentController::class)
@@ -567,7 +592,7 @@ use Illuminate\Support\Facades\Route;
         });
 
             // รายงานวิเคราะห์ข้อมูลเด็กตามเงื่อนไข
-            Route::middleware(['auth', 'role:admin,executive,social_worker'])->group(function () {
+            Route::middleware(['auth'])->group(function () {
 
                 Route::get('/admin/child-analytics-report', [ChildAnalyticsReportController::class, 'index'])
                     ->name('child.analytics.report.index');

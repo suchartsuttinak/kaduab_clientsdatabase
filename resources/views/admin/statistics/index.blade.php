@@ -1056,6 +1056,42 @@
             margin-left: 0 !important;
         }
     }
+    .behavior-referral-alert {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 20px;
+        border: 1px solid rgba(255,255,255,.32);
+        border-radius: 18px;
+        color: #fff;
+        background: linear-gradient(135deg, #9a3412, #ea580c 62%, #f59e0b);
+        box-shadow: 0 14px 30px rgba(194, 65, 12, .18);
+    }
+
+    .behavior-referral-alert-icon {
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 15px;
+        background: rgba(255,255,255,.18);
+        font-size: 1.35rem;
+    }
+
+    .behavior-referral-alert-content { flex: 1; min-width: 0; }
+    .behavior-referral-alert-kicker { display:block; color:rgba(255,255,255,.78); font-size:.78rem; font-weight:700; }
+    .behavior-referral-alert h2 { margin:2px 0 7px; color:#fff; font-size:1.15rem; font-weight:800; }
+    .behavior-referral-alert-meta { display:flex; gap:7px; flex-wrap:wrap; }
+    .behavior-referral-alert-meta span { padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.13); color:#fff; font-size:.73rem; font-weight:700; }
+    .behavior-referral-alert-meta span.urgent { background:#fff; color:#b42318; }
+    .behavior-referral-alert-action { flex:0 0 auto; border:0; border-radius:11px; color:#9a3412; font-weight:800; }
+
+    @media (max-width: 767.98px) {
+        .behavior-referral-alert { align-items:flex-start; flex-wrap:wrap; padding:16px; }
+        .behavior-referral-alert-action { width:100%; }
+    }
 </style>
 
     <div class="content">
@@ -1089,12 +1125,14 @@
 
         <div class="col-12 col-lg-6 dashboard-hero-action-col">
             <div class="dashboard-hero-actions">
-                <a href="{{ route('client.show') }}" class="btn btn-light dashboard-btn-pill">
-                    <i data-feather="arrow-right-circle"></i>
-                    <span>แสดงรายชื่อผู้รับบริการ</span>
-                </a>
+                @if((\App\Support\FormPermissionMenu::forUser(auth()->user())['has_any_client_form'] ?? false))
+                    <a href="{{ route('client.show') }}" class="btn btn-light dashboard-btn-pill">
+                        <i data-feather="arrow-right-circle"></i>
+                        <span>แสดงรายชื่อผู้รับบริการ</span>
+                    </a>
+                @endif
 
-                @if(auth()->check() && in_array(auth()->user()->role, ['admin', 'executive', 'social_worker'], true))
+                @if(auth()->user()?->canViewForm('dashboard_child_analytics'))
                     <a href="{{ route('child.analytics.report.index') }}"
                        class="btn dashboard-btn-pill dashboard-btn-report">
                         <i class="bi bi-graph-up-arrow"></i>
@@ -1106,11 +1144,35 @@
     </div>
 </div>
 
+@php
+    $canViewBehaviorReferralCenter = \Illuminate\Support\Facades\Route::has('observe.referrals.index')
+        && \App\Support\BehaviorReferralCenter::canAccess(auth()->user());
+    $behaviorReferralSummary = $canViewBehaviorReferralCenter
+        ? \App\Support\BehaviorReferralCenter::summary()
+        : ['actionable' => 0, 'waiting' => 0, 'assigned' => 0, 'overdue' => 0, 'high_risk' => 0];
+@endphp
+
+@if($canViewBehaviorReferralCenter && ($behaviorReferralSummary['actionable'] ?? 0) > 0)
+    <div class="behavior-referral-alert mb-4">
+        <div class="behavior-referral-alert-icon"><i class="bi bi-inbox-fill"></i></div>
+        <div class="behavior-referral-alert-content">
+            <span class="behavior-referral-alert-kicker">มีเคสที่ต้องดำเนินการ</span>
+            <h2>{{ number_format($behaviorReferralSummary['actionable']) }} เคสพฤติกรรมที่ส่งต่อ</h2>
+            <div class="behavior-referral-alert-meta">
+                <span>รอมอบหมาย {{ number_format($behaviorReferralSummary['waiting']) }}</span>
+                <span>รอรับเคส {{ number_format($behaviorReferralSummary['assigned']) }}</span>
+                @if($behaviorReferralSummary['high_risk'] > 0)<span class="urgent">ความเสี่ยงสูง {{ number_format($behaviorReferralSummary['high_risk']) }}</span>@endif
+                @if($behaviorReferralSummary['overdue'] > 0)<span class="urgent">เลยนัด {{ number_format($behaviorReferralSummary['overdue']) }}</span>@endif
+            </div>
+        </div>
+        <a href="{{ route('observe.referrals.index') }}" class="btn btn-light behavior-referral-alert-action">เปิดศูนย์รับเคส <i class="bi bi-arrow-right ms-1"></i></a>
+    </div>
+@endif
+
            <div class="row g-4 mb-4">
                 {{-- แจ้งเตือนเรื่องช่วยเหลือ --}}
                 @if (
-                    auth()->check() &&
-                    in_array(auth()->user()->role, ['admin', 'executive']) &&
+                    auth()->user()?->canViewForm('dashboard_issues') &&
                     isset($pendingIssues) &&
                     $pendingIssues->count() > 0
                 )
@@ -1151,7 +1213,7 @@
                 {{-- แจ้งเตือนผู้สนับสนุนทุน --}}
                 @if (
                     auth()->check() &&
-                    auth()->user()->role === 'admin' &&
+                    auth()->user()->canViewForm('dashboard_scholarship_sponsors') &&
                     isset($pendingScholarships) &&
                     $pendingScholarships->count() > 0
                 )
@@ -1284,8 +1346,7 @@
      </div>
 
       
-            @if (auth()->check() &&
-                    in_array(auth()->user()->role, ['admin', 'executive']) &&
+            @if (auth()->user()?->canUpdateForm('welfare_discharge') &&
                     isset($pendingReferApprovals) &&
                     $pendingReferApprovals->count() > 0)
                 <div class="card dashboard-card mb-4">

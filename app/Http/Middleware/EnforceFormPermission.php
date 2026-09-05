@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Services\AuditLogger;
 use App\Services\AuditMutationContext;
 use App\Support\FormPermissionUi;
+use App\Support\FormPermissionMenu;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -96,6 +97,22 @@ class EnforceFormPermission
             $action
         );
 
+        // UNIFIED_ACCESS_SCOPE_V5:
+        // รายการย่อยใน “ประเภท / หมวดหมู่” ต้องเปิดสิทธิ์เมนูหลักด้วย
+        // ป้องกันกรณีซ่อน Sidebar แล้วผู้ใช้เข้ารายการย่อยตรงจาก URL ได้
+        $usesMasterChildPermission = collect($permissionKeys)->contains(
+            static fn (string $key): bool => str_starts_with($key, 'master_')
+                && $key !== 'master_data_menu'
+        );
+
+        if (
+            $allowed
+            && $usesMasterChildPermission
+            && !$user->canViewForm('master_data_menu')
+        ) {
+            $allowed = false;
+        }
+
         /*
         |--------------------------------------------------------------------------
         | มีสิทธิ์ใช้งาน
@@ -167,6 +184,10 @@ class EnforceFormPermission
                 $permissionKeys,
                 'view'
             )
+            && (
+                !$usesMasterChildPermission
+                || $user->canViewForm('master_data_menu')
+            )
         ) {
             $request->attributes->set(
                 'form_permission_readonly',
@@ -237,11 +258,13 @@ class EnforceFormPermission
         */
 
         if ($isDashboardRedirect) {
+            $fallbackRoute = FormPermissionMenu::firstAccessibleRouteName($user);
+
             return redirect()
-                ->route('client.show')
+                ->route($fallbackRoute)
                 ->with(
                     'info',
-                    'บัญชีนี้ไม่ได้รับสิทธิ์เข้าหน้า Dashboard ระบบจึงนำกลับไปหน้าทะเบียนผู้รับบริการ'
+                    'บัญชีนี้ไม่ได้รับสิทธิ์เข้าหน้า Dashboard ระบบจึงนำไปยังหน้าที่ได้รับสิทธิ์'
                 );
         }
 

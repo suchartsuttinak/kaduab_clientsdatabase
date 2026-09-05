@@ -67,6 +67,7 @@
                 <div class="publicize-filter-box">
                     <form method="GET" action="{{ route('publicizes.index') }}" class="publicize-filter-form">
                         <input type="hidden" name="category" value="{{ $activeCategory }}">
+                        <input type="hidden" name="per_page" value="{{ $perPage }}">
 
                         <label class="form-label small fw-semibold mb-2">
                             <i class="bi bi-calendar3 me-1 text-primary"></i>
@@ -89,13 +90,15 @@
                         </div>
 
                         @if($yearBe)
-                            <div class="mt-2">
-                                <a href="{{ route('publicizes.index', ['category' => $activeCategory]) }}"
-                                   class="btn btn-light btn-sm border w-100 publicize-reset-btn">
-                                    <i class="bi bi-arrow-counterclockwise me-1"></i>
-                                    ล้างตัวกรองปี
-                                </a>
-                            </div>
+                            <a href="{{ route('publicizes.index', [
+                                    'category' => $activeCategory,
+                                    'per_page' => $perPage
+                                ]) }}"
+                               class="btn btn-light btn-sm border w-100 publicize-reset-btn">
+
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                ล้างตัวกรองปี
+                            </a>
                         @endif
                     </form>
                 </div>
@@ -104,7 +107,8 @@
                     @foreach($categories as $key => $label)
                         <a href="{{ route('publicizes.index', array_filter([
                                 'category' => $key,
-                                'year_be' => $yearBe
+                                'year_be' => $yearBe,
+                                'per_page' => $perPage
                            ])) }}"
                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ $activeCategory === $key ? 'active' : '' }}">
                             <span class="d-flex align-items-center gap-2">
@@ -162,8 +166,37 @@
                         </div>
                     </div>
 
-                    <div class="publicize-count-badge">
-                        จำนวน {{ $publicizes->count() }} รายการ
+                    <div class="publicize-list-tools">
+                        <div class="publicize-count-badge">
+                            ทั้งหมด {{ number_format($publicizes->total()) }} รายการ
+                        </div>
+
+                        <form method="GET"
+                              action="{{ route('publicizes.index') }}"
+                              class="publicize-per-page-form">
+                            <input type="hidden" name="category" value="{{ $activeCategory }}">
+
+                            @if($yearBe)
+                                <input type="hidden" name="year_be" value="{{ $yearBe }}">
+                            @endif
+
+                            <label for="per_page" class="small text-muted text-nowrap mb-0">
+                                แสดง
+                            </label>
+
+                            <select name="per_page"
+                                    id="per_page"
+                                    class="form-select form-select-sm publicize-per-page-select"
+                                    onchange="this.form.submit()">
+                                @foreach($perPageOptions as $option)
+                                    <option value="{{ $option }}" {{ (int) $perPage === (int) $option ? 'selected' : '' }}>
+                                        {{ $option }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <span class="small text-muted text-nowrap">รายการ/หน้า</span>
+                        </form>
                     </div>
                 </div>
 
@@ -176,7 +209,7 @@
 
             {{-- ลำดับ --}}
             <div class="publicize-item__no">
-                {{ $index + 1 }}
+                {{ $publicizes->firstItem() + $index }}
             </div>
 
             {{-- ชื่อเอกสาร --}}
@@ -198,14 +231,17 @@
                 {{ optional($item->recorded_at)->format('d/m/') }}{{ optional($item->recorded_at)->year + 543 }}
             </div>
 
-            {{-- admin actions --}}
-            @if(auth()->check() && auth()->user()->role === 'admin')
+            {{-- UNIFIED_ACCESS_SCOPE_V5: action buttons ตาม permission ไม่ผูกกับ role --}}
+            @if(auth()->check() && (auth()->user()->canUpdateForm('communications_publicizes') || auth()->user()->canDeleteForm('communications_publicizes')))
                 <div class="publicize-admin-actions">
-                    <a href="{{ route('publicizes.edit', $item->id) }}"
-                       class="btn btn-outline-warning btn-sm">
-                        <i class="bi bi-pencil-square"></i>
-                    </a>
+                    @if(auth()->user()->canUpdateForm('communications_publicizes'))
+                        <a href="{{ route('publicizes.edit', $item->id) }}"
+                           class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-pencil-square"></i>
+                        </a>
+                    @endif
 
+                    @if(auth()->user()->canDeleteForm('communications_publicizes'))
                     <form action="{{ route('publicizes.destroy', $item->id) }}"
                           method="POST"
                           class="delete-publicize-form d-inline">
@@ -218,6 +254,7 @@
                             <i class="bi bi-trash"></i>
                         </button>
                     </form>
+                    @endif
                 </div>
             @endif
 
@@ -225,6 +262,12 @@
     </div>
 @endforeach
                         </div>
+
+                        @if($publicizes->hasPages())
+                            <div class="publicize-pagination border-top px-3 py-3">
+                                {{ $publicizes->onEachSide(1)->links('pagination::bootstrap-5') }}
+                            </div>
+                        @endif
                     @else
                         <div class="publicize-empty-state">
                             <div class="publicize-empty-state__icon">
@@ -388,6 +431,55 @@
         border-radius: 999px;
         font-size: 0.9rem;
         font-weight: 600;
+    }
+
+    .publicize-page .publicize-list-tools{
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .publicize-page .publicize-per-page-form{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .publicize-page .publicize-per-page-select{
+        width: 72px;
+        min-width: 72px;
+        height: 36px;
+        border-radius: 9px;
+        font-weight: 600;
+    }
+
+    .publicize-page .publicize-pagination{
+        background: #fff;
+    }
+
+    .publicize-page .publicize-pagination nav{
+        display: flex;
+        justify-content: center;
+    }
+
+    .publicize-page .publicize-pagination .pagination{
+        margin-bottom: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 3px;
+    }
+
+    .publicize-page .publicize-pagination .page-link{
+        min-width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .9rem;
     }
 
     .publicize-page .publicize-list{
@@ -564,12 +656,6 @@
         }
     }
 
-        .publicize-page .publicize-action-group .btn,
-        .publicize-page .publicize-action-group form{
-            width:100%;
-        }
-    }
-
     @media (max-width: 1199.98px){
         .publicize-page .publicize-hero{
             padding: 16px;
@@ -619,6 +705,19 @@
         .publicize-page .publicize-hero__actions .btn{
             flex: 1 1 100%;
             justify-content: center;
+        }
+
+        .publicize-page .publicize-content-head{
+            align-items: flex-start;
+        }
+
+        .publicize-page .publicize-list-tools,
+        .publicize-page .publicize-per-page-form{
+            width: 100%;
+        }
+
+        .publicize-page .publicize-list-tools{
+            justify-content: flex-start;
         }
 
         .publicize-page .publicize-item__body{
@@ -674,8 +773,6 @@
     </script>
 
     @endsection
-
-
 
 
 

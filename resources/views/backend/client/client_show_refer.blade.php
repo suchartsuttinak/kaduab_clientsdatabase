@@ -1,6 +1,41 @@
 @extends('admin.admin_master')
 @section('admin')
 
+@php
+    $thaiMonthsShort = [
+        1 => 'ม.ค.',
+        2 => 'ก.พ.',
+        3 => 'มี.ค.',
+        4 => 'เม.ย.',
+        5 => 'พ.ค.',
+        6 => 'มิ.ย.',
+        7 => 'ก.ค.',
+        8 => 'ส.ค.',
+        9 => 'ก.ย.',
+        10 => 'ต.ค.',
+        11 => 'พ.ย.',
+        12 => 'ธ.ค.',
+    ];
+
+    $formatThaiDate = function ($value) use ($thaiMonthsShort) {
+        if (empty($value)) {
+            return '-';
+        }
+
+        try {
+            $date = $value instanceof \Carbon\CarbonInterface
+                ? $value
+                : \Carbon\Carbon::parse($value);
+
+            return $date->day
+                . ' ' . $thaiMonthsShort[$date->month]
+                . ' ' . ($date->year + 543);
+        } catch (\Throwable $e) {
+            return '-';
+        }
+    };
+@endphp
+
 <style>
     .refer-page{padding-top:.5rem}.refer-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:1rem}
     .refer-card{border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(15,23,42,.04)}
@@ -37,7 +72,7 @@
                         <div class="col-12 col-lg-4">
                             <label for="refer-search" class="refer-label">ค้นหาผู้รับบริการ</label>
                             <input type="search" id="refer-search" name="search" value="{{ $search ?? request('search') }}" class="form-control refer-control"
-                                   placeholder="ชื่อ นามสกุล เลขทะเบียน หรือปัญหา" maxlength="100" autocomplete="off"
+                                   placeholder="{{ ($canAccessSensitiveProblems ?? false) ? 'ชื่อ นามสกุล เลขทะเบียน หรือปัญหา' : 'ชื่อ นามสกุล หรือเลขทะเบียน' }}" maxlength="100" autocomplete="off"
                                    aria-describedby="refer-search-status">
                             {{-- <div id="refer-search-status" class="refer-search-help" role="status" aria-live="polite">
                                 <i class="mdi mdi-lightning-bolt-outline" aria-hidden="true"></i>
@@ -91,7 +126,13 @@
                     <div class="refer-table-wrap">
                         <table class="table table-hover align-middle refer-table">
                             <thead>
-                                <tr><th>ลำดับ</th><th>ภาพ</th><th>ชื่อ-นามสกุล</th><th>วันที่รับเข้า</th><th>วันเกิด</th><th>อายุ</th><th>ปัญหา</th><th>สถานะ</th><th>การจัดการ</th></tr>
+                                <tr>
+                                    <th>ลำดับ</th><th>ภาพ</th><th>ชื่อ-นามสกุล</th><th>วันที่รับเข้า</th><th>วันเกิด</th><th>อายุ</th>
+                                    @if($canAccessSensitiveProblems ?? false)
+                                        <th>ปัญหา</th>
+                                    @endif
+                                    <th>สถานะ</th><th>การจัดการ</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 @foreach ($clients as $key => $client)
@@ -103,12 +144,16 @@
                                                     . '-s' . substr(hash('sha256', (string) session()->getId()), 0, 10))
                                                 : asset('upload/no_image.jpg') }}" alt="รูปผู้รับบริการ {{ $client->full_name }}" class="refer-avatar" width="42" height="42" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='{{ asset('upload/no_image.jpg') }}';"></td>
                                         <td><div class="fw-semibold">{{ $client->full_name }}</div><div class="text-muted small">เลขทะเบียน {{ $client->register_number ?? '-' }}</div></td>
-                                        <td>{{ $client->arrival_date }}</td><td>{{ $client->birth_date }}</td><td>{{ $client->age }}</td>
-                                        <td>
-                                            @if($client->problems->isNotEmpty())
-                                                <ul class="mb-0 ps-3">@foreach($client->problems as $problem)<li>{{ $problem->problem_name }}</li>@endforeach</ul>
-                                            @else<span class="text-muted">ไม่มีข้อมูล</span>@endif
-                                        </td>
+                                       <td>{{ $formatThaiDate($client->arrival_date) }}</td>
+<td>{{ $formatThaiDate($client->birth_date) }}</td>
+<td>{{ $client->age }}</td>
+                                        @if($canAccessSensitiveProblems ?? false)
+                                            <td>
+                                                @if($client->problems->isNotEmpty())
+                                                    <ul class="mb-0 ps-3">@foreach($client->problems as $problem)<li>{{ $problem->problem_name }}</li>@endforeach</ul>
+                                                @else<span class="text-muted">ไม่มีข้อมูล</span>@endif
+                                            </td>
+                                        @endif
                                         <td>
                                             @if($client->release_status === 'show')<span class="badge bg-success">อยู่ในระบบ</span>
                                             @elseif($client->release_status === 'refer')<span class="badge bg-secondary">จำหน่าย/ส่งต่อ</span>

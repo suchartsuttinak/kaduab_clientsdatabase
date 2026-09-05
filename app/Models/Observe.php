@@ -52,4 +52,36 @@ class Observe extends Model
             ->orderBy('action_date')
             ->orderBy('id');
     }
+
+    /**
+     * รอบติดตามต้นทางล่าสุด ใช้หาสถานะ/ความเสี่ยงก่อนส่งต่อ
+     */
+    public function latestFollowup()
+    {
+        return $this->hasOne(ObserveFollowup::class, 'observe_id')
+            ->ofMany([
+                'followup_count' => 'max',
+                'id' => 'max',
+            ]);
+    }
+
+    /**
+     * รอบการช่วยเหลือหลังส่งต่อล่าสุด
+     */
+    public function latestReferralRound()
+    {
+        return $this->hasOne(ObserveReferralRound::class, 'observe_id')
+            ->ofMany([
+                'round_no' => 'max',
+                'id' => 'max',
+            ]);
+    }
+
+    /**
+     * ข้อมูลประสานงานของเคสที่ส่งต่อ (ไม่ซ้ำข้อมูลเคสต้นทาง)
+     */
+    public function referralAssignment()
+    {
+        return $this->hasOne(ObserveReferralAssignment::class, 'observe_id');
+    }
 }

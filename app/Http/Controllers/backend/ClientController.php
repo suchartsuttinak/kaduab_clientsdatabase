@@ -45,20 +45,93 @@ class ClientController extends Controller
         return Client::forUser(auth()->user())->findOrFail($id);
     }
 
-    protected function isAdminOrExecutive($user): bool
+    /** USER_MULTI_PROJECT_SCOPE_V5: มีเพียง Admin ที่ไม่ถูกจำกัดขอบเขต */
+    protected function isAdmin($user): bool
+    {
+        return (bool) ($user && method_exists($user, 'isAdmin') && $user->isAdmin());
+    }
+
+    protected function getAuthorizedProjectIds(): array
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return [];
+        }
+
+        if (method_exists($user, 'accessibleProjectIds')) {
+            return $user->accessibleProjectIds();
+        }
+
+        if ($this->isAdmin($user) || empty($user->project_id)) {
+            return Project::query()
+                ->pluck('id')
+                ->map(static fn ($id) => (int) $id)
+                ->all();
+        }
+
+        return [(int) $user->project_id];
+    }
+
+    protected function getAuthorizedProjects(): Collection
+    {
+        $projectIds = $this->getAuthorizedProjectIds();
+
+        if ($projectIds === []) {
+            return collect();
+        }
+
+        return Project::query()
+            ->select(['id', 'project_name'])
+            ->whereIn('id', $projectIds)
+            ->orderBy('project_name')
+            ->get();
+    }
+
+    protected function ensureAuthorizedProjectId($projectId): void
+    {
+        $user = auth()->user();
+
+        abort_unless($user, Response::HTTP_FORBIDDEN, 'กรุณาเข้าสู่ระบบ');
+
+        $allowed = method_exists($user, 'canAccessProject')
+            ? $user->canAccessProject($projectId)
+            : ($this->isAdmin($user) || empty($user->project_id) || (int) $user->project_id === (int) $projectId);
+
+        abort_unless(
+            $allowed,
+            Response::HTTP_FORBIDDEN,
+            'คุณไม่มีสิทธิ์เข้าถึงหน่วยงาน/โครงการนี้'
+        );
+    }
+
+    /**
+     * ข้อมูล "ปัญหาที่พบ/สภาพปัญหา" เป็นข้อมูลอ่อนไหว
+     * อนุญาตเฉพาะผู้ดูแลระบบ ผู้บริหาร และนักสังคมสงเคราะห์
+     */
+    protected function canAccessSensitiveProblems($user): bool
     {
         if (!$user) {
             return false;
         }
 
-        return
-            (method_exists($user, 'isAdmin') && $user->isAdmin())
-            || (method_exists($user, 'isExecutive') && $user->isExecutive())
-            || in_array(($user->role ?? null), ['admin', 'executive'], true);
+        if (
+            method_exists($user, 'hasRole')
+            && $user->hasRole(['admin', 'executive', 'social_worker'])
+        ) {
+            return true;
+        }
+
+        return in_array(
+            (string) ($user->role ?? ''),
+            ['admin', 'executive', 'social_worker'],
+            true
+        );
     }
 
     /**
-     * ดึงรายการรหัสบ้านที่ผู้ใช้มีสิทธิ์
+     * ดึงรายการบ้านที่ผู้ใช้เข้าถึงได้จริง
+     * ไม่เลือกบ้าน = ทุกบ้าน, เลือก = เฉพาะบ้านที่เลือก, Admin = ทุกบ้าน
      */
     protected function getAuthorizedHouseIds(): array
     {
@@ -68,25 +141,14 @@ class ClientController extends Controller
             return [];
         }
 
-        if ($this->isAdminOrExecutive($user)) {
-            return House::query()
-                ->pluck('id')
-                ->map(static fn ($id) => (int) $id)
-                ->all();
+        if (method_exists($user, 'accessibleHouseIds')) {
+            return $user->accessibleHouseIds();
         }
 
-        if (method_exists($user, 'houses')) {
-            return $user->houses()
-                ->pluck('houses.id')
-                ->map(static fn ($id) => (int) $id)
-                ->all();
-        }
-
-        if (!empty($user->house_id)) {
-            return [(int) $user->house_id];
-        }
-
-        return [];
+        return House::query()
+            ->pluck('id')
+            ->map(static fn ($id) => (int) $id)
+            ->all();
     }
 
     /**
@@ -387,13 +449,27 @@ class ClientController extends Controller
     public function ClientShow(Request $request)
     {
         $user = auth()->user();
-        $canFilterProjects = $this->isAdminOrExecutive($user);
+
+        $projects = $this->getAuthorizedProjects();
+        $canFilterProjects = $projects->count() > 1;
+        $canAccessSensitiveProblems = $this->canAccessSensitiveProblems($user);
         $projectId = $canFilterProjects
             ? $request->input('project_id', 'all')
             : 'all';
 
         $search = Str::substr(trim((string) $request->input('search', '')), 0, 100);
         $perPage = $this->resolvePerPage($request->input('per_page'));
+
+        $clientRelations = [
+            'title:id,title_name',
+        ];
+
+        if ($canAccessSensitiveProblems) {
+            $clientRelations['problems'] = static function ($query) {
+                $query->select(['problems.id', 'problems.problem_name'])
+                    ->orderBy('problems.problem_name');
+            };
+        }
 
         $clientsQuery = Client::forUser($user)
             ->select([
@@ -410,13 +486,7 @@ class ClientController extends Controller
                 'clients.release_status',
                 'clients.created_at',
             ])
-            ->with([
-                'title:id,title_name',
-                'problems' => static function ($query) {
-                    $query->select(['problems.id', 'problems.problem_name'])
-                        ->orderBy('problems.problem_name');
-                },
-            ])
+            ->with($clientRelations)
             ->where(function ($query) {
                 $query
                     ->where('release_status', 'show')
@@ -429,9 +499,10 @@ class ClientController extends Controller
                     });
             });
 
-        $this->applyClientSearch($clientsQuery, $search);
+        $this->applyClientSearch($clientsQuery, $search, $canAccessSensitiveProblems);
 
         if ($canFilterProjects && !empty($projectId) && $projectId !== 'all') {
+            $this->ensureAuthorizedProjectId($projectId);
             $clientsQuery->where('project_id', (int) $projectId);
         }
 
@@ -440,18 +511,12 @@ class ClientController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $projects = $canFilterProjects
-            ? Project::query()
-                ->select(['id', 'project_name'])
-                ->orderBy('project_name')
-                ->get()
-            : collect();
-
         return view('backend.client.client_show', compact(
             'clients',
             'projects',
             'projectId',
             'canFilterProjects',
+            'canAccessSensitiveProblems',
             'search',
             'perPage'
         ));
@@ -463,44 +528,61 @@ class ClientController extends Controller
      */
     public function ClientIndex($id)
     {
-        $client = Client::forUser(auth()->user())
-            ->with([
-                'educationRecords',
-                'problems',
-                'house',
-                'title',
-                'national',
-                'religion',
-                'marital',
-                'occupation',
-                'income',
-                'education',
-                'contact',
-                'status',
-                'project',
-                'target',
-                'province',
-                'district',
-                'sub_district',
-                'originProvince',
-                'originDistrict',
-                'originSubDistrict',
-                'father',
-                'mother',
-                'spouse',
-                'relative',
-                'members',
-                'files',
-                'vaccinations',
-                'refers',
-            ])
+        $user = auth()->user();
+        $canAccessSensitiveProblems = $this->canAccessSensitiveProblems($user);
+
+        $clientRelations = [
+            'educationRecords',
+            'house',
+            'title',
+            'national',
+            'religion',
+            'marital',
+            'occupation',
+            'income',
+            'education',
+            'contact',
+            'status',
+            'project',
+            'target',
+            'province',
+            'district',
+            'sub_district',
+            'originProvince',
+            'originDistrict',
+            'originSubDistrict',
+            'father',
+            'mother',
+            'spouse',
+            'relative',
+            'members',
+            'files',
+            'vaccinations',
+            'refers',
+        ];
+
+        if ($canAccessSensitiveProblems) {
+            $clientRelations[] = 'problems';
+        }
+
+        $client = Client::forUser($user)
+            ->with($clientRelations)
             ->findOrFail($id);
 
-        return view('admin_client.index.client_index', compact('client'));
+        // ป้องกัน Blade เดิมเรียก relation แล้วเกิด lazy-load ข้อมูลอ่อนไหว
+        if (!$canAccessSensitiveProblems) {
+            $client->setRelation('problems', collect());
+        }
+
+        return view('admin_client.index.client_index', compact(
+            'client',
+            'canAccessSensitiveProblems'
+        ));
     }
 
     public function ClientAdd()
     {
+        $canAccessSensitiveProblems = $this->canAccessSensitiveProblems(auth()->user());
         $formOptions = $this->getClientFormOptions();
 
         $currentProvinceId = old('province_id');
@@ -528,7 +610,8 @@ class ClientController extends Controller
                 'houses',
                 'origin_provinces',
                 'origin_districts',
-                'origin_sub_districts'
+                'origin_sub_districts',
+                'canAccessSensitiveProblems'
             )
         ));
     }
@@ -589,7 +672,10 @@ class ClientController extends Controller
         $this->ensureAuthorizedHouseId($validated['house_id']);
         $this->validateTitleForClient($validated);
 
-        $problems = array_values(array_unique($validated['problems'] ?? []));
+        $canAccessSensitiveProblems = $this->canAccessSensitiveProblems(auth()->user());
+        $problems = $canAccessSensitiveProblems
+            ? array_values(array_unique($validated['problems'] ?? []))
+            : [];
         unset($validated['problems']);
 
         $validated['release_status'] = 'show';
@@ -601,10 +687,14 @@ class ClientController extends Controller
                 $validated['image'] = $newImage;
             }
 
-            $client = DB::transaction(function () use ($validated, $problems) {
+            $client = DB::transaction(function () use (
+                $validated,
+                $problems,
+                $canAccessSensitiveProblems
+            ) {
                 $client = Client::create($validated);
 
-                if ($problems !== []) {
+                if ($canAccessSensitiveProblems) {
                     $client->problems()->sync($problems);
                 }
 
@@ -644,6 +734,13 @@ class ClientController extends Controller
     public function ClientEdit(Request $request, $id)
     {
         $client = $this->findAuthorizedClient($id);
+        $canAccessSensitiveProblems = $this->canAccessSensitiveProblems(auth()->user());
+
+        // กัน lazy-load ข้อมูลปัญหาใน Blade สำหรับผู้ใช้ที่ไม่มีสิทธิ์
+        if (!$canAccessSensitiveProblems) {
+            $client->setRelation('problems', collect());
+        }
+
         $tab = $request->get('tab', 'profile');
         $allowedTabs = ['profile', 'detail', 'client', 'information', 'family', 'guardian', 'member'];
 
@@ -719,7 +816,8 @@ class ClientController extends Controller
             'origin_provinces',
             'origin_districts',
             'origin_sub_districts',
-            'documents'
+            'documents',
+            'canAccessSensitiveProblems'
         ));
     }
 
@@ -737,7 +835,10 @@ class ClientController extends Controller
         $this->ensureAuthorizedHouseId($validated['house_id']);
         $this->validateTitleForClient($validated);
 
-        $problems = array_values(array_unique($validated['problems'] ?? []));
+        $canAccessSensitiveProblems = $this->canAccessSensitiveProblems(auth()->user());
+        $problems = $canAccessSensitiveProblems
+            ? array_values(array_unique($validated['problems'] ?? []))
+            : [];
         unset($validated['problems']);
 
         $validated['release_status'] = 'show';
@@ -750,9 +851,18 @@ class ClientController extends Controller
                 $validated['image'] = $newImage;
             }
 
-            DB::transaction(function () use ($client, $validated, $problems) {
+            DB::transaction(function () use (
+                $client,
+                $validated,
+                $problems,
+                $canAccessSensitiveProblems
+            ) {
                 $client->update($validated);
-                $client->problems()->sync($problems);
+
+                // ผู้ใช้ที่ไม่มีสิทธิ์แก้ข้อมูลทั่วไปได้ โดยไม่ล้างปัญหาเดิม
+                if ($canAccessSensitiveProblems) {
+                    $client->problems()->sync($problems);
+                }
 
                 CaseActivity::query()
                     ->where('client_id', $client->id)
@@ -796,31 +906,21 @@ class ClientController extends Controller
 
     protected function forceAuthorizedProject(array $validated): array
     {
-        $user = auth()->user();
+        $projectId = (int) ($validated['project_id'] ?? 0);
 
-        if (!$user) {
-            abort(Response::HTTP_FORBIDDEN, 'กรุณาเข้าสู่ระบบ');
+        if ($projectId <= 0) {
+            abort(Response::HTTP_UNPROCESSABLE_ENTITY, 'กรุณาเลือกหน่วยงาน/โครงการ');
         }
 
-        if ($this->isAdminOrExecutive($user)) {
-            return $validated;
-        }
-
-        if (empty($user->project_id)) {
-            abort(Response::HTTP_FORBIDDEN, 'บัญชีของคุณยังไม่ได้กำหนดหน่วยงาน');
-        }
-
-        $validated['project_id'] = (int) $user->project_id;
+        $this->ensureAuthorizedProjectId($projectId);
+        $validated['project_id'] = $projectId;
 
         return $validated;
     }
 
     public function ClientDelete($id)
     {
-        if ((auth()->user()->role ?? null) !== 'admin') {
-            abort(Response::HTTP_FORBIDDEN, 'คุณไม่มีสิทธิ์ลบข้อมูล');
-        }
-
+        // สิทธิ์ delete ถูกตรวจด้วย EnforceFormPermission แล้วทุกบทบาท
         $client = $this->findAuthorizedClient($id);
         $client->update(['release_status' => 'refer']);
 
@@ -833,31 +933,31 @@ class ClientController extends Controller
     public function ClientShowRefer(Request $request)
     {
         $user = auth()->user();
-        $projectId = $request->input('project_id', 'all');
-        $canFilterProjects = $this->isAdminOrExecutive($user);
+        $projects = $this->getAuthorizedProjects();
+        $canFilterProjects = $projects->count() > 1;
+        $projectId = $canFilterProjects ? $request->input('project_id', 'all') : 'all';
+        $canAccessSensitiveProblems = $this->canAccessSensitiveProblems($user);
         $search = Str::substr(trim((string) $request->input('search', '')), 0, 100);
         $perPage = $this->resolvePerPage($request->input('per_page'));
 
-        if ($canFilterProjects) {
-            $filterProjectIds = (!empty($projectId) && $projectId !== 'all')
-                ? [(int) $projectId]
-                : [];
-        } else {
-            $filterProjectIds = [];
-
-            if (method_exists($user, 'projects')) {
-                $filterProjectIds = $user->projects()
-                    ->pluck('projects.id')
-                    ->map(static fn ($id) => (int) $id)
-                    ->all();
-            }
-
-            if ($filterProjectIds === [] && !empty($user->project_id)) {
-                $filterProjectIds = [(int) $user->project_id];
-            }
+        $filterProjectIds = [];
+        if ($canFilterProjects && !empty($projectId) && $projectId !== 'all') {
+            $this->ensureAuthorizedProjectId($projectId);
+            $filterProjectIds = [(int) $projectId];
         }
 
-        $query = Client::query()
+        $clientRelations = [
+            'title:id,title_name',
+        ];
+
+        if ($canAccessSensitiveProblems) {
+            $clientRelations['problems'] = static function ($problemQuery) {
+                $problemQuery->select(['problems.id', 'problems.problem_name'])
+                    ->orderBy('problems.problem_name');
+            };
+        }
+
+        $query = Client::forUser($user)
             ->select([
                 'clients.id',
                 'clients.project_id',
@@ -871,13 +971,7 @@ class ClientController extends Controller
                 'clients.release_status',
                 'clients.created_at',
             ])
-            ->with([
-                'title:id,title_name',
-                'problems' => static function ($problemQuery) {
-                    $problemQuery->select(['problems.id', 'problems.problem_name'])
-                        ->orderBy('problems.problem_name');
-                },
-            ])
+            ->with($clientRelations)
             ->whereIn('release_status', [
                 'show',
                 'refer',
@@ -885,7 +979,7 @@ class ClientController extends Controller
                 'active',
             ]);
 
-        $this->applyClientSearch($query, $search);
+        $this->applyClientSearch($query, $search, $canAccessSensitiveProblems);
 
         if ($filterProjectIds !== []) {
             $query->where(function ($q) use ($filterProjectIds) {
@@ -902,8 +996,6 @@ class ClientController extends Controller
                             });
                     });
             });
-        } elseif (!$canFilterProjects) {
-            $query->whereRaw('1 = 0');
         }
 
         $clients = $query
@@ -911,18 +1003,12 @@ class ClientController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $projects = $canFilterProjects
-            ? Project::query()
-                ->select(['id', 'project_name'])
-                ->orderBy('project_name')
-                ->get()
-            : collect();
-
         return view('backend.client.client_show_refer', compact(
             'clients',
             'projects',
             'projectId',
             'canFilterProjects',
+            'canAccessSensitiveProblems',
             'search',
             'perPage'
         ));
@@ -956,8 +1042,11 @@ class ClientController extends Controller
     /**
      * ค้นหาผู้รับบริการจากฐานข้อมูล ไม่โหลดข้อมูลทั้งหมดเข้าหน้าเว็บ
      */
-    private function applyClientSearch($query, string $search): void
-    {
+    private function applyClientSearch(
+        $query,
+        string $search,
+        bool $includeSensitiveProblems = false
+    ): void {
         if ($search === '') {
             return;
         }
@@ -966,7 +1055,7 @@ class ClientController extends Controller
         $escapedSearch = addcslashes($search, '\\%_');
         $keyword = '%' . $escapedSearch . '%';
 
-        $query->where(function ($searchQuery) use ($keyword) {
+        $query->where(function ($searchQuery) use ($keyword, $includeSensitiveProblems) {
             $searchQuery
                 ->where('clients.register_number', 'like', $keyword)
                 ->orWhere('clients.first_name', 'like', $keyword)
@@ -974,10 +1063,16 @@ class ClientController extends Controller
                 ->orWhereRaw(
                     "CONCAT_WS(' ', clients.first_name, clients.last_name) LIKE ?",
                     [$keyword]
-                )
-                ->orWhereHas('problems', static function ($problemQuery) use ($keyword) {
-                    $problemQuery->where('problems.problem_name', 'like', $keyword);
-                });
+                );
+
+            if ($includeSensitiveProblems) {
+                $searchQuery->orWhereHas(
+                    'problems',
+                    static function ($problemQuery) use ($keyword) {
+                        $problemQuery->where('problems.problem_name', 'like', $keyword);
+                    }
+                );
+            }
         });
     }
 
@@ -989,10 +1084,12 @@ class ClientController extends Controller
         $user = auth()->user();
 
         return [
-            'problems' => Problem::query()
-                ->select(['id', 'problem_name'])
-                ->orderBy('problem_name')
-                ->get(),
+            'problems' => $this->canAccessSensitiveProblems($user)
+                ? Problem::query()
+                    ->select(['id', 'problem_name'])
+                    ->orderBy('problem_name')
+                    ->get()
+                : collect(),
             'nations' => National::query()
                 ->select(['id', 'national_name'])
                 ->orderBy('national_name')
@@ -1021,12 +1118,7 @@ class ClientController extends Controller
                 ->select(['id', 'contact_name'])
                 ->orderBy('contact_name')
                 ->get(),
-            'projects' => $this->isAdminOrExecutive($user)
-                ? Project::query()
-                    ->select(['id', 'project_name'])
-                    ->orderBy('project_name')
-                    ->get()
-                : collect(),
+            'projects' => $this->getAuthorizedProjects(),
             'statuses' => Status::query()
                 ->select(['id', 'status_name'])
                 ->orderBy('id')
@@ -1078,7 +1170,7 @@ class ClientController extends Controller
 
     private function clientValidationRules(?int $clientId = null): array
     {
-        return [
+        $rules = [
             'register_number' => [
                 'nullable',
                 'string',
@@ -1138,10 +1230,19 @@ class ClientController extends Controller
             'house_id' => ['required', 'integer', Rule::exists(House::class, 'id')],
             'status_id' => ['required', 'integer', Rule::exists(Status::class, 'id')],
             'case_resident' => ['required', Rule::in(['Active', 'Inactive'])],
-            'problems' => ['nullable', 'array'],
-            'problems.*' => ['integer', 'distinct', Rule::exists(Problem::class, 'id')],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:2048'],
         ];
+
+        if ($this->canAccessSensitiveProblems(auth()->user())) {
+            $rules['problems'] = ['nullable', 'array'];
+            $rules['problems.*'] = [
+                'integer',
+                'distinct',
+                Rule::exists(Problem::class, 'id'),
+            ];
+        }
+
+        return $rules;
     }
 
     private function clientValidationMessages(): array

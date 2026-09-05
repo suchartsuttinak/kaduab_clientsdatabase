@@ -49,7 +49,7 @@ class FollowupController extends Controller
     public function store(Request $request, $client_id)
     {
         $client = Client::forUser(auth()->user())->findOrFail($client_id);
-        $this->authorizeManage();
+        $this->authorizeAction('create');
 
         $this->normalizeTextInputs($request);
 
@@ -112,7 +112,7 @@ class FollowupController extends Controller
         $followup = $this->scopedFollowupQuery()->findOrFail($id);
         $client = Client::forUser(auth()->user())->findOrFail($followup->client_id);
 
-        $this->authorizeManage();
+        $this->authorizeAction('update');
         $this->normalizeTextInputs($request);
 
         $validator = Validator::make(
@@ -422,11 +422,10 @@ class FollowupController extends Controller
         }
     }
 
-    private function authorizeManage(): void
+    private function authorizeAction(string $action): void
     {
         abort_unless(
-            auth()->check()
-                && in_array(auth()->user()->role, ['admin', 'executive', 'social_worker'], true),
+            auth()->check() && auth()->user()->hasFormPermission('welfare_followup', $action),
             403,
             'คุณไม่มีสิทธิ์ดำเนินการนี้'
         );
@@ -435,7 +434,7 @@ class FollowupController extends Controller
     private function authorizeDelete(): void
     {
         abort_unless(
-            auth()->check() && auth()->user()->role === 'admin',
+            auth()->check() && auth()->user()->canDeleteForm('welfare_followup'),
             403,
             'คุณไม่มีสิทธิ์ลบข้อมูลนี้'
         );

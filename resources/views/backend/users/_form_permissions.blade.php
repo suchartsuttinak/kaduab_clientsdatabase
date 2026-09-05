@@ -6,10 +6,8 @@
         : collect();
     $hasOldPermissionInput = session()->hasOldInput('permissions');
     $oldPermissionValues = old('permissions', []);
-    $permissionsEnabled = (bool) old(
-        'form_permissions_enabled',
-        isset($user) ? (bool) $user->form_permissions_enabled : false
-    );
+    // UNIFIED_ACCESS_SCOPE_V5: ผู้ใช้ที่จัดการผ่านหน้านี้ใช้ permission matrix เสมอ
+    $permissionsEnabled = true;
 @endphp
 
 <div class="col-12">
@@ -27,27 +25,18 @@
                 </div>
             </div>
 
-            <div class="form-check form-switch ufp-enable-switch">
-                <input type="hidden" name="form_permissions_enabled" value="0">
-                <input
-                    class="form-check-input"
-                    type="checkbox"
-                    role="switch"
-                    id="formPermissionsEnabled"
-                    name="form_permissions_enabled"
-                    value="1"
-                    {{ $permissionsEnabled ? 'checked' : '' }}
-                >
-                <label class="form-check-label fw-bold" for="formPermissionsEnabled">
-                    เปิดใช้สิทธิ์รายฟอร์ม
-                </label>
+            <div class="ufp-policy-badge">
+                <input type="hidden" name="form_permissions_enabled" value="1">
+                <i class="bi bi-shield-check"></i>
+                <span>ใช้สิทธิ์รายฟอร์มอัตโนมัติ</span>
             </div>
         </div>
 
         <div class="ufp-legacy-note" id="permissionLegacyNote">
             <i class="bi bi-info-circle-fill"></i>
             <span>
-                เมื่อปิดไว้ ผู้ใช้นี้จะยังทำงานตามบทบาทและ Route เดิม จึงไม่กระทบผู้ใช้งานเดิมระหว่างทยอยเชื่อมระบบ
+                สำหรับผู้ใช้ทุกบทบาทยกเว้น Admin: <strong>ไม่ได้เลือกสิทธิ์ = เมนูไม่แสดงและเข้า Route ไม่ได้</strong>
+                บทบาทใช้บอกหน้าที่ของบุคลากร ส่วนสิทธิ์ด้านล่างเป็นตัวกำหนดเมนูและการกระทำจริง
             </span>
         </div>
 
@@ -390,6 +379,18 @@
     color:#cbd5e1;
     font-weight:700;
 }
+.user-form-page .ufp-policy-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:.45rem;
+    padding:.55rem .85rem;
+    border-radius:999px;
+    background:#ecfdf5;
+    color:#047857;
+    border:1px solid #a7f3d0;
+    font-weight:700;
+    font-size:.86rem;
+}
 @media (max-width:767.98px){
     .user-form-page .ufp-section-head,
     .user-form-page .ufp-group-head{
@@ -420,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const section = document.getElementById('userFormPermissionSection');
     if (!section) return;
 
-    const enabledSwitch = document.getElementById('formPermissionsEnabled');
+    const enabledSwitch = null;
     const groups = document.getElementById('permissionGroups');
     const toolbar = document.getElementById('permissionToolbar');
     const legacyNote = document.getElementById('permissionLegacyNote');
@@ -429,26 +430,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const permissionCheckboxes = [...section.querySelectorAll('.ufp-permission-checkbox')];
 
     function setPermissionEnabledState() {
-        const isEnabled = Boolean(enabledSwitch && enabledSwitch.checked);
-
         permissionCheckboxes.forEach(function (checkbox) {
-            checkbox.disabled = !isEnabled;
+            checkbox.disabled = false;
         });
 
         section.querySelectorAll('[data-permission-global], [data-permission-group-action]').forEach(function (button) {
-            button.disabled = !isEnabled;
+            button.disabled = false;
         });
 
-        groups?.classList.toggle('is-disabled', !isEnabled);
-        toolbar?.classList.toggle('is-disabled', !isEnabled);
-        legacyNote?.classList.toggle('d-none', isEnabled);
+        groups?.classList.remove('is-disabled');
+        toolbar?.classList.remove('is-disabled');
+        legacyNote?.classList.remove('d-none');
     }
 
     function ensureEnabled() {
-        if (enabledSwitch && !enabledSwitch.checked) {
-            enabledSwitch.checked = true;
-            setPermissionEnabledState();
-        }
+        setPermissionEnabledState();
     }
 
     function applySelection(container, mode) {
@@ -507,7 +503,6 @@ document.addEventListener('DOMContentLoaded', function () {
         adminNote?.classList.toggle('d-none', !isAdmin);
     }
 
-    enabledSwitch?.addEventListener('change', setPermissionEnabledState);
     roleSelect?.addEventListener('change', syncAdminNotice);
 
     setPermissionEnabledState();

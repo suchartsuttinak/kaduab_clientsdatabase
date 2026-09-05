@@ -24,7 +24,7 @@ class IndividualDevelopmentTimelineController extends Controller
 
         $canViewAcrossHouses = (method_exists($user, 'isAdmin') && $user->isAdmin())
             || (method_exists($user, 'hasFormPermission') && $user->hasFormPermission('individual_development_center', 'view'));
-        $clientQuery = $canViewAcrossHouses ? Client::query() : Client::forUser($user);
+        $clientQuery = Client::forUser($user);
         $clientModel = $clientQuery->with(['house', 'project'])->findOrFail($client);
         $timeline = $this->timeline->forClient($clientModel->id);
 

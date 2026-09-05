@@ -151,9 +151,93 @@ class User extends Authenticatable
             });
     }
 
+    /**
+     * โครงการเดิมแบบหนึ่งต่อหนึ่ง เก็บไว้เพื่อรองรับข้อมูล/โค้ดเก่า
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * USER_MULTI_PROJECT_SCOPE_V5
+     * ผู้ใช้งานหนึ่งบัญชีสามารถรับผิดชอบได้หลายหน่วยงาน/โครงการ
+     */
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_user', 'user_id', 'project_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * คืน project id ที่ "กำหนดไว้จริง" ให้บัญชี
+     * [] หมายถึงไม่ได้จำกัดหน่วยงาน = ทุกหน่วยงาน
+     *
+     * รองรับ project_id เดิมในช่วงเปลี่ยนผ่านเพื่อไม่ให้สิทธิ์เก่าหาย
+     */
+    public function assignedProjectIds(): array
+    {
+        if ($this->isAdmin()) {
+            return [];
+        }
+
+        $ids = [];
+
+        try {
+            $this->loadMissing('projects');
+            $ids = $this->projects
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->filter(fn ($id) => $id > 0)
+                ->unique()
+                ->values()
+                ->toArray();
+        } catch (\Throwable) {
+            // ระหว่าง deploy ก่อน migrate ให้ fallback project_id เดิมได้
+            $ids = [];
+        }
+
+        if ($ids === [] && !empty($this->project_id)) {
+            $ids = [(int) $this->project_id];
+        }
+
+        return $ids;
+    }
+
+    public function hasProjectRestriction(): bool
+    {
+        return !$this->isAdmin() && $this->assignedProjectIds() !== [];
+    }
+
+    /**
+     * project ที่บัญชีเข้าถึงได้จริง
+     * - Admin: ทุกโครงการ
+     * - ไม่ได้เลือก project: ทุกโครงการ
+     * - เลือก 1+ project: เฉพาะที่เลือก
+     */
+    public function accessibleProjectIds(): array
+    {
+        if ($this->isAdmin() || !$this->hasProjectRestriction()) {
+            return Project::query()
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->toArray();
+        }
+
+        return $this->assignedProjectIds();
+    }
+
+    public function canAccessProject(int|string|null $projectId): bool
+    {
+        if ($this->isAdmin() || !$this->hasProjectRestriction()) {
+            return true;
+        }
+
+        if (empty($projectId)) {
+            return false;
+        }
+
+        return in_array((int) $projectId, $this->assignedProjectIds(), true);
     }
 
     public function operations(): HasMany
@@ -175,46 +259,73 @@ class User extends Authenticatable
     }
 
     /**
-     * คืนค่า id บ้านทั้งหมดที่ user มีสิทธิ์
-     * admin = เห็นทุกบ้าน
+     * USER_MULTI_PROJECT_SCOPE_V5
+     * คืน house id ที่กำหนดไว้จริง
+     * [] หมายถึงไม่ได้จำกัดบ้าน = ทุกบ้าน
+     */
+    public function assignedHouseIds(): array
+    {
+        if ($this->isAdmin()) {
+            return [];
+        }
+
+        $this->loadMissing('houses');
+
+        $ids = $this->houses
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->toArray();
+
+        // รองรับ house_id เดิม เมื่อระบบเก่ายังไม่ได้ย้ายเข้าตาราง house_user
+        if ($ids === [] && !empty($this->house_id)) {
+            $ids = [(int) $this->house_id];
+        }
+
+        return $ids;
+    }
+
+    public function hasHouseRestriction(): bool
+    {
+        return !$this->isAdmin() && $this->assignedHouseIds() !== [];
+    }
+
+    /**
+     * คืนบ้านทั้งหมดที่ผู้ใช้เข้าถึงได้จริง
+     * - Admin: ทุกบ้าน
+     * - ไม่ได้เลือกบ้าน: ทุกบ้าน
+     * - เลือกบ้าน 1+ หลัง: เฉพาะบ้านที่เลือก
      */
     public function accessibleHouseIds(): array
     {
-        if ($this->isAdmin()) {
+        if ($this->isAdmin() || !$this->hasHouseRestriction()) {
             return House::query()
                 ->pluck('id')
                 ->map(fn ($id) => (int) $id)
                 ->toArray();
         }
 
-        $this->loadMissing('houses');
-
-        return $this->houses
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->toArray();
+        return $this->assignedHouseIds();
     }
 
-    /**
-     * ตรวจว่าผู้ใช้มีสิทธิ์เข้าถึงบ้านนี้หรือไม่
-     */
     public function canAccessHouse(int|string|null $houseId): bool
     {
+        if ($this->isAdmin() || !$this->hasHouseRestriction()) {
+            return true;
+        }
+
         if (empty($houseId)) {
             return false;
         }
 
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        return in_array((int) $houseId, $this->accessibleHouseIds(), true);
+        return in_array((int) $houseId, $this->assignedHouseIds(), true);
     }
 
     /**
-     * ตรวจว่าผู้ใช้มีบ้านในความดูแลหรือไม่
+     * คงชื่อ method เดิมไว้สำหรับ compatibility
+     * หมายถึงมีการ "เลือกจำกัดบ้าน" จริง ไม่ใช่การเข้าถึงบ้านได้หรือไม่
      */
     public function hasAssignedHouses(): bool
     {
@@ -222,26 +333,22 @@ class User extends Authenticatable
             return true;
         }
 
-        $this->loadMissing('houses');
-
-        return $this->houses->isNotEmpty();
+        return $this->assignedHouseIds() !== [];
     }
 
     /**
-     * ตรวจสิทธิ์รายฟอร์ม
+     * UNIFIED_ACCESS_SCOPE_V5
+     * ตรวจสิทธิ์รายฟอร์มแบบ Default Deny สำหรับผู้ใช้ทุกบทบาท ยกเว้น Admin
      *
-     * หลักการเพื่อไม่ให้กระทบระบบเดิม:
-     * - admin ผ่านทุกสิทธิ์เสมอ
-     * - หาก form_permissions_enabled = false ให้ใช้ระบบ role/route เดิมต่อไป
-     * - เมื่อเปิดใช้งานแล้ว สิทธิ์ที่ไม่ได้กำหนดจะถือว่าไม่อนุญาต
+     * - Admin: ผ่านทุกสิทธิ์เสมอ
+     * - ผู้บริหาร / นักสังคม / ครู / พยาบาล / เจ้าหน้าที่ / ผู้ใช้ทั่วไป:
+     *   ต้องได้รับสิทธิ์ใน user_form_permissions โดยตรง
+     * - form_permissions_enabled คงไว้เพื่อ compatibility กับฐานข้อมูลเดิม
+     *   แต่ไม่ใช้เป็นช่องทาง bypass สิทธิ์อีกต่อไป
      */
     public function hasFormPermission(string $permissionKey, string $action = 'view'): bool
     {
         if ($this->isAdmin()) {
-            return true;
-        }
-
-        if (!$this->form_permissions_enabled) {
             return true;
         }
 

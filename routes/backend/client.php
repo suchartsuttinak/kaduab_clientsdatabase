@@ -42,7 +42,11 @@ Route::middleware('auth')->group(function () {
     // =====================================================
     // CREATE / EDIT CLIENT
     // =====================================================
-    Route::middleware('role:admin,executive,social_worker')->group(function () {
+    /*
+     * เพิ่มผู้รับบริการ/เปลี่ยนสถานะ:
+     * ใช้สิทธิ์รายฟอร์มเป็นตัวกำหนด view/create/update สำหรับทุกบทบาทที่ไม่ใช่ Admin
+     */
+    Route::group([], function () {
 
         Route::get('/client/add', [ClientController::class, 'clientAdd'])
             ->name('client.add');
@@ -50,21 +54,26 @@ Route::middleware('auth')->group(function () {
         Route::post('/client/store', [ClientController::class, 'ClientStore'])
             ->name('client.store');
 
-        Route::get('/client/edit/{id}', [ClientController::class, 'ClientEdit'])
-            ->name('client.edit');
-
-        Route::post('/client/update', [ClientController::class, 'ClientUpdate'])
-            ->name('client.update');
-
         Route::post('/client/change-status/{id}', [ClientController::class, 'changeStatus'])
             ->name('client.changeStatus');
     });
 
+    /*
+     * เปิด GET หน้าแก้ไขให้ผู้ใช้ที่มีสิทธิ์ view เข้าดูได้แบบ read-only
+     * และให้ EnforceFormPermission / CheckFormPermission เป็นผู้ตัดสินสิทธิ์ update
+     * แทนการบล็อกทั้งหน้าด้วย role middleware
+     */
+    Route::get('/client/edit/{id}', [ClientController::class, 'ClientEdit'])
+        ->name('client.edit');
+
+    Route::post('/client/update', [ClientController::class, 'ClientUpdate'])
+        ->name('client.update');
+
    
         // TRANSFER CASE
         // =====================================================
-        // EPC_PROJECT_TRANSFER_EXECUTIVE_V1: Admin/Executive + form permission
-        Route::middleware('role:admin,executive')->group(function () {
+        // UNIFIED_ACCESS_SCOPE_V5: ใช้ permission + Project/House scope ไม่ผูกกับชื่อบทบาท
+        Route::group([], function () {
 
             Route::get('/client/transfers', [ClientTransferController::class, 'index'])
                 ->name('client.transfers');
@@ -85,7 +94,7 @@ Route::middleware('auth')->group(function () {
             // =====================================================
             // DELETE
             // =====================================================
-            Route::middleware('role:admin')->group(function () {
+            Route::group([], function () {
 
                 Route::delete('/client/delete/{id}', [ClientController::class, 'ClientDelete'])
                     ->name('client.delete');

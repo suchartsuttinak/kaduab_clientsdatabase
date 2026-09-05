@@ -41,9 +41,9 @@ class SpecialChildReportController extends Controller
         // Defense-in-depth: แม้ config route permission ยังถูก cache อยู่ ก็ไม่เปิดข้อมูลให้ผู้ไม่มีสิทธิ์
         if (method_exists($user, 'canViewForm')) {
             abort_unless(
-                $user->canViewForm('health_body_check'),
+                $user->canViewForm('report_special_children'),
                 403,
-                'บัญชีนี้ไม่มีสิทธิ์ดูข้อมูลการตรวจร่างกาย'
+                'บัญชีนี้ไม่มีสิทธิ์ดูรายงานเด็กกลุ่มพิเศษ'
             );
         }
 
@@ -114,7 +114,7 @@ class SpecialChildReportController extends Controller
         $houses = $this->accessibleHouses($user);
 
         $canPrint = method_exists($user, 'canPrintForm')
-            ? (bool) $user->canPrintForm('health_body_check')
+            ? (bool) $user->canPrintForm('report_special_children')
             : false;
 
         $supportTypes = collect(self::SUPPORT_TYPES)->mapWithKeys(

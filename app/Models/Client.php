@@ -291,53 +291,77 @@ class Client extends Model
     |--------------------------------------------------------------------------
     */
 
-  public function scopeForUser(Builder $query, $user): Builder
-{
-    if (!$user) {
-        return $query->whereRaw('1 = 0');
-    }
+    /**
+     * USER_MULTI_PROJECT_SCOPE_V5
+     *
+     * ขอบเขตข้อมูลผู้รับบริการ:
+     * - Admin: เห็นทั้งหมด และไม่ต้องกำหนด Project / House
+     * - ผู้ใช้อื่นทุกบทบาท: ใช้กติกาเดียวกัน
+     * - ไม่เลือก Project: ไม่จำกัด Project = ทุกหน่วยงาน
+     * - เลือก Project 1+ รายการ: เฉพาะ Project ที่เลือก
+     * - ไม่เลือก House: ไม่จำกัด House = ทุกบ้าน
+     * - เลือก House 1+ รายการ: เฉพาะ House ที่เลือก
+     * - เมื่อเลือกทั้ง Project และ House: ใช้เงื่อนไข AND
+     */
+    public function scopeForUser(Builder $query, $user): Builder
+    {
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
 
-    // admin / executive เห็นทั้งหมด
-    if (
-        (method_exists($user, 'isAdmin') && $user->isAdmin()) ||
-        (method_exists($user, 'isExecutive') && $user->isExecutive()) ||
-        in_array(($user->role ?? null), ['admin', 'executive'], true)
-    ) {
+        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+            return $query;
+        }
+
+        $projectIds = method_exists($user, 'assignedProjectIds')
+            ? $user->assignedProjectIds()
+            : (!empty($user->project_id) ? [(int) $user->project_id] : []);
+
+        $houseIds = method_exists($user, 'assignedHouseIds')
+            ? $user->assignedHouseIds()
+            : [];
+
+        if ($houseIds === [] && !empty($user->house_id)) {
+            $houseIds = [(int) $user->house_id];
+        }
+
+        if ($projectIds !== []) {
+            $query->whereIn('clients.project_id', $projectIds);
+        }
+
+        if ($houseIds !== []) {
+            $query->whereIn('clients.house_id', $houseIds);
+        }
+
         return $query;
     }
 
-    if (method_exists($user, 'loadMissing')) {
-        $user->loadMissing('houses');
+    /**
+     * ขอบเขตเฉพาะ Project สำหรับโมดูลส่วนกลางที่ตั้งใจให้ดูข้ามบ้าน
+     * เช่น ศูนย์กลางการพัฒนาเด็ก เมื่อได้รับ permission เฉพาะของโมดูลนั้น
+     */
+    public function scopeForProjectScope(Builder $query, $user): Builder
+    {
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+            return $query;
+        }
+
+        $projectIds = method_exists($user, 'assignedProjectIds')
+            ? $user->assignedProjectIds()
+            : (!empty($user->project_id) ? [(int) $user->project_id] : []);
+
+        if ($projectIds !== []) {
+            $query->whereIn('clients.project_id', $projectIds);
+        }
+
+        return $query;
     }
 
-    // มีสิทธิ์ตามบ้าน
-    if (isset($user->houses) && $user->houses && $user->houses->isNotEmpty()) {
-
-        $houseIds = $user->houses
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->toArray();
-
-        return $query->whereIn('house_id', $houseIds);
-    }
-
-    // fallback บ้านเดี่ยว
-    if (!empty($user->house_id)) {
-        return $query->where('house_id', (int) $user->house_id);
-    }
-
-    // กรณีมี project_id แต่ไม่มีบ้าน
-    if (!empty($user->project_id)) {
-        return $query->where('project_id', (int) $user->project_id);
-    }
-
-    // ไม่มีสิทธิ์ใดเลย
-    return $query->whereRaw('1 = 0');
-}
-
-        // ความสัมพันธ์กับ Followup (ติดตามผล)
+// ความสัมพันธ์กับ Followup (ติดตามผล)
     public function followups()
 {
     return $this->hasMany(\App\Models\Followup::class, 'client_id');

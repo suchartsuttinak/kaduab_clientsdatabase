@@ -1,6 +1,9 @@
 @extends('admin.admin_master')
 
 @section('admin')
+@php
+    $canApproveTransfer = (bool) (auth()->user()?->canUpdateForm('registration_project_transfer') ?? false);
+@endphp
 <div class="container-fluid py-4">
 
     <div class="card shadow-sm border-0 rounded-4">
@@ -25,6 +28,7 @@
                                 <th>วันที่ย้าย</th>
                                 <th>ผู้ขอ</th>
                                 <th>ผู้อนุมัติ</th>
+                                @if($canApproveTransfer)<th class="text-center">จัดการ</th>@endif
                             </tr>
                         </thead>
                         <tbody>
@@ -53,6 +57,28 @@
                                     </td>
                                     <td>{{ optional($transfer->requestedBy)->name ?? '-' }}</td>
                                     <td>{{ optional($transfer->approvedBy)->name ?? '-' }}</td>
+                                    @if($canApproveTransfer)
+                                        <td class="text-center text-nowrap">
+                                            @if($transfer->status === 'pending')
+                                                <form method="POST" action="{{ route('client.transfer.approve', $transfer->id) }}" class="d-inline" onsubmit="return confirm('ยืนยันอนุมัติการย้ายผู้รับบริการไปยังหน่วยงาน/โครงการปลายทาง?')">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                        <i class="bi bi-check-circle me-1"></i>อนุมัติ
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ route('client.transfer.reject', $transfer->id) }}" class="d-inline ms-1" onsubmit="return confirm('ยืนยันไม่อนุมัติคำขอย้ายรายการนี้?')">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-x-circle me-1"></i>ไม่อนุมัติ
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <span class="text-muted">—</span>
+                                            @endif
+                                        </td>
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>

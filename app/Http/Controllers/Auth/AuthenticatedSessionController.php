@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Support\FormPermissionMenu;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -28,19 +29,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // [SECURITY / UX]
-        // หลังล็อกอินให้แยกปลายทางตามสิทธิ์ผู้ใช้
-        // - admin / executive / social_worker -> ไปหน้า dashboard
-        // - role อื่นทั้งหมด -> ไปหน้า client.show
+        // USER_PERMISSION_VISIBILITY_FIX_V2:
+        // หลังล็อกอินเลือกหน้าแรกจากสิทธิ์จริง ไม่บังคับครู/ผู้ดูแลไปหน้า client.show
         $user = Auth::user();
+        $routeName = FormPermissionMenu::firstAccessibleRouteName($user);
 
-        if ($user && in_array($user->role, ['admin', 'executive', 'social_worker'])) {
-            // ผู้มีสิทธิ์เข้าหน้าสถิติ
-            return redirect()->intended(route('dashboard', absolute: false));
-        }
+        // PERMISSION_LANDING_LOGOUT_FIX_V3:
+        // ไม่ใช้ redirect()->intended() เพราะ URL ค้างใน session (เช่น /profile)
+        // สามารถพาผู้ใช้ไปหน้าที่ไม่ได้ตั้งใจหลัง Login ได้
+        $request->session()->forget('url.intended');
 
-        // ผู้ใช้ที่ไม่มีสิทธิ์เข้าหน้าสถิติ ให้ไปหน้ารายชื่อผู้รับบริการแทน
-        return redirect()->intended(route('client.show', absolute: false));
+        return redirect()->route($routeName);
     }
 
     /**

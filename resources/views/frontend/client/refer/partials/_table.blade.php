@@ -1,5 +1,5 @@
 @php
-    $canApproveRefer = auth()->check() && in_array(auth()->user()->role, ['admin', 'executive'], true);
+    $canApproveRefer = (bool) (auth()->user()?->canUpdateForm('welfare_discharge') ?? false);
     $hasReferRows = isset($refers) && $refers->isNotEmpty();
     $canCreateRefer = $canCreateRefer ?? !in_array($client->release_status, ['pending_refer', 'refer'], true);
 @endphp

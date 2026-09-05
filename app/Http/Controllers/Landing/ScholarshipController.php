@@ -276,14 +276,6 @@ class ScholarshipController extends Controller
             abort(403);
         }
 
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        if (!$user->isExecutive()) {
-            abort(403, 'บัญชีนี้ไม่มีสิทธิ์จัดการผู้สนับสนุนทุนการศึกษา');
-        }
-
         if (!$user->hasFormPermission('dashboard_scholarship_sponsors', $action)) {
             abort(403, 'บัญชีนี้ไม่ได้รับสิทธิ์สำหรับการดำเนินการด้านผู้สนับสนุนทุนการศึกษา');
         }

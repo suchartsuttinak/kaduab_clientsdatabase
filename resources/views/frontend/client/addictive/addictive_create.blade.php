@@ -808,23 +808,14 @@
     ];
 
     $permissionUser = auth()->user();
-    $fallbackWriteRoles = ['admin', 'executive', 'social_worker'];
 
-    $canAddictiveCreate = $permissionUser && method_exists($permissionUser, 'canCreateForm')
-        ? $permissionUser->canCreateForm('health_addictive')
-        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
+    $canAddictiveCreate = (bool) ($permissionUser?->canCreateForm('health_addictive') ?? false);
 
-    $canAddictiveUpdate = $permissionUser && method_exists($permissionUser, 'canUpdateForm')
-        ? $permissionUser->canUpdateForm('health_addictive')
-        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
+    $canAddictiveUpdate = (bool) ($permissionUser?->canUpdateForm('health_addictive') ?? false);
 
-    $canAddictiveDelete = $permissionUser && method_exists($permissionUser, 'canDeleteForm')
-        ? $permissionUser->canDeleteForm('health_addictive')
-        : $permissionUser?->role === 'admin';
+    $canAddictiveDelete = (bool) ($permissionUser?->canDeleteForm('health_addictive') ?? false);
 
-    $canAddictivePrint = $permissionUser && method_exists($permissionUser, 'canPrintForm')
-        ? $permissionUser->canPrintForm('health_addictive')
-        : true;
+    $canAddictivePrint = (bool) ($permissionUser?->canPrintForm('health_addictive') ?? false);
 
     $isAddictiveReadOnly = !$canAddictiveCreate && !$canAddictiveUpdate && !$canAddictiveDelete;
     $hasAddictiveData = $hasAddictiveRows;

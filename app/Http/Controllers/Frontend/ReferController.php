@@ -134,7 +134,7 @@ class ReferController extends Controller
         }
 
         $canAutoApprove = auth()->check()
-            && in_array(auth()->user()->role, ['admin', 'executive'], true);
+            && auth()->user()->canUpdateForm('welfare_discharge');
 
         $uploadedAbsolutePath = null;
 
@@ -273,7 +273,7 @@ class ReferController extends Controller
     public function approve($id)
     {
         abort_unless(
-            auth()->check() && in_array(auth()->user()->role, ['admin', 'executive'], true),
+            auth()->check() && auth()->user()->canUpdateForm('welfare_discharge'),
             403,
             'คุณไม่มีสิทธิ์อนุมัติการจำหน่าย'
         );
@@ -367,7 +367,7 @@ class ReferController extends Controller
     public function restore($id)
     {
         abort_unless(
-            auth()->check() && in_array(auth()->user()->role, ['admin', 'executive'], true),
+            auth()->check() && auth()->user()->canUpdateForm('welfare_discharge'),
             403,
             'คุณไม่มีสิทธิ์คืนสถานะ'
         );
@@ -572,7 +572,7 @@ class ReferController extends Controller
     public function allRefers(Request $request)
     {
         abort_unless(
-            auth()->check() && in_array(auth()->user()->role, ['admin', 'executive'], true),
+            auth()->check() && auth()->user()->canViewForm('report_discharge_all'),
             403,
             'คุณไม่มีสิทธิ์เข้าถึงตารางการจำหน่ายรวม'
         );

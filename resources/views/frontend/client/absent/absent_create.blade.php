@@ -875,19 +875,10 @@
         ->contains(fn ($field) => $errors->has($field));
 
     $permissionUser = auth()->user();
-    $fallbackWriteRoles = ['admin', 'executive', 'social_worker'];
-    $canAbsentCreate = $permissionUser && method_exists($permissionUser, 'canCreateForm')
-        ? $permissionUser->canCreateForm('education_absence')
-        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
-    $canAbsentUpdate = $permissionUser && method_exists($permissionUser, 'canUpdateForm')
-        ? $permissionUser->canUpdateForm('education_absence')
-        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
-    $canAbsentDelete = $permissionUser && method_exists($permissionUser, 'canDeleteForm')
-        ? $permissionUser->canDeleteForm('education_absence')
-        : $permissionUser?->role === 'admin';
-    $canAbsentPrint = $permissionUser && method_exists($permissionUser, 'canPrintForm')
-        ? $permissionUser->canPrintForm('education_absence')
-        : true;
+    $canAbsentCreate = (bool) ($permissionUser?->canCreateForm('education_absence') ?? false);
+    $canAbsentUpdate = (bool) ($permissionUser?->canUpdateForm('education_absence') ?? false);
+    $canAbsentDelete = (bool) ($permissionUser?->canDeleteForm('education_absence') ?? false);
+    $canAbsentPrint = (bool) ($permissionUser?->canPrintForm('education_absence') ?? false);
 
     $absentReadonlyRecords = $absents->mapWithKeys(function ($item) {
         return [$item->id => [

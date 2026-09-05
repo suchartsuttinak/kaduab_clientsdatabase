@@ -160,7 +160,7 @@
                                                 <span>แก้ไข</span>
                                             </a>
 
-                                            @if (auth()->user()->role === 'admin')
+                                            @if (auth()->user()?->canDeleteForm('screening_nutrition'))
                                                 <form action="{{ route('nutrition_assessments.destroy', [$client->id, $item->id]) }}"
                                                       method="POST"
                                                       class="delete-form m-0">

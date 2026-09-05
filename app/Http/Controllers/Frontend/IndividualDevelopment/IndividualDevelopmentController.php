@@ -585,7 +585,7 @@ class IndividualDevelopmentController extends Controller
         $canViewAcrossHouses = (method_exists($user, 'isAdmin') && $user->isAdmin())
             || (method_exists($user, 'hasFormPermission') && $user->hasFormPermission('individual_development_center', 'view'));
 
-        $query = $canViewAcrossHouses ? Client::query() : Client::forUser($user);
+        $query = Client::forUser($user);
         return $query->with(['house', 'project', 'target'])->findOrFail($clientId);
     }
 

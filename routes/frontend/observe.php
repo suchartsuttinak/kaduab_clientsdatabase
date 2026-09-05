@@ -1,7 +1,34 @@
 <?php
 
 use App\Http\Controllers\Frontend\ObserveController;
+use App\Http\Controllers\Frontend\ObserveReferralCenterController;
 use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| ศูนย์รับเคสพฤติกรรมที่ส่งต่อ
+|--------------------------------------------------------------------------
+| เปิดดูข้ามบ้านเฉพาะเคสที่ถูกส่งต่อแล้ว และตรวจสิทธิ์ซ้ำใน Controller
+*/
+Route::prefix('observe/referrals')
+    ->middleware([
+        'auth',
+        'prevent-back',
+        'form-permissions-explicit',
+    ])
+    ->group(function () {
+        Route::get('/', [ObserveReferralCenterController::class, 'index'])
+            ->name('observe.referrals.index');
+        Route::get('/{id}', [ObserveReferralCenterController::class, 'show'])
+            ->whereNumber('id')
+            ->name('observe.referrals.show');
+        Route::post('/{id}/accept', [ObserveReferralCenterController::class, 'accept'])
+            ->whereNumber('id')
+            ->name('observe.referrals.accept');
+        Route::put('/{id}/assign', [ObserveReferralCenterController::class, 'assign'])
+            ->whereNumber('id')
+            ->name('observe.referrals.assign');
+    });
 
 // Routes สำหรับพฤติกรรม (Observe)
 Route::prefix('observe')->group(function () {
@@ -21,8 +48,10 @@ Route::prefix('observe')->group(function () {
     Route::delete('/followup/delete/{id}', [ObserveController::class, 'DeleteFollowup'])->name('observe.followup.delete');
 
     // การช่วยเหลือหลังส่งต่อ: นักสังคมสงเคราะห์ / ผู้บริหาร / Admin เท่านั้น (ตรวจซ้ำใน Controller)
-    Route::post('/referral/store', [ObserveController::class, 'StoreReferralRound'])->name('observe.referral.store');
-    Route::put('/referral/update/{id}', [ObserveController::class, 'UpdateReferralRound'])->name('observe.referral.update');
-    Route::delete('/referral/delete/{id}', [ObserveController::class, 'DeleteReferralRound'])->name('observe.referral.delete');
-    Route::get('/referral/report/{id}', [ObserveController::class, 'ReportReferral'])->name('observe.referral.report');
+    Route::middleware(['auth'])->group(function () {
+        Route::post('/referral/store', [ObserveController::class, 'StoreReferralRound'])->name('observe.referral.store');
+        Route::put('/referral/update/{id}', [ObserveController::class, 'UpdateReferralRound'])->name('observe.referral.update');
+        Route::delete('/referral/delete/{id}', [ObserveController::class, 'DeleteReferralRound'])->name('observe.referral.delete');
+        Route::get('/referral/report/{id}', [ObserveController::class, 'ReportReferral'])->name('observe.referral.report');
+    });
 });

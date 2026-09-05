@@ -2,6 +2,7 @@
     use Illuminate\Support\Facades\Request;
     use Illuminate\Support\Facades\Route;
     use Illuminate\Support\Str;
+    use App\Support\BehaviorReferralCenter;
     use App\Support\FormPermissionMenu;
 
     $permissionMenu = FormPermissionMenu::forUser(auth()->user());
@@ -128,6 +129,12 @@
         || Request::routeIs('case-activities.*')
         || Request::routeIs('idstation.*')
         || Request::routeIs('counseling.*');
+
+    $canViewBehaviorReferralCenter = Route::has('observe.referrals.index')
+        && BehaviorReferralCenter::canAccess(auth()->user());
+    $behaviorReferralSummary = $canViewBehaviorReferralCenter
+        ? BehaviorReferralCenter::summary()
+        : ['actionable' => 0];
 
     $isStatelessClient = $sidebarClient
         && optional($sidebarClient->target)->target_name === 'บุคคลไม่มีสถานะทางทะเบียน';
@@ -574,7 +581,16 @@
 
 
                                 @if ($clientId && $canForm('welfare_behavior_problem'))
-                                    <li><a href="{{ route('observe.create', $clientId) }}" class="tp-link {{ Request::routeIs('observe.*') ? 'active' : '' }}">บันทึกปัญหาพฤติกรรม</a></li>
+                                    <li><a href="{{ route('observe.create', $clientId) }}" class="tp-link {{ Request::routeIs('observe.*') && !Request::routeIs('observe.referrals.*') ? 'active' : '' }}">บันทึกปัญหาพฤติกรรม</a></li>
+                                @endif
+
+                                @if ($canViewBehaviorReferralCenter)
+                                    <li>
+                                        <a href="{{ route('observe.referrals.index') }}" class="tp-link {{ Request::routeIs('observe.referrals.*') ? 'active' : '' }}">
+                                            เคสพฤติกรรมที่ส่งต่อ
+                                            @if(($behaviorReferralSummary['actionable'] ?? 0) > 0)<span class="badge rounded-pill bg-danger ms-1">{{ $behaviorReferralSummary['actionable'] > 99 ? '99+' : $behaviorReferralSummary['actionable'] }}</span>@endif
+                                        </a>
+                                    </li>
                                 @endif
 
                                 @if ($clientId && $canForm('welfare_escape'))

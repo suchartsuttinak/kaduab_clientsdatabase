@@ -9,14 +9,7 @@ $schoolFollowTypeLabels = [
 ];
 
 $schoolFollowupPermissionUser = auth()->user();
-$schoolFollowupFallbackWriteRoles = ['admin', 'executive', 'social_worker'];
-$canCreateSchoolFollowup = $schoolFollowupPermissionUser
-    ? (
-        method_exists($schoolFollowupPermissionUser, 'canCreateForm')
-            ? $schoolFollowupPermissionUser->canCreateForm('education_followup')
-            : in_array($schoolFollowupPermissionUser->role, $schoolFollowupFallbackWriteRoles, true)
-    )
-    : false;
+$canCreateSchoolFollowup = (bool) ($schoolFollowupPermissionUser?->canCreateForm('education_followup') ?? false);
 @endphp
 <div class="container-fluid ut-page"><div class="ut-wrap py-3">@include('university.partials.flash')
 <div class="ut-card ut-header"><div class="ut-title-row"><div class="ut-icon"><i class="bi bi-journal-check"></i></div><div><h1 class="ut-title">ผลการเรียน ปี {{ $record->year_level }} · ภาค {{ $record->term }}/{{ $record->academic_year }}</h1><p class="ut-subtitle">@include('university.partials.client_name',['client'=>$client]) · {{ data_get($record,'educationRecord.school_name',$enrollment->university_name) }}</p></div></div><div class="ut-actions ut-no-print">@if($universityPermissions['print'])<a class="ut-btn ut-btn-light" href="{{ route('university.reports.semester',$record->id) }}"><i class="bi bi-printer"></i> รายงานภาคเรียน</a>@endif @if($universityPermissions['update'])<a class="ut-btn ut-btn-warning" href="{{ route('university.semesters.edit',$record->id) }}"><i class="bi bi-pencil-square"></i> แก้ไข</a>@endif @if($universityPermissions['delete'])<form method="POST" action="{{ route('university.semesters.destroy',$record->id) }}" class="ut-delete-form d-inline" data-message="ลบข้อมูลภาคเรียน รายวิชา และ PDF ของภาคเรียนนี้หรือไม่?">@csrf @method('DELETE')<button class="ut-btn ut-btn-danger"><i class="bi bi-trash"></i> ลบ</button></form>@endif <a class="ut-btn ut-btn-light" href="{{ route('university.enrollments.show',$enrollment->id) }}"><i class="bi bi-arrow-left"></i> กลับ</a></div></div>

@@ -206,8 +206,12 @@ class AppServiceProvider extends ServiceProvider
             $upcomingAppointmentItems = collect();
 
             if (auth()->check()) {
-                $authorizedClientIds = Client::forUser(auth()->user())
-                    ->pluck('id');
+                $user = auth()->user();
+                $authorizedClientIds = Client::forUser($user)->pluck('id');
+                $canRefer = $user->canViewForm('welfare_discharge');
+                $canAbsence = $user->canViewForm('education_absence');
+                $canMedical = $user->canViewForm('health_medical');
+                $canPsychiatric = $user->canViewForm('health_psychiatric');
 
                 /*
                 |--------------------------------------------------------------------------
@@ -215,7 +219,8 @@ class AppServiceProvider extends ServiceProvider
                 |--------------------------------------------------------------------------
                 */
                 if (
-                    class_exists(Refer::class)
+                    $canRefer
+                    && class_exists(Refer::class)
                     && Schema::hasTable('refers')
                 ) {
                     $pendingReferItems = Refer::with('client')
@@ -240,7 +245,8 @@ class AppServiceProvider extends ServiceProvider
                 |--------------------------------------------------------------------------
                 */
                 if (
-                    class_exists(Absent::class)
+                    $canAbsence
+                    && class_exists(Absent::class)
                     && Schema::hasTable('absents')
                     && Schema::hasColumn('absents', 'absent_date')
                 ) {
@@ -260,7 +266,8 @@ class AppServiceProvider extends ServiceProvider
                 |--------------------------------------------------------------------------
                 */
                 if (
-                    class_exists(Medical::class)
+                    $canMedical
+                    && class_exists(Medical::class)
                     && Schema::hasTable('medicals')
                     && Schema::hasColumn('medicals', 'medical_date')
                 ) {
@@ -280,7 +287,8 @@ class AppServiceProvider extends ServiceProvider
                 |--------------------------------------------------------------------------
                 */
                 if (
-                    class_exists(Medical::class)
+                    $canMedical
+                    && class_exists(Medical::class)
                     && Schema::hasTable('medicals')
                     && Schema::hasColumn('medicals', 'appointment_date')
                 ) {
@@ -308,7 +316,8 @@ class AppServiceProvider extends ServiceProvider
                 |--------------------------------------------------------------------------
                 */
                 if (
-                    class_exists(Psychiatric::class)
+                    $canPsychiatric
+                    && class_exists(Psychiatric::class)
                     && Schema::hasTable('psychiatrics')
                     && Schema::hasColumn('psychiatrics', 'appoin_date')
                 ) {

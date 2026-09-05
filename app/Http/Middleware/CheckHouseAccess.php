@@ -15,19 +15,18 @@ class CheckHouseAccess
      */
     public function handle(Request $request, Closure $next): Response
     {
-         $user = auth()->user();
+        $user = $request->user();
 
-    if (!$user) {
-        abort(403);
-    }
+        if (!$user) {
+            abort(403);
+        }
 
-    // ถ้ามี house_id ใน request
-    if ($request->route('house_id')) {
-        if (!$user->houses->pluck('id')->contains($request->house_id)) {
+        // UNIFIED_ACCESS_SCOPE_V5: ใช้กฎบ้านเดียวกับ Client::forUser()
+        $houseId = $request->route('house_id');
+        if ($houseId !== null && !$user->canAccessHouse($houseId)) {
             abort(403, 'คุณไม่มีสิทธิ์เข้าถึงบ้านนี้');
         }
-    }
 
-    return $next($request);
+        return $next($request);
     }
 }

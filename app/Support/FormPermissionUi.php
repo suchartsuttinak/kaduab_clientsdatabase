@@ -26,12 +26,9 @@ final class FormPermissionUi
             return self::disabledState($routeName);
         }
 
-        $enabled = (bool) ($user->form_permissions_enabled ?? false);
-
-        if (!$enabled) {
-            return self::disabledState($routeName);
-        }
-
+        // UNIFIED_ACCESS_SCOPE_V5:
+        // สิทธิ์รายฟอร์มเป็นระบบหลักสำหรับผู้ใช้ทุกบทบาท (Admin bypass ใน User model)
+        // จึงไม่ปิด Permission UI ตาม flag legacy form_permissions_enabled อีกต่อไป
         $currentRule = $routeName ? self::findRule($routeName) : null;
 
         if ($currentRule === null) {
@@ -221,13 +218,24 @@ final class FormPermissionUi
             ));
 
             $allowed = self::isAllowed($user, $permissionKeys, $action);
+            $usesMasterChildPermission = collect($permissionKeys)->contains(
+                static fn (string $key): bool => str_starts_with($key, 'master_')
+                    && $key !== 'master_data_menu'
+            );
+            $masterParentAllowed = !$usesMasterChildPermission
+                || (bool) $user->canViewForm('master_data_menu');
+
+            if (!$masterParentAllowed) {
+                $allowed = false;
+            }
 
             /*
              * GET ของหน้าแก้ไขยังเปิดได้เมื่อมีสิทธิ์ดู เพื่อแสดงข้อมูลแบบอ่านอย่างเดียว
-             * แต่ PUT/PATCH/POST ของการอัปเดตยังถูกปฏิเสธตามสิทธิ์จริง
+             * แต่ต้องผ่านสิทธิ์เมนูหลัก “ประเภท / หมวดหมู่” ด้วยเช่นเดียวกับ Middleware
              */
             if (
                 !$allowed
+                && $masterParentAllowed
                 && $action === 'update'
                 && self::containsSafeReadMethod($methods)
                 && self::isAllowed($user, $permissionKeys, 'view')

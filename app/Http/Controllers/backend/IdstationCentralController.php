@@ -15,9 +15,10 @@ class IdstationCentralController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
         $today = now('Asia/Bangkok')->toDateString();
 
-        $clientsQuery = Client::forUser(auth()->user())
+        $clientsQuery = Client::forUser($user)
             ->with(['target', 'house', 'project'])
             ->whereHas('target', function ($query) {
                 $query->where('target_name', 'บุคคลไม่มีสถานะทางทะเบียน');
@@ -33,6 +34,13 @@ class IdstationCentralController extends Controller
                 'updater',
             ])
             ->whereIn('client_id', (clone $clientsQuery)->pluck('id'));
+
+        if ($request->filled('house_id')) {
+            abort_unless($user->canAccessHouse((int) $request->house_id), 403, 'คุณไม่มีสิทธิ์ดูบ้านนี้');
+        }
+        if ($request->filled('project_id')) {
+            abort_unless($user->canAccessProject((int) $request->project_id), 403, 'คุณไม่มีสิทธิ์ดูหน่วยงาน/โครงการนี้');
+        }
 
         if ($request->filled('date_from')) {
             $idstationsQuery->whereDate('created_at', '>=', $request->date_from);
@@ -139,9 +147,9 @@ class IdstationCentralController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-       $houses = House::orderBy('house_name')->get();
+       $houses = House::query()->whereIn('id', $user->accessibleHouseIds())->orderBy('house_name')->get();
 
-            $projects = Project::orderBy('project_name')->get();
+            $projects = Project::query()->whereIn('id', $user->accessibleProjectIds())->orderBy('project_name')->get();
 
             $citizens = Citizen::orderBy('id')->get();
 

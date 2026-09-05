@@ -125,7 +125,7 @@ class NutritionAssessmentController extends Controller
         $this->ensureAssessmentBelongsToClient($assessment, $client);
 
         abort_unless(
-            auth()->user()?->role === 'admin',
+            auth()->user()?->canDeleteForm('screening_nutrition'),
             403,
             'คุณไม่มีสิทธิ์ลบข้อมูลนี้'
         );

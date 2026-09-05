@@ -218,6 +218,11 @@ return [
                     'description' => 'บันทึกปัญหาพฤติกรรมและการดำเนินการที่เกี่ยวข้อง',
                     'actions' => ['view', 'create', 'update', 'delete', 'print'],
                 ],
+                'welfare_behavior_referral_center' => [
+                    'label' => 'ศูนย์รับเคสพฤติกรรมที่ส่งต่อ',
+                    'description' => 'รวบรวมเคสจากทุกบ้าน มอบหมาย รับเคส ติดตามความเสี่ยง และปิดการช่วยเหลือหลังส่งต่อ',
+                    'actions' => ['view', 'create', 'update', 'delete', 'print'],
+                ],
                 'welfare_escape' => [
                     'label' => 'การหลบหนีจากที่พักพิง',
                     'description' => 'เหตุการณ์หลบหนีและการติดตามค้นหา',
@@ -300,16 +305,38 @@ return [
             ],
         ],
 
+        // USER_PERMISSION_VISIBILITY_FIX_V2: เมนูที่เดิมอาศัยเพียง role/auth ต้องถูกกำหนดสิทธิ์ได้ด้วย
+        'communications' => [
+            'label' => 'ประชาสัมพันธ์และการปฏิบัติงาน',
+            'icon' => 'bi-megaphone-fill',
+            'description' => 'ข่าวสาร/กิจกรรม และบันทึก/รายงานการปฏิบัติงาน',
+            'items' => [
+                'communications_publicizes' => [
+                    'label' => 'ข่าวสาร/กิจกรรม',
+                    'description' => 'ดู เพิ่ม แก้ไข ลบ และเปิดเอกสารข่าวสาร/กิจกรรม',
+                    'actions' => ['view', 'create', 'update', 'delete'],
+                ],
+                'communications_operations' => [
+                    'label' => 'บันทึกการปฏิบัติงาน',
+                    'description' => 'ดู เพิ่ม แก้ไข ลบ และออกรายงานการปฏิบัติงาน',
+                    'actions' => ['view', 'create', 'update', 'delete', 'print'],
+                ],
+            ],
+        ],
+
         'master_data' => [
             'label' => 'ประเภทและหมวดหมู่',
             'icon' => 'bi-grid-fill',
             'description' => 'ข้อมูลอ้างอิงส่วนกลางสำหรับใช้เป็นตัวเลือกในฟอร์มต่าง ๆ',
             'items' => [
+                // สิทธิ์นี้ควบคุมการแสดง “เมนูหลัก” ประเภท / หมวดหมู่ โดยรายการย่อยยังตรวจสิทธิ์ของตนเอง
+                'master_data_menu' => ['label' => 'ประเภท / หมวดหมู่', 'description' => 'แสดงเมนูข้อมูลอ้างอิงประเภทและหมวดหมู่ รายการย่อยยังเป็นไปตามสิทธิ์ที่เลือกแต่ละรายการ', 'actions' => ['view']],
                 'master_institutions' => ['label' => 'รายการสถานศึกษา', 'description' => 'จัดการข้อมูลสถานศึกษา', 'actions' => ['view', 'create', 'update', 'delete']],
                 'master_subjects' => ['label' => 'รายการวิชาเรียน', 'description' => 'จัดการข้อมูลวิชาเรียน', 'actions' => ['view', 'create', 'update', 'delete']],
                 'master_houses' => ['label' => 'รายการบ้านพัก', 'description' => 'จัดการข้อมูลบ้านและสถานที่พักพิง', 'actions' => ['view', 'create', 'update', 'delete']],
                 'master_education_levels' => ['label' => 'รายการระดับการศึกษา', 'description' => 'จัดการระดับการศึกษา', 'actions' => ['view', 'create', 'update', 'delete']],
                 'master_semesters' => ['label' => 'รายการปีการศึกษา', 'description' => 'จัดการปีการศึกษาและภาคเรียน', 'actions' => ['view', 'create', 'update', 'delete']],
+                'master_projects' => ['label' => 'รายการโครงการ', 'description' => 'จัดการรายการหน่วยงาน/โครงการที่ใช้กำหนดขอบเขตผู้รับบริการ', 'actions' => ['view', 'create', 'update', 'delete']],
                 'master_psychiatric_diseases' => ['label' => 'รายการโรคทางจิตเวช', 'description' => 'จัดการรายการโรคทางจิตเวช', 'actions' => ['view', 'create', 'update', 'delete']],
                 'master_behaviors' => ['label' => 'รายการพฤติกรรม', 'description' => 'จัดการรายการพฤติกรรม', 'actions' => ['view', 'create', 'update', 'delete']],
                 'master_outside_types' => ['label' => 'รายการเด็กที่อยู่ภายนอก', 'description' => 'จัดการประเภทการอยู่ภายนอก', 'actions' => ['view', 'create', 'update', 'delete']],
@@ -327,6 +354,7 @@ return [
             'icon' => 'bi-file-earmark-bar-graph-fill',
             'description' => 'รายงานภาพรวมที่แยกจากฟอร์มรายบุคคล',
             'items' => [
+                'report_special_children' => ['label' => 'เด็กกลุ่มพิเศษ', 'description' => 'ดูและพิมพ์รายงานเด็กกลุ่มพิเศษโดยแยกสิทธิ์ออกจากฟอร์มตรวจร่างกาย', 'actions' => ['view', 'print']],
                 'report_discharge_all' => ['label' => 'รายงานการจำหน่าย', 'description' => 'ดูและพิมพ์รายงานการจำหน่ายรวมทุกผู้รับบริการตามขอบเขตข้อมูล', 'actions' => ['view', 'print']],
             ],
         ],
@@ -494,6 +522,11 @@ return [
         ['routes' => ['semester.store'], 'permissions' => ['master_semesters'], 'action' => 'create'],
         ['routes' => ['semester.edit', 'semester.update'], 'permissions' => ['master_semesters'], 'action' => 'update'],
         ['routes' => ['semester.delete'], 'permissions' => ['master_semesters'], 'action' => 'delete'],
+        // รายการโครงการ: เดิมไม่มี route permission และเคยอาศัย master_semesters เป็น fallback
+        ['routes' => ['project.show'], 'permissions' => ['master_projects'], 'action' => 'view'],
+        ['routes' => ['project.store'], 'permissions' => ['master_projects'], 'action' => 'create'],
+        ['routes' => ['project.edit', 'project.update'], 'permissions' => ['master_projects'], 'action' => 'update'],
+        ['routes' => ['project.delete'], 'permissions' => ['master_projects'], 'action' => 'delete'],
         ['routes' => ['psycho.show'], 'permissions' => ['master_psychiatric_diseases'], 'action' => 'view'],
         ['routes' => ['psycho.store'], 'permissions' => ['master_psychiatric_diseases'], 'action' => 'create'],
         ['routes' => ['psycho.edit', 'psycho.update'], 'permissions' => ['master_psychiatric_diseases'], 'action' => 'update'],
@@ -541,7 +574,9 @@ return [
         */
         ['routes' => ['audit_logs.index'], 'permissions' => ['system_audit_logs'], 'action' => 'view'],
 
-        // ทางเข้าแฟ้มผู้รับบริการ: ต้องมีสิทธิ์ดูอย่างน้อยหนึ่งฟอร์ม
+        // USER_MULTI_PROJECT_SCOPE_V5:
+        // client.show เป็นทางเข้าเพื่อเลือกผู้รับบริการ จึงเปิดเมื่อมีสิทธิ์ดู
+        // ฟอร์มรายบุคคลอย่างน้อยหนึ่งรายการ ส่วน Project / House ใช้กรองข้อมูลภายใน
         ['routes' => ['client.show', 'client.image', 'admin.index', 'admin.client.overview'], 'permissions' => [
             'registration_client_profile',
             'registration_factfinding',
@@ -667,7 +702,21 @@ return [
         ['routes' => ['check_body.delete'], 'permissions' => ['health_body_check'], 'action' => 'delete'],
         ['routes' => ['check_body.report'], 'permissions' => ['health_body_check'], 'action' => 'print'],
         // SPECIAL_CHILDREN_REPORT_V1 : รายงานกลางเด็กกลุ่มพิเศษ ใช้สิทธิ์ดูข้อมูลตรวจร่างกายเดิม
-        ['routes' => ['special_children.index'], 'permissions' => ['health_body_check'], 'action' => 'view'],
+        // ข่าวสาร/กิจกรรม (backend)
+        ['routes' => ['publicizes.index', 'publicizes.file'], 'permissions' => ['communications_publicizes'], 'action' => 'view'],
+        ['routes' => ['publicizes.create', 'publicizes.store'], 'permissions' => ['communications_publicizes'], 'action' => 'create'],
+        ['routes' => ['publicizes.edit', 'publicizes.update'], 'permissions' => ['communications_publicizes'], 'action' => 'update'],
+        ['routes' => ['publicizes.destroy'], 'permissions' => ['communications_publicizes'], 'action' => 'delete'],
+
+        // บันทึก/รายงานการปฏิบัติงาน
+        ['routes' => ['operations.index'], 'permissions' => ['communications_operations'], 'action' => 'view'],
+        ['routes' => ['operations.create', 'operations.store'], 'permissions' => ['communications_operations'], 'action' => 'create'],
+        ['routes' => ['operations.edit', 'operations.update'], 'permissions' => ['communications_operations'], 'action' => 'update'],
+        ['routes' => ['operations.delete'], 'permissions' => ['communications_operations'], 'action' => 'delete'],
+        ['routes' => ['operations.report.daily'], 'permissions' => ['communications_operations'], 'action' => 'print'],
+
+        // รายงานเด็กกลุ่มพิเศษต้องได้รับสิทธิ์โดยตรง ไม่ผูกกับ “บันทึกการตรวจร่างกาย”
+        ['routes' => ['special_children.index'], 'permissions' => ['report_special_children'], 'action' => 'view'],
 
         // 3.3 สิทธิรักษาพยาบาล
         ['routes' => ['healthcare_rights.index'], 'permissions' => ['health_treatment_rights'], 'action' => 'view'],
@@ -767,6 +816,8 @@ return [
         ['routes' => ['observe.edit', 'observe.update', 'observe.followup.edit', 'observe.followup.update'], 'permissions' => ['welfare_behavior_problem'], 'action' => 'update'],
         ['routes' => ['observe.delete', 'observe.followup.delete'], 'permissions' => ['welfare_behavior_problem'], 'action' => 'delete'],
         ['routes' => ['observe.report'], 'permissions' => ['welfare_behavior_problem'], 'action' => 'print'],
+        ['routes' => ['observe.referrals.index', 'observe.referrals.show'], 'permissions' => ['welfare_behavior_referral_center'], 'action' => 'view'],
+        ['routes' => ['observe.referrals.accept', 'observe.referrals.assign'], 'permissions' => ['welfare_behavior_referral_center'], 'action' => 'update'],
 
         // 5.2 หลบหนี
         ['routes' => ['escape.index', 'escape.add'], 'permissions' => ['welfare_escape'], 'action' => 'view'],

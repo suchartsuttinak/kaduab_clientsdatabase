@@ -1,5 +1,6 @@
 @php
     use Illuminate\Support\Facades\Request;
+    use App\Support\BehaviorReferralCenter;
     use App\Support\FormPermissionMenu;
 
     $currentUser = auth()->user();
@@ -11,10 +12,22 @@
     $canCreate = static fn (string $key): bool => (bool) ($currentUser?->canCreateForm($key) ?? false);
     $canManageSystemUsers = (bool) ($currentUser && ($currentUser->isAdmin() || $currentUser->isExecutive()));
 
-    $showRegistrationMenu = (bool) ($permissionMenu['has_any_client_form'] ?? false)
+    // USER_MULTI_PROJECT_SCOPE_V5:
+    // เมนูต้องอิงสิทธิ์รายฟอร์มเท่านั้น ส่วน Project / House ใช้กรองข้อมูลภายในเมนู
+    $hasAnyClientForm = (bool) ($permissionMenu['has_any_client_form'] ?? false);
+    $showRegistrationMenu = $hasAnyClientForm
         || ($groupAccess['registration_central'] ?? false);
     $showDashboardMenu = (bool) ($groupAccess['dashboard'] ?? false);
-    $showMasterMenu = (bool) ($groupAccess['master_data'] ?? false);
+
+    $hasMasterChild = in_array(true, [
+        $canForm('master_institutions'), $canForm('master_subjects'), $canForm('master_houses'),
+        $canForm('master_education_levels'), $canForm('master_semesters'), $canForm('master_projects'),
+        $canForm('master_psychiatric_diseases'), $canForm('master_behaviors'), $canForm('master_outside_types'),
+        $canForm('master_documents'), $canForm('master_incomes'), $canForm('master_help_types'),
+        $canForm('master_citizenships'), $canForm('master_citizen_statuses'), $canForm('master_release_types'),
+    ], true);
+    $showMasterMenu = $canForm('master_data_menu') && $hasMasterChild;
+    $showCommunicationMenu = $canForm('communications_publicizes') || $canForm('communications_operations');
     $showSystemMenu = $canManageSystemUsers
     || $canForm('system_audit_logs');
 
@@ -53,6 +66,12 @@
     || Request::routeIs('audit_logs.*');
     $isIdstationCentralMenu = Request::routeIs('idstation.central.*');
     $isIndividualDevelopmentCentral = Request::routeIs('individual-development.center');
+    $canViewBehaviorReferralCenter = Route::has('observe.referrals.index')
+        && BehaviorReferralCenter::canAccess($currentUser);
+    $behaviorReferralSummary = $canViewBehaviorReferralCenter
+        ? BehaviorReferralCenter::summary()
+        : ['actionable' => 0];
+    $isBehaviorReferralCenter = Request::routeIs('observe.referrals.*');
 @endphp
 
 {{-- FORM_PERMISSION_MENU_V6: MAIN_SIDEBAR --}}
@@ -89,7 +108,7 @@
                         </a>
                         <div class="collapse {{ $isProfileOpen ? 'show' : '' }}" id="sidebarProfile">
                             <ul class="nav-second-level">
-                                @if($permissionMenu['has_any_client_form'] ?? false)
+                                @if($hasAnyClientForm)
                                     <li>
                                         <a href="{{ route('client.show') }}" class="tp-link {{ Request::routeIs('client.show') ? 'active' : '' }}">
                                             <i class="bi bi-people-fill me-2"></i>ทะเบียนผู้รับบริการ
@@ -151,6 +170,20 @@
                     <li><a href="{{ route('individual-development.center') }}" class="{{ $isIndividualDevelopmentCentral ? 'active' : '' }}"><i class="bi bi-diagram-3 sidebar-fa-icon"></i><span>ศูนย์กลางการพัฒนาเด็ก</span></a></li>
                 @endif
 
+                @if($canViewBehaviorReferralCenter)
+                    <li class="menu-title mt-2">สังคมสงเคราะห์</li>
+                    <li>
+                        <a href="{{ route('observe.referrals.index') }}"
+                           class="{{ $isBehaviorReferralCenter ? 'active' : '' }}">
+                            <i class="bi bi-inbox-fill sidebar-fa-icon"></i>
+                            <span>เคสพฤติกรรมที่ส่งต่อ</span>
+                            @if(($behaviorReferralSummary['actionable'] ?? 0) > 0)
+                                <span class="sidebar-badge-soft">{{ $behaviorReferralSummary['actionable'] > 99 ? '99+' : $behaviorReferralSummary['actionable'] }}</span>
+                            @endif
+                        </a>
+                    </li>
+                @endif
+
                 @if($canForm('welfare_stateless_person'))
                     <li class="menu-title">ศูนย์กลางทะเบียน</li>
                     <li>
@@ -197,7 +230,7 @@
                 @endif
 
                 {{-- SPECIAL_CHILDREN_REPORT_V1 --}}
-                @if($canForm('health_body_check') && Route::has('special_children.index'))
+                @if($canForm('report_special_children') && Route::has('special_children.index'))
                     <li>
                         <a href="{{ route('special_children.index') }}"
                            class="{{ Request::routeIs('special_children.*') ? 'active' : '' }}">
@@ -206,10 +239,18 @@
                         </a>
                     </li>
                 @endif
-                <li class="menu-title mt-2">ประชาสัมพันธ์</li>
-                <li><a href="{{ route('publicizes.index') }}" class="tp-link {{ Request::routeIs('publicizes.*') ? 'active' : '' }}"><i class="bi bi-megaphone me-1"></i>ข่าวสาร/กิจกรรม</a></li>
-                <li><a href="{{ route('operations.index') }}" class="nav-link {{ Request::routeIs('operations.index') ? 'active' : '' }}"><i class="bi bi-journal-text me-2"></i><span>บันทึกการปฏิบัติงาน</span></a></li>
-                <li><a href="{{ route('operations.report.daily') }}" class="nav-link {{ Request::routeIs('operations.report.daily') ? 'active' : '' }}"><i class="bi bi-file-earmark-text me-2"></i><span>รายงานการปฏิบัติงาน</span></a></li>
+                @if($showCommunicationMenu)
+                    <li class="menu-title mt-2">ประชาสัมพันธ์</li>
+                    @if($canForm('communications_publicizes'))
+                        <li><a href="{{ route('publicizes.index') }}" class="tp-link {{ Request::routeIs('publicizes.*') ? 'active' : '' }}"><i class="bi bi-megaphone me-1"></i>ข่าวสาร/กิจกรรม</a></li>
+                    @endif
+                    @if($canForm('communications_operations'))
+                        <li><a href="{{ route('operations.index') }}" class="nav-link {{ Request::routeIs('operations.index') ? 'active' : '' }}"><i class="bi bi-journal-text me-2"></i><span>บันทึกการปฏิบัติงาน</span></a></li>
+                        @if($currentUser?->canPrintForm('communications_operations'))
+                            <li><a href="{{ route('operations.report.daily') }}" class="nav-link {{ Request::routeIs('operations.report.daily') ? 'active' : '' }}"><i class="bi bi-file-earmark-text me-2"></i><span>รายงานการปฏิบัติงาน</span></a></li>
+                        @endif
+                    @endif
+                @endif
 
                 @if($canForm('report_discharge_all'))
                     <li><a href="{{ route('refers.all') }}" class="nav-link {{ Request::routeIs('refers.all') ? 'active' : '' }}"><i class="bi bi-box-arrow-right me-2"></i><span>รายงานการจำหน่าย</span></a></li>
@@ -273,7 +314,8 @@
                 <li>
                     {{-- DASHBOARD_USER_MENU_LOGOUT_HOTFIX_V1: session action, not a form write permission --}}
                     <form method="POST"
-                          action="{{ route('admin.logout') }}"
+{{-- PERMISSION_LANDING_LOGOUT_FIX_V3: ใช้ logout route มาตรฐานเพียงจุดเดียว --}}
+                          action="{{ route('logout') }}"
                           class="m-0"
                           data-permission-action="navigation">
                         @csrf

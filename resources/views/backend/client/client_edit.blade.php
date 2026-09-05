@@ -447,8 +447,6 @@
                                             <label for="project_id" class="form-label">
                                                 หน่วยงาน <span class="required-star">*</span>
                                             </label>
-
-                                            @if (auth()->user()->isAdmin() || auth()->user()->isExecutive())
                                                 <select name="project_id" id="project_id"
                                                     class="form-select @error('project_id') is-invalid @enderror">
 
@@ -461,13 +459,7 @@
                                                         </option>
                                                     @endforeach
                                                 </select>
-                                            @else
-                                                <input type="hidden" name="project_id"
-                                                    value="{{ auth()->user()->project_id }}">
 
-                                                <input type="text" class="form-control"
-                                                    value="{{ auth()->user()->project->project_name ?? '-' }}" readonly>
-                                            @endif
 
                                             @error('project_id')
                                                 <small class="text-danger error-message" id="error-project_id">
@@ -587,28 +579,30 @@
                                     </div>
                                 </div>
 
-                                <div class="col-12 mt-2">
-                                    <label class="form-label">
-                                        ปัญหาที่พบ <span class="required-star">* (เลือกได้มากกว่า 1 รายการ)</span>
-                                    </label>
+                                @if($canAccessSensitiveProblems ?? false)
+                                    <div class="col-12 mt-2">
+                                        <label class="form-label">
+                                            ปัญหาที่พบ <span class="required-star">* (เลือกได้มากกว่า 1 รายการ)</span>
+                                        </label>
 
-                                    <div class="problem-box">
-                                        <div class="problem-grid">
-                                            @foreach ($problems as $problem)
-                                                <label class="problem-item" for="problem{{ $problem->id }}">
-                                                    <input class="form-check-input" type="checkbox" name="problems[]"
-                                                        value="{{ $problem->id }}" id="problem{{ $problem->id }}"
-                                                        {{ in_array($problem->id, old('problems', $client?->problems->pluck('id')->toArray() ?? [])) ? 'checked' : '' }}>
-                                                    <span>{{ $problem->problem_name }}</span>
-                                                </label>
-                                            @endforeach
+                                        <div class="problem-box">
+                                            <div class="problem-grid">
+                                                @foreach ($problems as $problem)
+                                                    <label class="problem-item" for="problem{{ $problem->id }}">
+                                                        <input class="form-check-input" type="checkbox" name="problems[]"
+                                                            value="{{ $problem->id }}" id="problem{{ $problem->id }}"
+                                                            {{ in_array($problem->id, old('problems', $client?->problems->pluck('id')->toArray() ?? [])) ? 'checked' : '' }}>
+                                                        <span>{{ $problem->problem_name }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+
+                                            @error('problems')
+                                                <div class="invalid-feedback d-block small-text">{{ $message }}</div>
+                                            @enderror
                                         </div>
-
-                                        @error('problems')
-                                            <div class="invalid-feedback d-block small-text">{{ $message }}</div>
-                                        @enderror
                                     </div>
-                                </div>
+                                @endif
                             </div>
                         </div>
 

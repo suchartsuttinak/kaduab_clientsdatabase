@@ -33,7 +33,7 @@
                 <i class="bi bi-shield-lock-fill"></i>
                 <div>
                     <h3>สถานะ: ส่งต่อข้อมูล</h3>
-                    <p>การดำเนินงานในส่วนของครู/ผู้ใช้ที่ไม่เกี่ยวข้องสิ้นสุดแล้ว ข้อมูลการช่วยเหลือหลังส่งต่อจำกัดเฉพาะนักสังคมสงเคราะห์ ผู้บริหาร และ Admin</p>
+                    <p>การดำเนินงานในส่วนต้นทางสิ้นสุดแล้ว ข้อมูลการช่วยเหลือหลังส่งต่อเปิดให้เฉพาะบัญชีที่ได้รับสิทธิ์ศูนย์รับเคสพฤติกรรม</p>
                 </div>
             </div>
         </div>
@@ -54,7 +54,7 @@
                         การช่วยเหลือหลังส่งต่อ
                     </h2>
                     <div class="observe-modern-subtitle">
-                        สถานะต้นทางคงเป็น “ส่งต่อข้อมูล” ส่วนนี้เป็นพื้นที่ทำงานเฉพาะนักสังคมสงเคราะห์ ผู้บริหาร และ Admin
+                        สถานะต้นทางคงเป็น “ส่งต่อข้อมูล” ส่วนนี้เป็นพื้นที่ทำงานเฉพาะบัญชีที่ได้รับสิทธิ์จัดการศูนย์รับเคสพฤติกรรม
                     </div>
                 </div>
 
@@ -168,7 +168,7 @@
                             @csrf
                             <input type="hidden" name="observe_id" value="{{ $observe->id }}">
                             <div class="modal-body">
-                                <div class="observe-referral-access-note"><i class="bi bi-shield-lock-fill"></i> ข้อมูลส่วนนี้จำกัดเฉพาะนักสังคมสงเคราะห์ ผู้บริหาร และ Admin</div>
+                                <div class="observe-referral-access-note"><i class="bi bi-shield-lock-fill"></i> ข้อมูลส่วนนี้เปิดให้เฉพาะบัญชีที่ได้รับสิทธิ์ศูนย์รับเคสพฤติกรรม</div>
                                 @include('frontend.client.observe.partials._referral_round_fields', [
                                     'referralItem' => null,
                                     'referralBag' => $referralStoreBag,

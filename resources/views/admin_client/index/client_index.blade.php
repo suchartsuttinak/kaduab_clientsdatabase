@@ -48,13 +48,29 @@
     $todayText = ($day ?? '-') . ' ' . ($month ?? '-') . ' ' . ($year ?? '-');
 
     $clientFullName = $client->full_name ?? $client->fullname ?? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''));
+
+    // USER_PERMISSION_VISIBILITY_FIX_V2: การ์ดสรุปบนหน้าแฟ้มต้องไม่เปิดเผยโมดูลที่ไม่ได้รับสิทธิ์
+    $permissionUser = auth()->user();
+    $canClientServiceLogs = (bool) ($permissionUser?->canViewForm('welfare_client_activity') ?? false);
+    $canClientHealth = (bool) ($permissionUser?->hasAnyFormPermission([
+        'health_accident', 'health_body_check', 'health_treatment_rights', 'health_medical',
+        'health_vaccination', 'health_psychiatric', 'health_addictive', 'health_annual_checkup',
+    ], 'view') ?? false);
+    $canClientPublicizes = (bool) ($permissionUser?->canViewForm('communications_publicizes') ?? false);
+    $canClientFiles = (bool) ($permissionUser?->canViewForm('registration_client_files') ?? false);
+    $canClientActivities = (bool) ($permissionUser?->canViewForm('welfare_client_activity') ?? false);
+    $fallbackRouteName = \App\Support\FormPermissionMenu::firstAccessibleRouteName($permissionUser);
+    $clientBackUrl = ($permissionMenu = \App\Support\FormPermissionMenu::forUser($permissionUser))
+        && ($permissionMenu['has_any_client_form'] ?? false)
+            ? route('client.show')
+            : route($fallbackRouteName);
 @endphp
 
 <div class="container-fluid client-page">
 
     <div class="client-topbar d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div class="topbar-left">
-            <a href="{{ route('client.show') }}" class="btn btn-primary btn-back shadow-sm">
+            <a href="{{ $clientBackUrl }}" class="btn btn-primary btn-back shadow-sm">
                 <span class="btn-back-icon">
                     <i class="bi bi-arrow-left-short"></i>
                 </span>
@@ -358,6 +374,7 @@
                     </div>
                     
 
+@if($canClientServiceLogs)
 <div class="col-xl-4 col-md-6">
     <div class="card service-card border-0 shadow-sm h-100">
         <div class="card-body p-4">
@@ -412,7 +429,9 @@
         </div>
     </div>
 </div>
+@endif
 
+@if($canClientHealth)
       <div class="col-xl-4 col-md-6">
     <div class="card service-card border-0 shadow-sm h-100">
         <div class="card-body p-4">
@@ -470,7 +489,9 @@
         </div>
     </div>
 </div>
+@endif
 
+@if($canClientPublicizes)
     <div class="col-xl-4 col-md-6">
     <a href="{{ route('publicizes.index') }}" class="service-card-link">
 
@@ -534,7 +555,9 @@
 
     </a>
 </div>
+@endif
 
+@if($canClientFiles)
        <div class="col-xl-4 col-md-6">
     <a href="{{ route('client_files.index', $client->id) }}" class="service-card-link">
 
@@ -598,7 +621,9 @@
 
     </a>
 </div>
+@endif
 
+@if($canClientActivities)
        <div class="col-xl-4 col-md-6">
     <a href="{{ route('case-activities.index', $client->id) }}"
        class="service-card-link">
@@ -677,6 +702,7 @@
 
     </a>
 </div>
+@endif
     </div>
 </div>
 

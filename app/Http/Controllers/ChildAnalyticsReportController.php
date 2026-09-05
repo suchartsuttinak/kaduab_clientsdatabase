@@ -22,6 +22,7 @@ class ChildAnalyticsReportController extends Controller
 
     public function index(Request $request)
     {
+        $user = auth()->user();
         $todayDate = now(self::TIMEZONE);
         $today = $todayDate->toDateString();
 
@@ -81,6 +82,13 @@ class ChildAnalyticsReportController extends Controller
         $targetId       = $this->selectedId($request, 'target_id');
         $releaseStatus  = $request->input('release_status', 'show');
 
+        if ($projectId !== null) {
+            abort_unless($user->canAccessProject($projectId), 403, 'คุณไม่มีสิทธิ์ดูหน่วยงาน/โครงการนี้');
+        }
+        if ($houseId !== null) {
+            abort_unless($user->canAccessHouse($houseId), 403, 'คุณไม่มีสิทธิ์ดูบ้านนี้');
+        }
+
         if ($educationStart !== null && $educationEnd !== null && $educationStart > $educationEnd) {
             [$educationStart, $educationEnd] = [$educationEnd, $educationStart];
         }
@@ -98,7 +106,7 @@ class ChildAnalyticsReportController extends Controller
         | ระดับชั้น/สถานศึกษา ใช้ข้อมูลล่าสุดที่มี record_date ไม่เกินวันสิ้นสุด
         | และอายุคำนวณ ณ วันสิ้นสุดรายงาน เพื่อให้รายงานย้อนหลังสอดคล้องกัน
         */
-        $eligibleClientQuery = Client::forUser(auth()->user())
+        $eligibleClientQuery = Client::forUser($user)
             ->with([
                 'title',
                 'educationRecords' => function ($query) use ($periodEnd) {
@@ -276,8 +284,8 @@ class ChildAnalyticsReportController extends Controller
         $educations   = Education::orderBy('id')->get();
         $institutions = Institution::orderBy('institution_name')->get();
         $problems     = Problem::orderBy('problem_name')->get();
-        $projects     = Project::orderBy('project_name')->get();
-        $houses       = House::orderBy('id')->get();
+        $projects = Project::query()->whereIn('id', $user->accessibleProjectIds())->orderBy('project_name')->get();
+        $houses = House::query()->whereIn('id', $user->accessibleHouseIds())->orderBy('id')->get();
         $targets      = Target::orderBy('target_name')->get();
 
         return view('admin.reports.child_analytics.index', compact(

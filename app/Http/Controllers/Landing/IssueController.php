@@ -17,7 +17,7 @@ class IssueController extends Controller
         $user = auth()->user();
 
         abort_unless(
-            $user && in_array(($user->role ?? null), ['admin', 'executive'], true),
+            $user && $user->canViewForm('dashboard_issues'),
             403,
             'คุณไม่มีสิทธิ์เข้าถึงหน้านี้'
         );

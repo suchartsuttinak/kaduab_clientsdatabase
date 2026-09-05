@@ -32,23 +32,14 @@
 
     /* สิทธิ์รายฟอร์ม: ตัวกรองยังใช้งานได้ในโหมดอ่านอย่างเดียว */
     $permissionUser = auth()->user();
-    $fallbackWriteRoles = ['admin', 'executive', 'social_worker'];
 
-    $canPsychiatricCreate = $permissionUser && method_exists($permissionUser, 'canCreateForm')
-        ? $permissionUser->canCreateForm('health_psychiatric')
-        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
+    $canPsychiatricCreate = (bool) ($permissionUser?->canCreateForm('health_psychiatric') ?? false);
 
-    $canPsychiatricUpdate = $permissionUser && method_exists($permissionUser, 'canUpdateForm')
-        ? $permissionUser->canUpdateForm('health_psychiatric')
-        : in_array($permissionUser?->role, $fallbackWriteRoles, true);
+    $canPsychiatricUpdate = (bool) ($permissionUser?->canUpdateForm('health_psychiatric') ?? false);
 
-    $canPsychiatricDelete = $permissionUser && method_exists($permissionUser, 'canDeleteForm')
-        ? $permissionUser->canDeleteForm('health_psychiatric')
-        : $permissionUser?->role === 'admin';
+    $canPsychiatricDelete = (bool) ($permissionUser?->canDeleteForm('health_psychiatric') ?? false);
 
-    $canPsychiatricPrint = $permissionUser && method_exists($permissionUser, 'canPrintForm')
-        ? $permissionUser->canPrintForm('health_psychiatric')
-        : true;
+    $canPsychiatricPrint = (bool) ($permissionUser?->canPrintForm('health_psychiatric') ?? false);
 @endphp
 
 <div class="container-fluid mt-2 psychiatric-page">

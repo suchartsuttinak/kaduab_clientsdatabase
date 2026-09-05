@@ -1,5 +1,13 @@
 @php
     $editingUser = $user ?? null;
+    $selectedProjects = old(
+        'project_ids',
+        $editingUser
+            ? ($editingUser->projects->isNotEmpty()
+                ? $editingUser->projects->pluck('id')->map(fn ($id) => (int) $id)->toArray()
+                : (!empty($editingUser->project_id) ? [(int) $editingUser->project_id] : []))
+            : []
+    );
     $selectedHouses = old(
         'house_ids',
         $editingUser ? $editingUser->houses->pluck('id')->map(fn ($id) => (int) $id)->toArray() : []
@@ -175,26 +183,79 @@
                 <span class="user-form-section-icon user-form-section-icon-green"><i class="bi bi-diagram-3-fill"></i></span>
                 <div>
                     <h5 class="mb-1">ขอบเขตข้อมูลที่รับผิดชอบ</h5>
-                    <div class="text-muted small">กำหนดโครงการก่อน แล้วจำกัดเพิ่มเติมด้วยบ้านที่ผู้ใช้งานดูแล</div>
+                    <div class="text-muted small">เลือกหน่วยงานและบ้านได้หลายรายการ • ไม่เลือกหมายถึงไม่จำกัดขอบเขตส่วนนั้น</div>
                 </div>
             </div>
 
+            @if(auth()->user()?->isExecutive())
+                <div class="alert alert-primary border-0 rounded-4 mx-0 mb-1 mt-3">
+                    <div class="d-flex gap-2 align-items-start">
+                        <i class="bi bi-shield-lock-fill mt-1"></i>
+                        <div class="small">
+                            <strong>ขอบเขตการมอบหมายของผู้บริหาร</strong><br>
+                            คุณสามารถกำหนดหน่วยงานและบ้านให้เจ้าหน้าที่ได้เฉพาะภายในขอบเขตที่บัญชีผู้บริหารของคุณได้รับมอบหมาย
+                            หากบัญชีผู้บริหารไม่ถูกจำกัดในส่วนนั้น จึงสามารถกำหนดได้ทั้งหมด
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <div class="row g-4 mt-0">
-                <div class="col-lg-6">
-                    <label class="form-label fw-semibold">หน่วยงาน / โครงการ</label>
-                    <select name="project_id" class="form-select form-control-modern @error('project_id') is-invalid @enderror">
-                        <option value="">-- ไม่กำหนดหน่วยงาน/โครงการ --</option>
-                        @foreach($projects as $project)
-                            <option
-                                value="{{ $project->id }}"
-                                {{ (string) old('project_id', $editingUser?->project_id) === (string) $project->id ? 'selected' : '' }}
-                            >
-                                {{ $project->project_name ?? $project->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('project_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <div class="form-text">ระบบเดิมรองรับหนึ่งโครงการต่อผู้ใช้ เพื่อไม่กระทบ Client::forUser()</div>
+                <div class="col-12">
+                    <div class="project-box">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    <i class="bi bi-diagram-3-fill text-primary me-2"></i>
+                                    หน่วยงาน / โครงการที่เข้าถึง
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    <strong>ไม่เลือกหน่วยงาน = เข้าถึงทุกหน่วยงาน</strong> • หากเลือก ให้เข้าถึงเฉพาะหน่วยงานที่เลือก และสามารถเลือกได้มากกว่า 1 หน่วยงาน
+                                </div>
+                            </div>
+
+                            <div class="form-check m-0">
+                                <input type="checkbox" class="form-check-input" id="checkAllProjects">
+                                <label class="form-check-label fw-semibold" for="checkAllProjects">เลือกทั้งหมด</label>
+                            </div>
+                        </div>
+
+                        @if($projects->isNotEmpty())
+                            <div class="row g-3">
+                                @foreach($projects as $project)
+                                    <div class="col-md-6 col-xl-4">
+                                        <label class="project-option" for="project_{{ $project->id }}">
+                                            <input
+                                                type="checkbox"
+                                                class="form-check-input project-checkbox"
+                                                name="project_ids[]"
+                                                value="{{ $project->id }}"
+                                                id="project_{{ $project->id }}"
+                                                {{ in_array((int) $project->id, array_map('intval', $selectedProjects), true) ? 'checked' : '' }}
+                                            >
+                                            <span class="project-option-text">
+                                                <i class="bi bi-building text-primary me-1"></i>
+                                                {{ $project->project_name ?? $project->name }}
+                                            </span>
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="house-empty-state">
+                                <i class="bi bi-building-exclamation"></i>
+                                ยังไม่มีข้อมูลหน่วยงาน / โครงการ
+                            </div>
+                        @endif
+
+                        <div class="scope-hint mt-3">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <span>หากไม่ทำเครื่องหมายรายการใด ระบบจะถือว่า <strong>ทุกหน่วยงาน</strong> โดยอัตโนมัติ</span>
+                        </div>
+
+                        @error('project_ids')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
+                        @error('project_ids.*')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
+                    </div>
                 </div>
 
                 <div class="col-12">
@@ -206,7 +267,7 @@
                                     เลือกบ้านที่ดูแล
                                 </div>
                                 <div class="text-muted small mt-1">
-                                    หากเลือกบ้าน ระบบจะจำกัดผู้รับบริการเฉพาะบ้านเหล่านี้ก่อนใช้สิทธิ์รายฟอร์ม
+                                    <strong>ไม่เลือกบ้าน = ทุกบ้าน</strong> • หากเลือก ระบบจะจำกัดผู้รับบริการเฉพาะบ้านที่เลือกก่อนใช้สิทธิ์รายฟอร์ม
                                 </div>
                             </div>
 
@@ -417,12 +478,14 @@
     color:#1e40af;
     background:#dbeafe;
 }
+.user-form-page .project-box,
 .user-form-page .house-box{
     border:1px solid #e1e9f2;
     border-radius:20px;
     padding:1.1rem;
     background:#f9fbfd;
 }
+.user-form-page .project-option,
 .user-form-page .house-option{
     display:flex;
     align-items:center;
@@ -436,14 +499,32 @@
     cursor:pointer;
     transition:all .18s ease;
 }
+.user-form-page .project-option:hover,
 .user-form-page .house-option:hover{
     border-color:#93c5fd;
     transform:translateY(-1px);
     box-shadow:0 8px 22px rgba(15,23,42,.05);
 }
+.user-form-page .project-option-text,
 .user-form-page .house-option-text{
     font-weight:700;
     color:#263247;
+}
+.user-form-page .scope-hint{
+    display:flex;
+    align-items:flex-start;
+    gap:.55rem;
+    padding:.75rem .9rem;
+    border:1px solid #dbeafe;
+    border-radius:14px;
+    background:#eff6ff;
+    color:#35557c;
+    font-size:.82rem;
+    line-height:1.55;
+}
+.user-form-page .scope-hint i{
+    color:#2563eb;
+    margin-top:.1rem;
 }
 .user-form-page .house-empty-state{
     display:flex;
@@ -517,6 +598,32 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const checkAllProjects = document.getElementById('checkAllProjects');
+    const projectCheckboxes = [...document.querySelectorAll('.project-checkbox')];
+
+    function syncProjectCheckAll() {
+        if (!checkAllProjects) return;
+        checkAllProjects.checked = projectCheckboxes.length > 0 && projectCheckboxes.every(function (item) {
+            return item.checked;
+        });
+        checkAllProjects.indeterminate = projectCheckboxes.some(function (item) {
+            return item.checked;
+        }) && !checkAllProjects.checked;
+    }
+
+    checkAllProjects?.addEventListener('change', function () {
+        projectCheckboxes.forEach(function (checkbox) {
+            checkbox.checked = checkAllProjects.checked;
+        });
+        syncProjectCheckAll();
+    });
+
+    projectCheckboxes.forEach(function (checkbox) {
+        checkbox.addEventListener('change', syncProjectCheckAll);
+    });
+
+    syncProjectCheckAll();
+
     const checkAll = document.getElementById('checkAllHouses');
     const houseCheckboxes = [...document.querySelectorAll('.house-checkbox')];
 

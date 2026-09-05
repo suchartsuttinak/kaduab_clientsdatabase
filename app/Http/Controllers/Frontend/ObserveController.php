@@ -8,7 +8,9 @@ use App\Models\Client;
 use App\Models\Misbehavior;
 use App\Models\Observe;
 use App\Models\ObserveFollowup;
+use App\Models\ObserveReferralAssignment;
 use App\Models\ObserveReferralRound;
+use App\Support\BehaviorReferralCenter;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,17 +43,6 @@ class ObserveController extends Controller
         'psychotherapy_counseling',
         'behavior_therapy',
         'referred_treatment',
-    ];
-
-    /**
-     * เฉพาะกลุ่มนี้เท่านั้นที่สามารถบันทึก/แก้ไขข้อมูลการส่งต่อความช่วยเหลือ
-     * รองรับทั้งบทบาทผู้บริหารระดับ executive และ manager ของระบบเดิม
-     */
-    private const REFERRAL_ROLES = [
-        'admin',
-        'executive',
-        'manager',
-        'social_worker',
     ];
 
     /**
@@ -315,7 +306,7 @@ class ObserveController extends Controller
                 || $observe->followups()->where('status', 'referred')->exists()
             )
         ) {
-            abort(403, 'ข้อมูลการส่งต่อความช่วยเหลือจำกัดสิทธิ์เฉพาะ Admin ผู้บริหาร และนักสังคมสงเคราะห์');
+            abort(403, 'ข้อมูลการส่งต่อความช่วยเหลือเปิดให้เฉพาะบัญชีที่ได้รับสิทธิ์ศูนย์รับเคสพฤติกรรม');
         }
 
         $clientId = $observe->client_id;
@@ -679,21 +670,22 @@ class ObserveController extends Controller
 
     /**
      * บันทึกรอบการช่วยเหลือหลังส่งต่อ
-     * ใช้งานได้เฉพาะนักสังคมสงเคราะห์ ผู้บริหาร และ Admin
+     * ใช้งานได้เฉพาะบัญชีที่ได้รับสิทธิ์จัดการศูนย์รับเคสพฤติกรรม
      */
     public function StoreReferralRound(Request $request)
     {
         $this->ensureCanManageReferral();
 
         $observeId = (int) $request->input('observe_id');
-        $observe = $this->authorizedObserveQuery()
+        $observe = $this->referralCenterObserveQuery()
             ->with([
                 'followups' => $this->followupOrderCallback(),
                 'referralRounds',
+                'referralAssignment',
             ])
             ->findOrFail($observeId);
 
-        Client::forUser(auth()->user())->findOrFail($observe->client_id);
+        $this->ensureCanActOnReferral($observe);
 
         $bag = 'referralStore' . $observe->id;
 
@@ -734,13 +726,16 @@ class ObserveController extends Controller
         $data = $this->normalizeReferralRoundData($data);
 
         DB::transaction(function () use ($observe, $data, $bag): void {
-            $lockedObserve = $this->authorizedObserveQuery()
+            $lockedObserve = $this->referralCenterObserveQuery()
                 ->with([
                     'followups' => $this->followupOrderCallback(),
                     'referralRounds',
+                    'referralAssignment',
                 ])
                 ->lockForUpdate()
                 ->findOrFail($observe->id);
+
+            $this->ensureCanActOnReferral($lockedObserve);
 
             if ($this->currentObserveStatus($lockedObserve) !== 'referred') {
                 $this->throwValidation($bag, [
@@ -783,12 +778,29 @@ class ObserveController extends Controller
                 'recorder_name' => auth()->user()->name ?? null,
             ]));
 
+            $assignment = ObserveReferralAssignment::query()
+                ->where('observe_id', $lockedObserve->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$assignment || !$assignment->assigned_to_user_id) {
+                ObserveReferralAssignment::query()->updateOrCreate(
+                    ['observe_id' => $lockedObserve->id],
+                    [
+                        'assigned_to_user_id' => auth()->id(),
+                        'assigned_by_user_id' => $assignment?->assigned_by_user_id ?: auth()->id(),
+                        'assigned_at' => $assignment?->assigned_at ?: now(self::TIMEZONE),
+                        'accepted_at' => now(self::TIMEZONE),
+                    ]
+                );
+            } elseif ((int) $assignment->assigned_to_user_id === (int) auth()->id() && !$assignment->accepted_at) {
+                $assignment->update(['accepted_at' => now(self::TIMEZONE)]);
+            }
+
             $this->syncCaseActivity($lockedObserve->client_id);
         });
 
-        return redirect()
-            ->route('observe.edit', $observe->id)
-            ->with('success', 'บันทึกการช่วยเหลือหลังส่งต่อเรียบร้อย');
+        return $this->referralRedirect($observe, 'บันทึกการช่วยเหลือหลังส่งต่อเรียบร้อย');
     }
 
     /**
@@ -798,7 +810,7 @@ class ObserveController extends Controller
     {
         $this->ensureCanManageReferral();
 
-        $round = $this->authorizedReferralRoundQuery()->findOrFail($id);
+        $round = $this->referralCenterRoundQuery()->findOrFail($id);
         $observe = $round->observeRelation;
 
         if (!$observe) {
@@ -810,7 +822,7 @@ class ObserveController extends Controller
             'referralRounds',
         ]);
 
-        Client::forUser(auth()->user())->findOrFail($observe->client_id);
+        $this->ensureCanActOnReferral($observe);
 
         $bag = 'referralUpdate' . $round->id;
 
@@ -872,7 +884,7 @@ class ObserveController extends Controller
         }
 
         DB::transaction(function () use ($round, $observe, $data): void {
-            $lockedRound = $this->authorizedReferralRoundQuery()
+            $lockedRound = $this->referralCenterRoundQuery()
                 ->lockForUpdate()
                 ->findOrFail($round->id);
 
@@ -884,9 +896,7 @@ class ObserveController extends Controller
             $this->syncCaseActivity($observe->client_id);
         });
 
-        return redirect()
-            ->route('observe.edit', $observe->id)
-            ->with('success', 'อัปเดตการช่วยเหลือหลังส่งต่อเรียบร้อย');
+        return $this->referralRedirect($observe, 'อัปเดตการช่วยเหลือหลังส่งต่อเรียบร้อย');
     }
 
     /**
@@ -896,14 +906,14 @@ class ObserveController extends Controller
     {
         $this->ensureCanManageReferral();
 
-        $round = $this->authorizedReferralRoundQuery()->findOrFail($id);
+        $round = $this->referralCenterRoundQuery()->findOrFail($id);
         $observe = $round->observeRelation;
 
         if (!$observe) {
             abort(404);
         }
 
-        Client::forUser(auth()->user())->findOrFail($observe->client_id);
+        $this->ensureCanActOnReferral($observe);
 
         $hasLaterRound = ObserveReferralRound::query()
             ->where('observe_id', $observe->id)
@@ -911,13 +921,11 @@ class ObserveController extends Controller
             ->exists();
 
         if ($hasLaterRound) {
-            return redirect()
-                ->route('observe.edit', $observe->id)
-                ->with('error', 'ลบไม่ได้ เนื่องจากรอบนี้มีรอบถัดไปแล้ว');
+            return $this->referralRedirect($observe, 'ลบไม่ได้ เนื่องจากรอบนี้มีรอบถัดไปแล้ว', 'error');
         }
 
         DB::transaction(function () use ($round, $observe): void {
-            $this->authorizedReferralRoundQuery()
+            $this->referralCenterRoundQuery()
                 ->lockForUpdate()
                 ->findOrFail($round->id)
                 ->delete();
@@ -925,9 +933,7 @@ class ObserveController extends Controller
             $this->syncCaseActivity($observe->client_id);
         });
 
-        return redirect()
-            ->route('observe.edit', $observe->id)
-            ->with('success', 'ลบรอบการช่วยเหลือหลังส่งต่อเรียบร้อย');
+        return $this->referralRedirect($observe, 'ลบรอบการช่วยเหลือหลังส่งต่อเรียบร้อย');
     }
 
     /**
@@ -961,7 +967,7 @@ class ObserveController extends Controller
     {
         $this->ensureCanManageReferral();
 
-        $observe = $this->authorizedObserveQuery()
+        $observe = $this->referralCenterObserveQuery()
             ->with([
                 'client',
                 'misbehavior',
@@ -970,17 +976,17 @@ class ObserveController extends Controller
             ])
             ->findOrFail($id);
 
-        $client = Client::forUser(auth()->user())->findOrFail($observe->client_id);
+        $client = Client::query()->findOrFail($observe->client_id);
 
         if ($this->currentObserveStatus($observe) !== 'referred') {
-            return redirect()
-                ->route('observe.edit', $observe->id)
-                ->with('error', 'ยังไม่มีการส่งต่อข้อมูลสำหรับรายการนี้');
+            return $this->referralRedirect($observe, 'ยังไม่มีการส่งต่อข้อมูลสำหรับรายการนี้', 'error');
         }
 
         return view(
             'frontend.client.observe.observe_referral_report',
-            compact('observe', 'client')
+            compact('observe', 'client') + [
+                'fromReferralCenter' => request()->query('from') === 'center',
+            ]
         );
     }
 
@@ -1011,6 +1017,39 @@ class ObserveController extends Controller
         return ObserveReferralRound::query()
             ->with('observeRelation')
             ->whereHas('observeRelation.client', fn ($query) => $query->forUser(auth()->user()));
+    }
+
+    /**
+     * ข้อมูลที่เปิดข้ามบ้านได้เฉพาะเคสที่ส่งต่อแล้ว
+     */
+    private function referralCenterObserveQuery()
+    {
+        $query = BehaviorReferralCenter::query();
+
+        // ถ้าไม่ได้รับสิทธิ์ศูนย์กลาง ให้คง scope ตามบ้านแบบเดิม
+        if (!auth()->user()->canViewForm('welfare_behavior_referral_center')) {
+            $query->whereHas('client', fn ($client) => $client->forUser(auth()->user()));
+        }
+
+        return $query;
+    }
+
+    private function referralCenterRoundQuery()
+    {
+        $query = ObserveReferralRound::query()
+            ->with('observeRelation.referralAssignment')
+            ->whereHas('observeRelation', function ($query): void {
+                $query->where(function ($referred): void {
+                    $referred->where('observes.status', 'referred')
+                        ->orWhereHas('followups', fn ($followup) => $followup->where('status', 'referred'));
+                });
+            });
+
+        if (!auth()->user()->canViewForm('welfare_behavior_referral_center')) {
+            $query->whereHas('observeRelation.client', fn ($client) => $client->forUser(auth()->user()));
+        }
+
+        return $query;
     }
 
     /**
@@ -1267,16 +1306,36 @@ class ObserveController extends Controller
 
     private function canManageReferral(): bool
     {
-        $role = strtolower(trim((string) (auth()->user()->role ?? '')));
+        $user = auth()->user();
 
-        return in_array($role, self::REFERRAL_ROLES, true);
+        return (bool) ($user
+            && $user->canUpdateForm(BehaviorReferralCenter::PERMISSION_KEY));
     }
 
     private function ensureCanManageReferral(): void
     {
         if (!$this->canManageReferral()) {
-            abort(403, 'ส่วนการช่วยเหลือหลังส่งต่อจำกัดสิทธิ์เฉพาะนักสังคมสงเคราะห์ ผู้บริหาร และ Admin');
+            abort(403, 'บัญชีนี้ไม่ได้รับสิทธิ์แก้ไขการช่วยเหลือหลังส่งต่อ');
         }
+    }
+
+    /**
+     * UNIFIED_ACCESS_SCOPE_V5
+     * การอนุญาตแก้ไขใช้สิทธิ์รายฟอร์มเหมือนกันทุกบทบาท
+     * การมอบหมายผู้รับผิดชอบยังถูกจัดการที่ศูนย์รับเคสโดย permission เดียวกัน
+     */
+    private function ensureCanActOnReferral(Observe $observe): void
+    {
+        $this->ensureCanManageReferral();
+    }
+
+    private function referralRedirect(Observe $observe, string $message, string $type = 'success')
+    {
+        $route = request()->input('return_to') === 'referral_center'
+            ? route('observe.referrals.show', $observe->id)
+            : route('observe.edit', $observe->id);
+
+        return redirect($route)->with($type, $message);
     }
 
     private function referralSourceDate(Observe $observe): string

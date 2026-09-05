@@ -22,19 +22,30 @@ class UserManagementController extends Controller
     {
         $this->ensureActorCanManageUsers();
 
+        $actor = auth()->user();
+
         $users = User::query()
-            ->with(['houses', 'project', 'formPermissions'])
+            ->with(['houses', 'projects', 'project', 'formPermissions'])
             ->latest()
             ->get();
 
+        // USER_DELEGATION_SCOPE_GUARD_V5:
+        // ผู้บริหารที่ถูกจำกัดหน่วยงาน/บ้าน จะเห็นและจัดการเฉพาะบัญชีระดับเจ้าหน้าที่
+        // ที่มีขอบเขตอยู่ภายในขอบเขตของตนเองเท่านั้น ป้องกันการมอบสิทธิ์ข้ามหน่วยงาน
+        if ($actor && $actor->isExecutive()) {
+            $users = $users
+                ->filter(fn (User $candidate): bool => $this->actorCanManageTargetByScope($actor, $candidate))
+                ->values();
+        }
+
         $stats = [
-            'total' => User::count(),
-            'active' => User::where('status', '1')->count(),
-            'admin' => User::where('role', User::ROLE_ADMIN)->count(),
-            'executive' => User::where('role', User::ROLE_EXECUTIVE)->count(),
-            'social_worker' => User::where('role', User::ROLE_SOCIAL_WORKER)->count(),
-            'teacher_caregiver' => User::where('role', User::ROLE_TEACHER_CAREGIVER)->count(),
-            'nurse' => User::where('role', User::ROLE_NURSE)->count(),
+            'total' => $users->count(),
+            'active' => $users->filter(fn (User $u): bool => (string) $u->status === '1')->count(),
+            'admin' => $users->filter(fn (User $u): bool => $u->isAdmin())->count(),
+            'executive' => $users->filter(fn (User $u): bool => $u->isExecutive())->count(),
+            'social_worker' => $users->filter(fn (User $u): bool => $u->isSocialWorker())->count(),
+            'teacher_caregiver' => $users->filter(fn (User $u): bool => $u->isTeacherCaregiver())->count(),
+            'nurse' => $users->filter(fn (User $u): bool => $u->isNurse())->count(),
         ];
 
         return view('backend.users.index', compact('users', 'stats'));
@@ -45,8 +56,8 @@ class UserManagementController extends Controller
         $this->ensureActorCanManageUsers();
 
         $roles = $this->availableRolesForActor();
-        $projects = Project::orderBy('project_name')->get();
-        $houses = House::orderBy('house_name')->get();
+        $projects = $this->projectsForActor();
+        $houses = $this->housesForActor();
         $permissionGroups = $this->permissionGroupsForActor();
 
         return view('backend.users.create', compact(
@@ -63,9 +74,13 @@ class UserManagementController extends Controller
 
         $validated = $this->validateUser($request);
         $this->guardDelegatedRole($validated['role']);
-        $formPermissionsEnabled = $request->boolean('form_permissions_enabled');
+        // UNIFIED_ACCESS_SCOPE_V5: ผู้ใช้ทุกบทบาทยกเว้น Admin ใช้ permission matrix เป็นระบบหลัก
+        $formPermissionsEnabled = true;
+        $projectIds = $this->normalizedProjectIds($validated);
+        $houseIds = $this->normalizedHouseIds($validated);
+        $this->guardDelegatedScope($projectIds, $houseIds);
 
-        $user = DB::transaction(function () use ($request, $validated, $formPermissionsEnabled) {
+        $user = DB::transaction(function () use ($request, $validated, $formPermissionsEnabled, $projectIds, $houseIds) {
             $photoName = $this->storePhoto($request);
 
             $user = User::create([
@@ -77,15 +92,14 @@ class UserManagementController extends Controller
                 'photo' => $photoName,
                 'role' => $validated['role'],
                 'status' => $validated['status'],
-                'project_id' => $validated['project_id'] ?? null,
+                'project_id' => $projectIds[0] ?? null,
                 'form_permissions_enabled' => $formPermissionsEnabled,
             ]);
 
-            $user->houses()->sync($validated['house_ids'] ?? []);
+            $user->houses()->sync($houseIds);
+            $user->projects()->sync($projectIds);
 
-            if ($formPermissionsEnabled) {
-                $this->syncFormPermissions($user, $request->input('permissions', []));
-            }
+            $this->syncFormPermissions($user, $request->input('permissions', []));
 
             return $user;
         });
@@ -97,11 +111,11 @@ class UserManagementController extends Controller
 
     public function edit($id)
     {
-        $user = User::with(['houses', 'formPermissions'])->findOrFail($id);
+        $user = User::with(['houses', 'projects', 'formPermissions'])->findOrFail($id);
         $this->ensureActorCanManageTarget($user);
         $roles = $this->availableRolesForActor();
-        $projects = Project::orderBy('project_name')->get();
-        $houses = House::orderBy('house_name')->get();
+        $projects = $this->projectsForActor();
+        $houses = $this->housesForActor();
         $permissionGroups = $this->permissionGroupsForActor();
 
         return view('backend.users.edit', compact(
@@ -119,7 +133,11 @@ class UserManagementController extends Controller
         $this->ensureActorCanManageTarget($user);
         $validated = $this->validateUser($request, $user);
         $this->guardDelegatedRole($validated['role']);
-        $formPermissionsEnabled = $request->boolean('form_permissions_enabled');
+        // UNIFIED_ACCESS_SCOPE_V5: ผู้ใช้ทุกบทบาทยกเว้น Admin ใช้ permission matrix เป็นระบบหลัก
+        $formPermissionsEnabled = true;
+        $projectIds = $this->normalizedProjectIds($validated);
+        $houseIds = $this->normalizedHouseIds($validated);
+        $this->guardDelegatedScope($projectIds, $houseIds);
 
         /*
          * Snapshot เฉพาะโครงสร้างสิทธิ์ก่อนแก้ไข
@@ -135,7 +153,7 @@ class UserManagementController extends Controller
             $validated['status']
         );
 
-        DB::transaction(function () use ($request, $validated, $user, $formPermissionsEnabled) {
+        DB::transaction(function () use ($request, $validated, $user, $formPermissionsEnabled, $projectIds, $houseIds) {
             $photoName = $this->storePhoto($request, $user->photo);
 
             $data = [
@@ -146,7 +164,7 @@ class UserManagementController extends Controller
                 'photo' => $photoName,
                 'role' => $validated['role'],
                 'status' => $validated['status'],
-                'project_id' => $validated['project_id'] ?? null,
+                'project_id' => $projectIds[0] ?? null,
                 'form_permissions_enabled' => $formPermissionsEnabled,
             ];
 
@@ -155,22 +173,18 @@ class UserManagementController extends Controller
             }
 
             $user->update($data);
-            $user->houses()->sync($validated['house_ids'] ?? []);
+            $user->houses()->sync($houseIds);
+            $user->projects()->sync($projectIds);
 
-            /*
-             * เมื่อปิดสิทธิ์รายฟอร์ม จะเก็บรายการเดิมไว้ก่อน
-             * เพื่อให้เปิดกลับมาใช้ได้โดยไม่ต้องกำหนดใหม่ทั้งหมด
-             */
-            if ($formPermissionsEnabled) {
-                $this->syncFormPermissions($user, $request->input('permissions', []));
-            }
+            /* สิทธิ์ที่บันทึกจาก matrix คือสิทธิ์ใช้งานจริงของบัญชี */
+            $this->syncFormPermissions($user, $request->input('permissions', []));
         });
 
         /*
          * โหลดค่าจริงหลัง Transaction เพื่อให้ Audit สะท้อนข้อมูลที่บันทึกสำเร็จแล้ว
          */
         $user->refresh();
-        $user->load('formPermissions');
+        $user->load(['formPermissions', 'projects', 'houses']);
 
         $accessAfter = $this->accessSnapshot($user);
         $accessChangedFields = $this->detectAccessChangedFields(
@@ -258,6 +272,7 @@ class UserManagementController extends Controller
 
         DB::transaction(function () use ($user) {
             $user->houses()->detach();
+            $user->projects()->detach();
             $photo = $user->photo;
             $user->delete();
             $this->deletePhoto($photo);
@@ -342,6 +357,10 @@ class UserManagementController extends Controller
             'address' => ['nullable', 'string', 'max:2000'],
             'role' => ['required', Rule::in(array_keys($this->availableRolesForActor()))],
             'status' => ['required', Rule::in(['0', '1'])],
+            // USER_MULTI_PROJECT_SCOPE_V5: ไม่เลือก = ทุกหน่วยงาน, เลือกได้หลายหน่วยงาน
+            'project_ids' => ['nullable', 'array'],
+            'project_ids.*' => ['integer', 'distinct', 'exists:projects,id'],
+            // รับ field เดิมไว้เพื่อ compatibility ระหว่าง deploy/cache เก่า
             'project_id' => ['nullable', 'integer', 'exists:projects,id'],
             'house_ids' => ['nullable', 'array'],
             'house_ids.*' => ['integer', 'distinct', 'exists:houses,id'],
@@ -369,6 +388,9 @@ class UserManagementController extends Controller
             'role.required' => 'กรุณาเลือกบทบาทผู้ใช้งาน',
             'role.in' => 'บทบาทผู้ใช้งานไม่ถูกต้อง',
             'status.required' => 'กรุณาเลือกสถานะ',
+            'project_ids.array' => 'ข้อมูลหน่วยงาน/โครงการที่เลือกไม่ถูกต้อง',
+            'project_ids.*.exists' => 'หน่วยงาน/โครงการที่เลือกไม่ถูกต้อง',
+            'project_ids.*.distinct' => 'มีการเลือกหน่วยงาน/โครงการซ้ำกัน',
             'project_id.exists' => 'หน่วยงาน/โครงการที่เลือกไม่ถูกต้อง',
             'house_ids.array' => 'ข้อมูลบ้านที่เลือกไม่ถูกต้อง',
             'house_ids.*.exists' => 'บ้านที่เลือกไม่ถูกต้อง',
@@ -377,6 +399,163 @@ class UserManagementController extends Controller
             'photo.mimes' => 'รองรับไฟล์รูปประเภท JPG, JPEG, PNG และ WEBP',
             'photo.max' => 'รูปประจำตัวต้องมีขนาดไม่เกิน 2 MB',
         ]);
+    }
+
+    /**
+     * USER_MULTI_PROJECT_SCOPE_V5
+     * คืนรายการ Project ที่เลือกจริง
+     * [] = ทุกหน่วยงาน (ไม่จำกัด Project)
+     */
+    private function normalizedProjectIds(array $validated): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map(
+                static fn ($id): int => (int) $id,
+                (array) ($validated['project_ids'] ?? [])
+            ),
+            static fn (int $id): bool => $id > 0
+        )));
+
+        // รองรับ request จากหน้าเก่าที่ยังส่ง project_id เดี่ยวระหว่าง deploy
+        if ($ids === [] && !empty($validated['project_id'])) {
+            $ids = [(int) $validated['project_id']];
+        }
+
+        sort($ids);
+
+        return $ids;
+    }
+
+    /**
+     * คืนรายการ House ที่เลือกจริง
+     * [] = ทุกบ้าน (ไม่จำกัด House)
+     */
+    private function normalizedHouseIds(array $validated): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map(
+                static fn ($id): int => (int) $id,
+                (array) ($validated['house_ids'] ?? [])
+            ),
+            static fn (int $id): bool => $id > 0
+        )));
+
+        sort($ids);
+
+        return $ids;
+    }
+
+    /**
+     * USER_DELEGATION_SCOPE_GUARD_V5
+     * ผู้บริหารมอบขอบเขตให้เจ้าหน้าที่ได้ไม่เกินขอบเขตของตนเอง
+     * - ผู้บริหารไม่ถูกจำกัด Project/House -> มอบได้ทุกค่าในส่วนนั้น
+     * - ผู้บริหารถูกจำกัด -> ห้ามเลือก "ทุกหน่วยงาน/ทุกบ้าน" ให้ผู้ใต้บังคับบัญชา
+     *   และห้ามเลือกค่าที่อยู่นอกขอบเขตของผู้บริหาร
+     * - Admin ไม่ถูกจำกัด
+     */
+    private function guardDelegatedScope(array $projectIds, array $houseIds): void
+    {
+        $actor = auth()->user();
+
+        if (!$actor || $actor->isAdmin()) {
+            return;
+        }
+
+        if (!$actor->isExecutive()) {
+            abort(403, 'บัญชีนี้ไม่มีสิทธิ์กำหนดขอบเขตผู้ใช้งาน');
+        }
+
+        $actorProjectIds = $actor->assignedProjectIds();
+        if ($actorProjectIds !== []) {
+            if ($projectIds === []) {
+                throw ValidationException::withMessages([
+                    'project_ids' => 'ผู้บริหารบัญชีนี้ถูกจำกัดหน่วยงาน จึงไม่สามารถกำหนด “ทุกหน่วยงาน” ให้ผู้ใช้งานได้',
+                ]);
+            }
+
+            if (array_diff($projectIds, $actorProjectIds) !== []) {
+                throw ValidationException::withMessages([
+                    'project_ids' => 'มีหน่วยงาน/โครงการที่อยู่นอกขอบเขตของผู้บริหาร กรุณาเลือกเฉพาะหน่วยงานที่ได้รับมอบหมาย',
+                ]);
+            }
+        }
+
+        $actorHouseIds = $actor->assignedHouseIds();
+        if ($actorHouseIds !== []) {
+            if ($houseIds === []) {
+                throw ValidationException::withMessages([
+                    'house_ids' => 'ผู้บริหารบัญชีนี้ถูกจำกัดบ้าน จึงไม่สามารถกำหนด “ทุกบ้าน” ให้ผู้ใช้งานได้',
+                ]);
+            }
+
+            if (array_diff($houseIds, $actorHouseIds) !== []) {
+                throw ValidationException::withMessages([
+                    'house_ids' => 'มีบ้านที่อยู่นอกขอบเขตของผู้บริหาร กรุณาเลือกเฉพาะบ้านที่ได้รับมอบหมาย',
+                ]);
+            }
+        }
+    }
+
+    private function projectsForActor()
+    {
+        $actor = auth()->user();
+        $query = Project::query()->orderBy('project_name');
+
+        if ($actor && $actor->isExecutive() && $actor->hasProjectRestriction()) {
+            $query->whereIn('id', $actor->assignedProjectIds());
+        }
+
+        return $query->get();
+    }
+
+    private function housesForActor()
+    {
+        $actor = auth()->user();
+        $query = House::query()->orderBy('house_name');
+
+        if ($actor && $actor->isExecutive() && $actor->hasHouseRestriction()) {
+            $query->whereIn('id', $actor->assignedHouseIds());
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * ตรวจว่าบัญชีเป้าหมายอยู่ภายในขอบเขตที่ผู้บริหารสามารถกำกับได้หรือไม่
+     * "ไม่เลือก" ของบัญชีเป้าหมายหมายถึงทุกหน่วยงาน/ทุกบ้าน จึงถือว่ากว้างกว่า
+     * ผู้บริหารที่ถูกจำกัดในส่วนนั้นและไม่อนุญาตให้จัดการ
+     */
+    private function actorCanManageTargetByScope(User $actor, User $target): bool
+    {
+        if ($actor->isAdmin()) {
+            return true;
+        }
+
+        if (!$actor->isExecutive()) {
+            return false;
+        }
+
+        if ($target->isAdmin() || $target->isExecutive() || (int) $actor->id === (int) $target->id) {
+            return false;
+        }
+
+        $actorProjectIds = $actor->assignedProjectIds();
+        if ($actorProjectIds !== []) {
+            $targetProjectIds = $target->assignedProjectIds();
+            if ($targetProjectIds === [] || array_diff($targetProjectIds, $actorProjectIds) !== []) {
+                return false;
+            }
+        }
+
+        $actorHouseIds = $actor->assignedHouseIds();
+        if ($actorHouseIds !== []) {
+            $targetHouseIds = $target->assignedHouseIds();
+            if ($targetHouseIds === [] || array_diff($targetHouseIds, $actorHouseIds) !== []) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function syncFormPermissions(User $user, array $submittedPermissions): void
@@ -507,6 +686,10 @@ class UserManagementController extends Controller
         if ($actor && (int) $actor->id === (int) $target->id) {
             abort(403, 'กรุณาแก้ไขบัญชีของตนเองผ่านหน้าโปรไฟล์');
         }
+
+        if ($actor && $actor->isExecutive() && !$this->actorCanManageTargetByScope($actor, $target)) {
+            abort(403, 'บัญชีผู้ใช้งานนี้อยู่นอกขอบเขตหน่วยงาน/บ้านที่ผู้บริหารได้รับมอบหมาย');
+        }
     }
 
     private function protectLastAdmin(User $user, string $newRole, string $newStatus): void
@@ -535,7 +718,7 @@ class UserManagementController extends Controller
      */
     private function accessSnapshot(User $user): array
     {
-        $user->loadMissing('formPermissions');
+        $user->loadMissing(['formPermissions', 'projects']);
 
         $houseIds = $user->houses()
             ->pluck('houses.id')
@@ -562,9 +745,11 @@ class UserManagementController extends Controller
         return [
             'role' => (string) $user->role,
             'status' => (string) $user->status,
+            // project_id เดิมเก็บไว้เป็นค่า compatibility เท่านั้น
             'project_id' => $user->project_id !== null
                 ? (int) $user->project_id
                 : null,
+            'project_ids' => $user->assignedProjectIds(),
             'house_ids' => $houseIds,
             'form_permissions_enabled' => (bool) $user->form_permissions_enabled,
             'permissions' => $permissions,
@@ -592,8 +777,8 @@ class UserManagementController extends Controller
             $changed[] = 'account_status';
         }
 
-        if (($before['project_id'] ?? null) !== ($after['project_id'] ?? null)) {
-            $changed[] = 'project_assignment';
+        if (($before['project_ids'] ?? []) !== ($after['project_ids'] ?? [])) {
+            $changed[] = 'project_assignments';
         }
 
         if (($before['house_ids'] ?? []) !== ($after['house_ids'] ?? [])) {

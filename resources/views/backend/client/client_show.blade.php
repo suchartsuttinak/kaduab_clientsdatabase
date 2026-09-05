@@ -8,16 +8,46 @@
      * แต่ปุ่มจะถูกแสดงเป็น “ดูทะเบียนประวัติ” แทนปุ่มแก้ไข
      */
     $clientPermissionUser = auth()->user();
-    $clientPermissionEnabled = $clientPermissionUser
-        && method_exists($clientPermissionUser, 'hasFormPermission')
-        && (bool) ($clientPermissionUser->form_permissions_enabled ?? false);
+    // UNIFIED_ACCESS_SCOPE_V5: ผู้ใช้ทุกบทบาทยกเว้น Admin ใช้ permission matrix แบบ Default Deny
+    $canUpdateClientProfile = (bool) ($clientPermissionUser?->canUpdateForm('registration_client_profile') ?? false);
+    $canDeleteClientProfile = (bool) ($clientPermissionUser?->canDeleteForm('registration_client_profile') ?? false);
 
-    $canUpdateClientProfile = !$clientPermissionEnabled
-        || $clientPermissionUser->hasFormPermission('registration_client_profile', 'update');
 
-    $canDeleteClientProfile = !$clientPermissionEnabled
-        || $clientPermissionUser->hasFormPermission('registration_client_profile', 'delete');
+// ฟังก์ชันช่วยแปลงวันที่เป็นรูปแบบไทย
+        $thaiMonthsShort = [
+    1 => 'ม.ค.',
+    2 => 'ก.พ.',
+    3 => 'มี.ค.',
+    4 => 'เม.ย.',
+    5 => 'พ.ค.',
+    6 => 'มิ.ย.',
+    7 => 'ก.ค.',
+    8 => 'ส.ค.',
+    9 => 'ก.ย.',
+    10 => 'ต.ค.',
+    11 => 'พ.ย.',
+    12 => 'ธ.ค.',
+];
+
+$formatThaiDate = function ($value) use ($thaiMonthsShort) {
+    if (empty($value)) {
+        return '-';
+    }
+
+    try {
+        $date = $value instanceof \Carbon\CarbonInterface
+            ? $value
+            : \Carbon\Carbon::parse($value);
+
+        return $date->day
+            . ' ' . $thaiMonthsShort[$date->month]
+            . ' ' . ($date->year + 543);
+    } catch (\Throwable $e) {
+        return '-';
+    }
+};
 @endphp
+
 
 <style>
     .client-page{padding-top:.5rem}
@@ -139,7 +169,7 @@
                 </div>
             </div>
 
-            @if(auth()->check() && auth()->user()->hasRole(['admin','executive','social_worker']))
+            @if(auth()->check() && auth()->user()->canCreateForm('registration_client_profile'))
                 <div class="client-toolbar-right">
                     <a href="{{ route('client.add') }}" class="btn btn-success client-btn">
                         <i data-feather="plus-circle"></i><span>เพิ่มรายการ</span>
@@ -156,7 +186,7 @@
                             <label for="client-search" class="client-filter-label">ค้นหาผู้รับบริการ</label>  <i data-feather="zap" aria-hidden="true"></i> <span>พิมพ์แล้วระบบจะค้นหาให้อัตโนมัติ</span>
                             <input type="search" id="client-search" name="search" value="{{ $search ?? request('search') }}"
                                    class="form-control client-filter-control"
-                                   placeholder="ชื่อ นามสกุล เลขทะเบียน หรือปัญหา"
+                                   placeholder="{{ ($canAccessSensitiveProblems ?? false) ? 'ชื่อ นามสกุล เลขทะเบียน หรือปัญหา' : 'ชื่อ นามสกุล หรือเลขทะเบียน' }}"
                                    maxlength="100" autocomplete="off"
                                    aria-describedby="client-search-status">
                             {{-- <div id="client-search-status" class="client-search-help" role="status" aria-live="polite">
@@ -219,7 +249,11 @@
                         <table class="table table-hover align-middle client-table">
                             <thead>
                                 <tr>
-                                    <th>ลำดับ</th><th>ภาพ</th><th>ชื่อ-นามสกุล</th><th>วันที่รับเข้า</th><th>วันเกิด</th><th>อายุ</th><th>ปัญหา</th><th>สถานะ</th><th class="action-cell">การจัดการ</th>
+                                    <th>ลำดับ</th><th>ภาพ</th><th>ชื่อ-นามสกุล</th><th>วันที่รับเข้า</th><th>วันเกิด</th><th>อายุ</th>
+                                    @if($canAccessSensitiveProblems ?? false)
+                                        <th>ปัญหา</th>
+                                    @endif
+                                    <th>สถานะ</th><th class="action-cell">การจัดการ</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -254,18 +288,20 @@
                                                 <div class="client-subtext">เลขทะเบียน {{ $client->register_number ?? '-' }}</div>
                                             </a>
                                         </td>
-                                        <td>{{ $client->arrival_date }}</td>
-                                        <td>{{ $client->birth_date }}</td>
+                                    <td>{{ $formatThaiDate($client->arrival_date) }}</td>
+                                        <td>{{ $formatThaiDate($client->birth_date) }}</td>
                                         <td>{{ $client->age }}</td>
-                                        <td>
-                                            @if($client->problems->isNotEmpty())
-                                                <ul class="problem-list">
-                                                    @foreach($client->problems as $problem)<li>{{ $problem->problem_name }}</li>@endforeach
-                                                </ul>
-                                            @else
-                                                <span class="text-muted small">ไม่มีข้อมูล</span>
-                                            @endif
-                                        </td>
+                                        @if($canAccessSensitiveProblems ?? false)
+                                            <td>
+                                                @if($client->problems->isNotEmpty())
+                                                    <ul class="problem-list">
+                                                        @foreach($client->problems as $problem)<li>{{ $problem->problem_name }}</li>@endforeach
+                                                    </ul>
+                                                @else
+                                                    <span class="text-muted small">ไม่มีข้อมูล</span>
+                                                @endif
+                                            </td>
+                                        @endif
                                         <td>
                                             @if($client->release_status === 'show')
                                                 <span class="badge bg-success-subtle text-success status-badge">อยู่ในระบบ</span>
@@ -309,10 +345,7 @@
                                                     </a>
                                                 @endif
 
-                                                @if(
-                                                    in_array(auth()->user()->role, ['admin', 'social_worker'], true)
-                                                    && $canDeleteClientProfile
-                                                )
+                                                @if($canDeleteClientProfile)
                                                     <button
                                                         type="button"
                                                         class="btn btn-danger btn-sm action-btn client-delete-btn"
@@ -336,13 +369,13 @@
                                                     <span class="mdi mdi-file-export-outline mdi-18px" aria-hidden="true"></span>
                                                 </a>
 
-                                                @if(auth()->user()->role === 'admin')
+                                                @if(auth()->user()?->canCreateForm('registration_project_transfer'))
                                                     <a
                                                         href="{{ route('client.transfer.create', $client->id) }}"
                                                         class="btn btn-warning btn-sm action-btn"
                                                         title="ย้ายเคส"
                                                         aria-label="ย้ายเคส {{ $client->full_name }}"
-                                                        data-permission-action="update"
+                                                        data-permission-action="create"
                                                     >
                                                         <span class="mdi mdi-arrow-right-bold mdi-18px" aria-hidden="true"></span>
                                                     </a>

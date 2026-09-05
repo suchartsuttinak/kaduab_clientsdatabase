@@ -14,34 +14,38 @@ class ClientHouseTransferController extends Controller
 {
     public function index()
     {
-        $clients = Client::forUser(auth()->user())
+        $user = auth()->user();
+
+        $clients = Client::forUser($user)
             ->with(['house', 'project'])
             ->orderBy('house_id')
             ->orderBy('first_name')
             ->get();
 
-       $houses = House::orderByRaw('CAST(REGEXP_REPLACE(house_name, "[^0-9]", "") AS UNSIGNED)')
-        ->orderBy('house_name')
-        ->get();
+        $houses = House::query()
+            ->whereIn('id', $user->accessibleHouseIds())
+            ->orderByRaw('CAST(REGEXP_REPLACE(house_name, "[^0-9]", "") AS UNSIGNED)')
+            ->orderBy('house_name')
+            ->get();
+
+        $houseIds = $houses->pluck('id');
 
         $caregivers = User::query()
-            ->with('houses:id,house_name')
+            ->with(['houses' => fn ($q) => $q->whereIn('houses.id', $houseIds)])
             ->select('id', 'name', 'project_id')
-            ->whereHas('houses')
+            ->whereHas('houses', fn ($q) => $q->whereIn('houses.id', $houseIds))
             ->orderBy('name')
             ->get()
-            ->flatMap(function ($user) {
-                return $user->houses->map(function ($house) use ($user) {
+            ->flatMap(function ($caregiver) {
+                return $caregiver->houses->map(function ($house) use ($caregiver) {
                     return [
                         'house_id' => $house->id,
-                        'name' => $user->name,
+                        'name' => $caregiver->name,
                     ];
                 });
             })
             ->groupBy('house_id')
-            ->map(function ($items) {
-                return $items->pluck('name')->implode(', ');
-            });
+            ->map(fn ($items) => $items->pluck('name')->implode(', '));
 
         return view('frontend.client_house_transfer.index', compact(
             'clients',
@@ -52,12 +56,19 @@ class ClientHouseTransferController extends Controller
 
     public function update(Request $request, Client $client)
     {
-        $client = Client::forUser(auth()->user())->findOrFail($client->id);
+        $user = auth()->user();
+        $client = Client::forUser($user)->findOrFail($client->id);
 
         $validated = $request->validate([
             'house_id' => ['required', 'exists:houses,id'],
             'remark' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        abort_unless(
+            $user->canAccessHouse((int) $validated['house_id']),
+            403,
+            'คุณไม่มีสิทธิ์ย้ายผู้รับบริการไปยังบ้านนี้'
+        );
 
         if ((int) $client->house_id === (int) $validated['house_id']) {
             return back()->with('info', 'เด็กอยู่บ้านนี้อยู่แล้ว ไม่มีการเปลี่ยนแปลงข้อมูล');
@@ -75,7 +86,7 @@ class ClientHouseTransferController extends Controller
                 'client_id' => $client->id,
                 'old_house_id' => $oldHouseId,
                 'new_house_id' => $newHouseId,
-                'project_id' => auth()->user()->project_id,
+                'project_id' => $client->project_id,
                 'caregiver_id' => $caregiver?->id,
                 'changed_by' => auth()->id(),
                 'transfer_date' => now()->toDateString(),

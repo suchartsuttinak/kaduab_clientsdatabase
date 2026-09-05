@@ -3,7 +3,7 @@
 use App\Http\Controllers\Frontend\ReferController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'role:admin,executive,social_worker'])
+Route::middleware(['auth'])
     ->prefix('refer')
     ->group(function (): void {
         Route::get('/refers/all', [ReferController::class, 'allRefers'])

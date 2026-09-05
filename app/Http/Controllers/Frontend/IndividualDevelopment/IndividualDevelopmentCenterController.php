@@ -26,9 +26,11 @@ class IndividualDevelopmentCenterController extends Controller
         $soon = $today->copy()->addDays(7);
         $staleCutoff = $today->copy()->subDays(30);
 
-        // ศูนย์กลางนี้ตั้งใจให้ผู้ที่ได้รับสิทธิ์ individual_development_center เห็นเด็กทุกบ้าน
-        // จึงไม่ใช้ Client::forUser() เพื่อไม่ให้ house scope ของโมดูลอื่นมาจำกัดข้อมูลส่วนกลาง
-        $query = Client::query()
+        // UNIFIED_ACCESS_SCOPE_V5: แม้เป็นศูนย์กลางก็ต้องอยู่ภายใน Project + House ของผู้ใช้
+        $user = auth()->user();
+        $scopedClientIds = Client::forUser($user)->select('clients.id');
+
+        $query = Client::forUser($user)
             ->with(['house', 'project'])
             ->with([
                 'individualDevelopmentPlans' => fn ($q) => $q
@@ -41,6 +43,13 @@ class IndividualDevelopmentCenterController extends Controller
                     ->limit(1),
             ]);
 
+        if ($request->filled('house_id')) {
+            abort_unless($user->canAccessHouse($request->integer('house_id')), 403, 'คุณไม่มีสิทธิ์ดูบ้านนี้');
+        }
+        if ($request->filled('project_id')) {
+            abort_unless($user->canAccessProject($request->integer('project_id')), 403, 'คุณไม่มีสิทธิ์ดูหน่วยงาน/โครงการนี้');
+        }
+
         $this->applyFilters($query, $request, $today, $soon, $staleCutoff);
 
         $clients = $query
@@ -51,27 +60,33 @@ class IndividualDevelopmentCenterController extends Controller
             ->withQueryString();
 
         $stats = [
-            'clients' => Client::query()->count(),
+            'clients' => Client::forUser($user)->count(),
             'active_plans' => DevelopmentPlan::query()
+                ->whereIn('client_id', clone $scopedClientIds)
                 ->where('status', DevelopmentPlan::STATUS_ACTIVE)
                 ->distinct()->count('client_id'),
-            'without_plan' => Client::query()->whereDoesntHave('individualDevelopmentPlans')->count(),
+            'without_plan' => Client::forUser($user)->whereDoesntHave('individualDevelopmentPlans')->count(),
             'overdue' => DevelopmentPlan::query()
+                ->whereIn('client_id', clone $scopedClientIds)
                 ->where('status', DevelopmentPlan::STATUS_ACTIVE)
                 ->whereHas('goals', fn ($q) => $this->openGoals($q)->whereDate('target_date', '<', $today->toDateString()))
                 ->distinct()->count('client_id'),
             'due_soon' => DevelopmentPlan::query()
+                ->whereIn('client_id', clone $scopedClientIds)
                 ->where('status', DevelopmentPlan::STATUS_ACTIVE)
                 ->whereHas('goals', fn ($q) => $this->openGoals($q)->whereBetween('target_date', [$today->toDateString(), $soon->toDateString()]))
                 ->distinct()->count('client_id'),
             'stale' => DevelopmentPlan::query()
+                ->whereIn('client_id', clone $scopedClientIds)
                 ->where('status', DevelopmentPlan::STATUS_ACTIVE)
                 ->whereDoesntHave('followups', fn ($q) => $q->whereDate('followup_date', '>=', $staleCutoff->toDateString()))
                 ->distinct()->count('client_id'),
             'completed' => DevelopmentPlan::query()
+                ->whereIn('client_id', clone $scopedClientIds)
                 ->where('status', DevelopmentPlan::STATUS_COMPLETED)
                 ->distinct()->count('client_id'),
             'documents_attention' => ClientDocumentStatus::query()
+                ->whereIn('client_id', clone $scopedClientIds)
                 ->where(function ($q) use ($today): void {
                     $q->whereIn('status', ['missing', 'in_progress', 'expired'])
                         ->orWhereDate('expires_at', '<', $today->toDateString());
@@ -81,8 +96,8 @@ class IndividualDevelopmentCenterController extends Controller
 
         return view('frontend.client.individual_development.center.index', [
             'clients' => $clients,
-            'houses' => House::query()->orderBy('house_name')->get(),
-            'projects' => Project::query()->orderBy('project_name')->get(),
+            'houses' => House::query()->whereIn('id', $user->accessibleHouseIds())->orderBy('house_name')->get(),
+            'projects' => Project::query()->whereIn('id', $user->accessibleProjectIds())->orderBy('project_name')->get(),
             'stats' => $stats,
             'today' => $today,
             'soon' => $soon,

@@ -7,13 +7,14 @@ use App\Models\Client;
 
 class ClientPolicy
 {
-    public function view(User $user, Client $client)
+    public function view(User $user, Client $client): bool
     {
-        if ($user->role === 'admin') {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        return $user->houses->pluck('id')->contains($client->house_id);
+        return $user->canAccessProject($client->project_id)
+            && $user->canAccessHouse($client->house_id);
     }
 
     public function update(User $user, Client $client)

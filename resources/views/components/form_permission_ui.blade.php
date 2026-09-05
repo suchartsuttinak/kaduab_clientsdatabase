@@ -645,6 +645,13 @@
     function processForm(form) {
         if (!form || isFilterForm(form)) return;
 
+        // USER_PERMISSION_VISIBILITY_FIX_V2: ฟอร์มที่ชี้ไป route อื่นซึ่งถูกปฏิเสธ ต้องซ่อนตามสิทธิ์ของ route ปลายทาง
+        const targetRule = deniedRule(form.getAttribute('action') || window.location.href, effectiveFormMethod(form));
+        if (targetRule) {
+            hideElement(form);
+            return;
+        }
+
         const action = formAction(form);
         const inModal = !!form.closest('.modal');
 
@@ -687,7 +694,12 @@
 
         if (control.matches('a[href]')) {
             const rule = deniedRule(control.getAttribute('href'), 'GET');
-            if (rule?.action) action = String(rule.action).toLowerCase();
+
+            // ลิงก์ข้ามโมดูลต้องตัดสินจาก route ปลายทาง ไม่ใช้ permission ของหน้าปัจจุบัน
+            if (rule) {
+                hideElement(control.closest('.service-card-link') || control.closest('li') || control);
+                return;
+            }
         }
 
         if (action === 'create' && permissions.create === false) {

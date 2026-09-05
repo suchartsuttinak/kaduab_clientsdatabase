@@ -8,15 +8,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class PublicizeController extends Controller
 {
     public function index(Request $request)
     {
         $categories = ['all' => 'ทั้งหมด'] + Publicize::CATEGORIES;
-
         $activeCategory = $request->get('category', 'all');
         $yearBe = $request->get('year_be');
+
+        $perPageOptions = [10, 20, 30, 50];
+        $perPage = (int) $request->get('per_page', 10);
+
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = 10;
+        }
 
         if (!array_key_exists($activeCategory, $categories)) {
             $activeCategory = 'all';
@@ -36,7 +43,8 @@ class PublicizeController extends Controller
         $publicizes = $query
             ->orderByDesc('recorded_at')
             ->orderByDesc('id')
-            ->get();
+            ->paginate($perPage)
+            ->withQueryString();
 
         $yearOptions = Publicize::selectRaw('YEAR(recorded_at) as year_ad')
             ->distinct()
@@ -47,6 +55,7 @@ class PublicizeController extends Controller
             });
 
         $categoryCounts = [];
+
         foreach (Publicize::CATEGORIES as $key => $label) {
             $countQuery = Publicize::query()->where('category', $key);
 
@@ -58,9 +67,11 @@ class PublicizeController extends Controller
         }
 
         $allCountQuery = Publicize::query();
+
         if (!empty($yearBe) && is_numeric($yearBe)) {
             $allCountQuery->whereYear('recorded_at', ((int) $yearBe - 543));
         }
+
         $categoryCounts['all'] = $allCountQuery->count();
 
         return view('backend.publicizes.index', compact(
@@ -69,7 +80,9 @@ class PublicizeController extends Controller
             'publicizes',
             'yearOptions',
             'yearBe',
-            'categoryCounts'
+            'categoryCounts',
+            'perPage',
+            'perPageOptions'
         ));
     }
 
@@ -86,17 +99,17 @@ class PublicizeController extends Controller
 
         $validated = $request->validate([
             'recorded_at' => ['required', 'date', 'before_or_equal:' . now('Asia/Bangkok')->toDateString()],
-            'category'    => ['required', Rule::in($categories)],
-            'title'       => ['required', 'string', 'max:255'],
-            'file'        => ['required', 'file', 'mimes:pdf', 'max:10240'],
+            'category' => ['required', Rule::in($categories)],
+            'title' => ['required', 'string', 'max:255'],
+            'file' => ['required', 'file', 'mimes:pdf', 'max:20480'],
         ], [
             'recorded_at.required' => 'กรุณาเลือกวันที่บันทึก',
             'recorded_at.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน',
-            'category.required'    => 'กรุณาเลือกประเภท',
-            'title.required'       => 'กรุณากรอกชื่อเรื่อง',
-            'file.required'        => 'กรุณาอัปโหลดไฟล์ PDF',
-            'file.mimes'           => 'รองรับเฉพาะไฟล์ PDF เท่านั้น',
-            'file.max'             => 'ขนาดไฟล์ต้องไม่เกิน 10 MB',
+            'category.required' => 'กรุณาเลือกประเภท',
+            'title.required' => 'กรุณากรอกชื่อเรื่อง',
+            'file.required' => 'กรุณาอัปโหลดไฟล์ PDF',
+            'file.mimes' => 'รองรับเฉพาะไฟล์ PDF เท่านั้น',
+            'file.max' => 'ขนาดไฟล์ต้องไม่เกิน 20 MB',
         ]);
 
         $file = $request->file('file');
@@ -104,10 +117,10 @@ class PublicizeController extends Controller
 
         Publicize::create([
             'recorded_at' => $validated['recorded_at'],
-            'category'    => $validated['category'],
-            'title'       => $validated['title'],
-            'file_path'   => $filePath,
-            'file_name'   => Str::limit(basename((string) $file->getClientOriginalName()), 255, ''),
+            'category' => $validated['category'],
+            'title' => $validated['title'],
+            'file_path' => $filePath,
+            'file_name' => Str::limit(basename((string) $file->getClientOriginalName()), 255, ''),
         ]);
 
         return redirect()
@@ -128,22 +141,22 @@ class PublicizeController extends Controller
 
         $validated = $request->validate([
             'recorded_at' => ['required', 'date', 'before_or_equal:' . now('Asia/Bangkok')->toDateString()],
-            'category'    => ['required', Rule::in($categories)],
-            'title'       => ['required', 'string', 'max:255'],
-            'file'        => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
+            'category' => ['required', Rule::in($categories)],
+            'title' => ['required', 'string', 'max:255'],
+            'file' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
         ], [
             'recorded_at.required' => 'กรุณาเลือกวันที่บันทึก',
             'recorded_at.before_or_equal' => 'วันที่บันทึกต้องไม่เกินวันที่ปัจจุบัน',
-            'category.required'    => 'กรุณาเลือกประเภท',
-            'title.required'       => 'กรุณากรอกชื่อเรื่อง',
-            'file.mimes'           => 'รองรับเฉพาะไฟล์ PDF เท่านั้น',
-            'file.max'             => 'ขนาดไฟล์ต้องไม่เกิน 10 MB',
+            'category.required' => 'กรุณาเลือกประเภท',
+            'title.required' => 'กรุณากรอกชื่อเรื่อง',
+            'file.mimes' => 'รองรับเฉพาะไฟล์ PDF เท่านั้น',
+            'file.max' => 'ขนาดไฟล์ต้องไม่เกิน 20 MB',
         ]);
 
         $data = [
             'recorded_at' => $validated['recorded_at'],
-            'category'    => $validated['category'],
-            'title'       => $validated['title'],
+            'category' => $validated['category'],
+            'title' => $validated['title'],
         ];
 
         $oldFilePath = $publicize->file_path;
@@ -184,7 +197,6 @@ class PublicizeController extends Controller
         $category = $publicize->category;
 
         $this->deletePublicizeFile($publicize->file_path);
-
         $publicize->delete();
 
         return redirect()
@@ -195,6 +207,7 @@ class PublicizeController extends Controller
     public function viewFile(Publicize $publicize)
     {
         $path = $this->resolvePublicizeFile($publicize->file_path);
+
         abort_unless($path && $this->hasPdfSignature($path), 404);
 
         return response()->file($path, [
@@ -215,11 +228,14 @@ class PublicizeController extends Controller
         $safeCategory = array_key_exists($category, Publicize::CATEGORIES)
             ? $category
             : 'other';
+
         $folder = 'publicizes/' . $safeCategory;
         $destinationPath = storage_path('app/private/' . $folder);
+
         File::ensureDirectoryExists($destinationPath);
 
         $filename = now('Asia/Bangkok')->format('YmdHis') . '_' . bin2hex(random_bytes(8)) . '.pdf';
+
         $file->move($destinationPath, $filename);
 
         return $folder . '/' . $filename;
@@ -232,18 +248,21 @@ class PublicizeController extends Controller
         }
 
         $relative = ltrim(str_replace('\\', '/', trim($filePath)), '/');
+
         if ($relative === '' || str_contains($relative, '..')) {
             return null;
         }
 
         if (str_starts_with($relative, 'publicizes/')) {
             $path = storage_path('app/private/' . $relative);
+
             return File::isFile($path) ? $path : null;
         }
 
         // รองรับไฟล์เดิมที่เคยเก็บใต้ public/upload/publicizes
         if (str_starts_with($relative, 'upload/publicizes/')) {
             $path = public_path($relative);
+
             return File::isFile($path) ? $path : null;
         }
 
@@ -257,6 +276,7 @@ class PublicizeController extends Controller
         }
 
         $handle = @fopen($path, 'rb');
+
         if (!$handle) {
             return false;
         }
@@ -281,5 +301,4 @@ class PublicizeController extends Controller
             Storage::disk('public')->delete($filePath);
         }
     }
-
 }

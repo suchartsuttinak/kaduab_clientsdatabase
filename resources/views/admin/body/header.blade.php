@@ -80,7 +80,7 @@
                                             : '-';
                                     @endphp
 
-                                    <a href="{{ $client ? route('client.edit', $client->id) : route('client.show') }}"
+                                    <a href="{{ $client ? route('admin.index', $client->id) : route('client.show') }}"
                                        class="dropdown-item notify-item">
                                         <div class="notify-icon bg-warning-subtle text-warning">
                                             <i class="mdi mdi-calendar-clock"></i>
@@ -108,7 +108,7 @@
                                         $clientName = $client->fullname ?? trim(($client->first_name ?? '').' '.($client->last_name ?? ''));
                                     @endphp
 
-                                    <a href="{{ Route::has('refers.all') ? route('refers.all') : route('client.show') }}"
+                                    <a href="{{ $client ? route('refers.index', $client->id) : route('client.show') }}"
                                        class="dropdown-item notify-item">
                                         <div class="notify-icon bg-primary-subtle text-primary">
                                             <i class="mdi mdi-file-clock-outline"></i>
@@ -132,7 +132,7 @@
                                         $clientName = $client->fullname ?? trim(($client->first_name ?? '').' '.($client->last_name ?? ''));
                                     @endphp
 
-                                    <a href="{{ $client ? route('client.edit', $client->id) : route('client.show') }}"
+                                    <a href="{{ $client ? route('admin.index', $client->id) : route('client.show') }}"
                                        class="dropdown-item notify-item">
                                         <div class="notify-icon bg-info-subtle text-info">
                                             <i class="mdi mdi-school-outline"></i>
@@ -156,7 +156,7 @@
                                         $clientName = $client->fullname ?? trim(($client->first_name ?? '').' '.($client->last_name ?? ''));
                                     @endphp
 
-                                    <a href="{{ $client ? route('client.edit', $client->id) : route('client.show') }}"
+                                    <a href="{{ $client ? route('admin.index', $client->id) : route('client.show') }}"
                                        class="dropdown-item notify-item">
                                         <div class="notify-icon bg-success-subtle text-success">
                                             <i class="mdi mdi-medical-bag"></i>
@@ -224,7 +224,8 @@
                         <div class="dropdown-divider"></div>
 
                         <form method="POST"
-                              action="{{ route('admin.logout') }}"
+{{-- PERMISSION_LANDING_LOGOUT_FIX_V3: ใช้ logout route มาตรฐานเพียงจุดเดียว --}}
+                              action="{{ route('logout') }}"
                               class="m-0"
                               data-permission-action="navigation">
                             @csrf

@@ -1,5 +1,5 @@
 @php
-    $canApproveRefer = auth()->check() && in_array(auth()->user()->role, ['admin', 'executive'], true);
+    $canApproveRefer = (bool) (auth()->user()?->canUpdateForm('welfare_discharge') ?? false);
     $canCreateRefer = $canCreateRefer ?? !in_array($client->release_status, ['pending_refer', 'refer'], true);
 @endphp
 
@@ -44,8 +44,8 @@
                                 <div>
                                     <div class="fw-bold">รายการจะถูกส่งเข้าสู่ขั้นตอนรออนุมัติ</div>
                                     <div class="small mb-0">
-                                        เมื่อบันทึกแล้ว ต้องให้ <strong>ผู้ดูแลระบบหรือผู้บริหาร</strong>
-                                        เป็นผู้อนุมัติการจำหน่าย
+                                        เมื่อบันทึกแล้ว ต้องให้ <strong>ผู้ใช้งานที่ได้รับสิทธิ์แก้ไข/อนุมัติการจำหน่าย</strong>
+                                        เป็นผู้อนุมัติรายการ
                                     </div>
                                 </div>
                             </div>
